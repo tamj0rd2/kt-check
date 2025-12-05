@@ -31,6 +31,9 @@ dependencies {
     implementation(libs.guava)
 }
 
+group = "com.github.tamj0rd2"
+version = "0.0.2"
+
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
