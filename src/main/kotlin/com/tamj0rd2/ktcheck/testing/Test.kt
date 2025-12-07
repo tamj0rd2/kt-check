@@ -28,9 +28,10 @@ fun interface Test<T> {
     operator fun invoke(input: T)
 }
 
-fun <T> test(gen: Gen<T>, test: Test<T>) = test(TestConfig(), gen, test)
+@Suppress("unused")
+fun <T> checkAll(gen: Gen<T>, test: Test<T>) = checkAll(TestConfig(), gen, test)
 
-fun <T> test(
+fun <T> checkAll(
     config: TestConfig,
     gen: Gen<T>,
     test: Test<T>,

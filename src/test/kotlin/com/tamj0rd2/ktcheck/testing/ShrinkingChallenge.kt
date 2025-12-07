@@ -20,7 +20,7 @@ class ShrinkingChallenge {
         expected = mapOf(0 to listOf(0, 1))
     ) { config ->
         val gen = Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list(0..10000)
-        test(config, gen) { initial -> expectThat(initial.reversed()).isEqualTo(initial) }
+        checkAll(config, gen) { initial -> expectThat(initial.reversed()).isEqualTo(initial) }
     }
 
     @Test
@@ -28,7 +28,7 @@ class ShrinkingChallenge {
         expected = mapOf(0 to listOf(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))),
         minConfidence = 80.0
     ) { config ->
-        test(config, Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()) { ls ->
+        checkAll(config, Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()) { ls ->
             expectThat(ls.sumOf { it.size }).isLessThanOrEqualTo(10)
         }
     }
@@ -40,7 +40,7 @@ class ShrinkingChallenge {
         minConfidence = 2.0
     ) { config ->
         val gen = Gen.int(0..1000).list(1..100)
-        test(config, gen) { ls -> expectThat(ls.max()).isLessThan(900) }
+        checkAll(config, gen) { ls -> expectThat(ls.max()).isLessThan(900) }
     }
 
     // runs the property as property so we can assert on confidence levels of shrinking.
@@ -52,7 +52,7 @@ class ShrinkingChallenge {
         // todo: make an actual Long generator.
         val seedGen = Gen.int(0..Int.MAX_VALUE).map { it.toLong() }
         withStats { stats ->
-            test(TestConfig(iterations = 100), seedGen) { seed ->
+            checkAll(TestConfig(iterations = 100), seedGen) { seed ->
                 val spyTestReporter = SpyTestReporter()
                 expectThrows<AssertionError> { block(TestConfig(seed = seed, testReporter = spyTestReporter)) }
 
