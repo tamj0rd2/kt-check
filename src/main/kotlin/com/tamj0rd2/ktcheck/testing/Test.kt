@@ -17,7 +17,7 @@ sealed interface TestResult {
 typealias Property = Gen<TestResult>
 
 fun test(
-    arb: Property,
+    property: Property,
     // todo: make default configurable via a system property
     iterations: Int = 1000,
     seed: Long = Random.nextLong(),
@@ -29,7 +29,7 @@ fun test(
         for (candidate in choices.shrink()) {
             val result =
                 try {
-                    arb.generate(candidate)
+                    property.generate(candidate)
                 } catch (_: InvalidReplay) {
                     continue
                 }
@@ -44,7 +44,7 @@ fun test(
 
     (1..iterations).forEach { iteration ->
         val choices = WritableChoiceSequence(rand)
-        when (val testResult = arb.generate(choices)) {
+        when (val testResult = property.generate(choices)) {
             is TestResult.Success -> return@forEach
 
             is TestResult.Failure -> {

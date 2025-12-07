@@ -20,7 +20,7 @@ class ShrinkingChallenge {
     fun reverse() = expectShrunkOutput("Arg 0 -> [0, 1]") { seed, printStream ->
         val gen = Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list(0..10000)
         test(
-            arb = checkAll(gen) { initial -> expectThat(initial.reversed()).isEqualTo(initial) },
+            property = checkAll(gen) { initial -> expectThat(initial.reversed()).isEqualTo(initial) },
             seed = seed,
             testReporter = PrintingTestReporter(printStream, false),
         )
@@ -30,7 +30,7 @@ class ShrinkingChallenge {
     fun nestedLists() =
         expectShrunkOutput("Arg 0 -> [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]", minConfidence = 80.0) { seed, printStream ->
             test(
-                arb = checkAll(Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()) { ls ->
+                property = checkAll(Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()) { ls ->
                     expectThat(ls.sumOf { it.size }).isLessThanOrEqualTo(10)
                 },
                 seed = seed,
@@ -43,7 +43,7 @@ class ShrinkingChallenge {
     fun lengthList() = expectShrunkOutput("Arg 0 -> [900]", minConfidence = 5.0) { seed, printStream ->
         val gen = Gen.int(0..1000).list(1..100)
         test(
-            arb = checkAll(gen) { ls -> expectThat(ls.max()).isLessThan(900) },
+            property = checkAll(gen) { ls -> expectThat(ls.max()).isLessThan(900) },
             seed = seed,
             testReporter = PrintingTestReporter(printStream, false),
         )
