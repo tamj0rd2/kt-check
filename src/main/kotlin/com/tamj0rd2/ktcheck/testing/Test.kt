@@ -16,13 +16,20 @@ sealed interface TestResult {
 
 typealias Property = Gen<TestResult>
 
+data class TestConfig(
+    // todo: make default configurable via a system property. also, extract this into some Config object?
+    val iterations: Int = 1000,
+    val seed: Long = Random.nextLong(),
+    val testReporter: TestReporter = PrintingTestReporter(),
+)
+
 fun test(
     property: Property,
-    // todo: make default configurable via a system property. also, extract this into some Config object?
-    iterations: Int = 1000,
-    seed: Long = Random.nextLong(),
-    testReporter: TestReporter = PrintingTestReporter(),
+    config: TestConfig = TestConfig(),
 ) {
+    val seed = config.seed
+    val iterations = config.iterations
+    val testReporter = config.testReporter
     val rand = Random(seed)
 
     fun getSmallestCounterExample(choices: ChoiceSequence): TestResult.Failure? {
