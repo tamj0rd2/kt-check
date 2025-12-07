@@ -5,10 +5,8 @@ import com.tamj0rd2.ktcheck.gen.ChoiceSequence.Companion.shrink
 import com.tamj0rd2.ktcheck.gen.Gen
 import com.tamj0rd2.ktcheck.gen.InvalidReplay
 import com.tamj0rd2.ktcheck.gen.WritableChoiceSequence
-import com.tamj0rd2.ktcheck.gen.constant
-import com.tamj0rd2.ktcheck.gen.flatMap
+import com.tamj0rd2.ktcheck.gen.map
 import com.tamj0rd2.ktcheck.util.Tuple
-import sun.nio.ch.IOStatus.checkAll
 import kotlin.random.Random
 
 sealed interface TestResult {
@@ -60,21 +58,18 @@ fun <T> test(
 }
 
 private fun <T> checkAll(gen: Gen<T>, test: (T) -> Unit): Gen<TestResult> =
-    gen.flatMap {
+    gen.map {
         val args = when (it) {
             is Tuple -> it.values
             else -> listOf(it)
         }
 
-        val testResult =
-            try {
-                test(it)
-                TestResult.Success(args)
-            } catch (e: AssertionError) {
-                TestResult.Failure(args, e)
-            }
-
-        Gen.constant(testResult)
+        try {
+            test(it)
+            TestResult.Success(args)
+        } catch (e: AssertionError) {
+            TestResult.Failure(args, e)
+        }
     }
 
 private fun Gen<TestResult>.getSmallestCounterExample(choices: ChoiceSequence): TestResult.Failure? {
