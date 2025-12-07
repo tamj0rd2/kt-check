@@ -32,30 +32,13 @@ fun test(
     val testReporter = config.testReporter
     val rand = Random(seed)
 
-    fun getSmallestCounterExample(choices: ChoiceSequence): TestResult.Failure? {
-        for (candidate in choices.shrink()) {
-            val result =
-                try {
-                    property.generate(candidate)
-                } catch (_: InvalidReplay) {
-                    continue
-                }
-
-            if (result is TestResult.Failure) {
-                return getSmallestCounterExample(candidate) ?: result
-            }
-        }
-
-        return null
-    }
-
     (1..iterations).forEach { iteration ->
         val choices = WritableChoiceSequence(rand)
         when (val testResult = property.generate(choices)) {
             is TestResult.Success -> return@forEach
 
             is TestResult.Failure -> {
-                val shrunkResult = getSmallestCounterExample(choices)
+                val shrunkResult = property.getSmallestCounterExample(choices)
                 testReporter.reportFailure(
                     seed = seed,
                     failedIteration = iteration,
@@ -68,4 +51,21 @@ fun test(
     }
 
     testReporter.reportSuccess(seed, iterations)
+}
+
+private fun Property.getSmallestCounterExample(choices: ChoiceSequence): TestResult.Failure? {
+    for (candidate in choices.shrink()) {
+        val result =
+            try {
+                generate(candidate)
+            } catch (_: InvalidReplay) {
+                continue
+            }
+
+        if (result is TestResult.Failure) {
+            return getSmallestCounterExample(candidate) ?: result
+        }
+    }
+
+    return null
 }
