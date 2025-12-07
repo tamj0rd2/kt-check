@@ -4,7 +4,7 @@ import com.tamj0rd2.ktcheck.gen.Gen
 import com.tamj0rd2.ktcheck.gen.int
 import com.tamj0rd2.ktcheck.gen.list
 import com.tamj0rd2.ktcheck.gen.map
-import com.tamj0rd2.ktcheck.testing.Stats.Companion.withStats
+import com.tamj0rd2.ktcheck.testing.stats.Counter.Companion.withCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.api.expectThrows
@@ -51,7 +51,7 @@ class ShrinkingChallenge {
     ) {
         // todo: make an actual Long generator.
         val seedGen = Gen.int(0..Int.MAX_VALUE).map { it.toLong() }
-        withStats { stats ->
+        val counter = withCounter {
             checkAll(TestConfig(iterations = 100), seedGen) { seed ->
                 val spyTestReporter = SpyTestReporter()
                 expectThrows<AssertionError> { block(TestConfig(seed = seed, reporter = spyTestReporter)) }
@@ -59,13 +59,12 @@ class ShrinkingChallenge {
                 val reportedFailure = expectThat(spyTestReporter.reportedFailure).isNotNull().subject
                 val shrunkArgs = expectThat(reportedFailure).get { shrunkArgs }.isNotNull().subject
                 val argsAreEqual = shrunkArgs == expected.entries.sortedBy { it.key }.map { it.value }
-                stats.collect(argsAreEqual.toString())
+                collect(argsAreEqual.toString())
 
                 if (!argsAreEqual) println("Bad sample $reportedFailure")
             }
-
-            stats.checkPercentages(mapOf("true" to minConfidence))
         }
+        counter.checkPercentages(mapOf("true" to minConfidence))
     }
 
     private class SpyTestReporter : TestReporter {
