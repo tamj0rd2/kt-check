@@ -5,36 +5,50 @@ package com.tamj0rd2.ktcheck.gen
 import kotlin.random.Random
 import kotlin.reflect.KClass
 
-fun interface Gen<T> {
-    fun generate(cs: ChoiceSequence): T
+sealed interface Gen<T> {
+    fun generate(choices: ChoiceSequence): T
 
     companion object
 }
 
+// todo: gradually remove this while migrating to individual primitive generators
+private class AllPurposeGenerator<T>(private val fn: (ChoiceSequence) -> T) : Gen<T> {
+    override fun generate(choices: ChoiceSequence): T = fn(choices)
+}
+
+data class GenContext(private val choices: ChoiceSequence) {
+    fun <T> Gen<T>.bind() = generate(choices)
+}
+
+fun <T> gen(fn: GenContext.() -> T): Gen<T> {
+    return AllPurposeGenerator { cs -> GenContext(cs).fn() }
+}
+
 fun <T> Gen<T>.sample(random: Random = Random.Default): T = generate(WritableChoiceSequence(random))
 
-fun <T, R> Gen<T>.map(fn: (T) -> R) = Gen { cs -> fn(generate(cs)) }
+fun <T, R> Gen<T>.map(fn: (T) -> R): Gen<R> = AllPurposeGenerator { cs -> fn(generate(cs)) }
 
-fun <T, R> Gen<T>.flatMap(fn: (T) -> Gen<R>): Gen<R> = Gen { cs -> fn(generate(cs)).generate(cs) }
+fun <T, R> Gen<T>.flatMap(fn: (T) -> Gen<R>): Gen<R> = AllPurposeGenerator { cs -> fn(generate(cs)).generate(cs) }
 
-fun <T> Gen<T>.filter(predicate: (T) -> Boolean) = Gen { cs -> generateSequence { generate(cs) }.filter { predicate(it) }.first() }
+fun <T> Gen<T>.filter(predicate: (T) -> Boolean): Gen<T> =
+    AllPurposeGenerator { cs -> generateSequence { generate(cs) }.filter { predicate(it) }.first() }
 
 fun <T> Gen<T>.ignoreExceptions(klass: KClass<out Throwable>, threshold: Int = 1000): Gen<T> {
     var exceptionCount = 0
-    return Gen { cs ->
+    return AllPurposeGenerator { cs ->
         sequence {
-                while (true) {
-                    try {
-                        yield(this@ignoreExceptions.generate(cs))
-                    } catch (e: Throwable) {
-                        exceptionCount++
-                        when {
-                            !klass.isInstance(e) -> throw e
-                            exceptionCount >= threshold -> throw ExceptionLimitReached(threshold, e)
-                        }
+            while (true) {
+                try {
+                    yield(generate(cs))
+                } catch (e: Throwable) {
+                    exceptionCount++
+                    when {
+                        !klass.isInstance(e) -> throw e
+                        exceptionCount >= threshold -> throw ExceptionLimitReached(threshold, e)
                     }
                 }
             }
+        }
             .first()
     }
 }
@@ -47,11 +61,12 @@ fun Gen<Char>.string(size: Int): Gen<String> = list(size).map { it.joinToString(
 
 fun Gen<Char>.string(size: IntRange = 0..100): Gen<String> = Gen.int(size).flatMap { size -> string(size) }
 
-fun <T> Gen.Companion.constant(value: T) = Gen { value }
+fun <T> Gen.Companion.constant(value: T): Gen<T> = AllPurposeGenerator { value }
 
-fun <T, R> Gen.Companion.mapN(gens: List<Gen<T>>, fn: (List<T>) -> R): Gen<R> = Gen { cs -> fn(gens.map { gen -> gen.generate(cs) }) }
+fun <T, R> Gen.Companion.mapN(gens: List<Gen<T>>, fn: (List<T>) -> R): Gen<R> =
+    AllPurposeGenerator { cs -> fn(gens.map { gen -> gen.generate(cs) }) }
 
-fun Gen.Companion.int(range: IntRange) = Gen { cs -> cs.randomInt(range) }
+fun Gen.Companion.int(range: IntRange): Gen<Int> = AllPurposeGenerator { cs -> cs.randomInt(range) }
 
 fun <T> Gen.Companion.oneOf(gens: List<Gen<T>>): Gen<T> {
     if (gens.isEmpty()) throw OneOfEmpty()
