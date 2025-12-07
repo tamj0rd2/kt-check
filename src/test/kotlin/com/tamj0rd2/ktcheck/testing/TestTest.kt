@@ -11,7 +11,7 @@ import strikt.assertions.isEqualTo
 
 class TestTest {
     private val reporter = SpyTestReporter()
-    private val testConfig = TestConfig(testReporter = reporter)
+    private val testConfig = TestConfig(reporter = reporter)
 
     @Test
     fun `forAll reports a success if the property holds true`() {

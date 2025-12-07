@@ -54,7 +54,7 @@ class ShrinkingChallenge {
         withStats { stats ->
             checkAll(TestConfig(iterations = 100), seedGen) { seed ->
                 val spyTestReporter = SpyTestReporter()
-                expectThrows<AssertionError> { block(TestConfig(seed = seed, testReporter = spyTestReporter)) }
+                expectThrows<AssertionError> { block(TestConfig(seed = seed, reporter = spyTestReporter)) }
 
                 val reportedFailure = expectThat(spyTestReporter.reportedFailure).isNotNull().subject
                 val shrunkArgs = expectThat(reportedFailure).get { shrunkArgs }.isNotNull().subject

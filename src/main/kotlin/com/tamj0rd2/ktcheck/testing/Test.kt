@@ -20,8 +20,7 @@ data class TestConfig(
     // todo: make default configurable via a system property. also, extract this into some Config object?
     val iterations: Int = 1000,
     val seed: Long = Random.nextLong(),
-    // todo: rename to just reporter
-    val testReporter: TestReporter = PrintingTestReporter(),
+    val reporter: TestReporter = PrintingTestReporter(),
 )
 
 sealed interface Test<T> {
@@ -61,7 +60,7 @@ private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
     val testResultsGen = gen.map { test.getResultFor(it) }
     val seed = config.seed
     val iterations = config.iterations
-    val testReporter = config.testReporter
+    val testReporter = config.reporter
     val rand = Random(seed)
 
     (1..iterations).forEach { iteration ->
