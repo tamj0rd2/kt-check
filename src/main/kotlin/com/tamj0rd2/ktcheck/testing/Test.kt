@@ -5,7 +5,6 @@ import com.tamj0rd2.ktcheck.gen.ChoiceSequence.Companion.shrink
 import com.tamj0rd2.ktcheck.gen.Gen
 import com.tamj0rd2.ktcheck.gen.InvalidReplay
 import com.tamj0rd2.ktcheck.gen.WritableChoiceSequence
-import java.io.PrintStream
 import kotlin.random.Random
 
 sealed interface TestResult {
@@ -22,8 +21,7 @@ fun test(
     // todo: make default configurable via a system property
     iterations: Int = 1000,
     seed: Long = Random.nextLong(),
-    showAllDiagnostics: Boolean = true,
-    printStream: PrintStream = System.out,
+    testReporter: TestReporter = PrintingTestReporter(),
 ) {
     val rand = Random(seed)
 
@@ -44,47 +42,23 @@ fun test(
         return null
     }
 
-    fun formatResults(prefix: String, result: TestResult.Failure): String = buildString {
-        appendLine("${prefix}Arguments:")
-        appendLine("-----------------")
-        result.args.forEachIndexed { index, arg -> appendLine("Arg $index -> $arg") }
-
-        if (showAllDiagnostics) {
-            appendLine()
-            appendLine("${prefix}Failure:")
-            appendLine("-----------------")
-            appendLine(result.failure)
-        }
-    }
-
-    repeat(iterations) {
+    (1..iterations).forEach { iteration ->
         val choices = WritableChoiceSequence(rand)
-        when (val result = arb.generate(choices)) {
-            is TestResult.Success -> return@repeat
+        when (val testResult = arb.generate(choices)) {
+            is TestResult.Success -> return@forEach
 
             is TestResult.Failure -> {
                 val shrunkResult = getSmallestCounterExample(choices)
-
-                buildString {
-                    appendLine("Seed: $seed\n")
-
-                    if (shrunkResult != null) {
-                        appendLine(formatResults(prefix = "", result = shrunkResult))
-                    } else {
-                        appendLine("Warning - Could not shrink the input arguments")
-                    }
-
-                    if (showAllDiagnostics || shrunkResult == null) {
-                        appendLine()
-                        appendLine(formatResults(prefix = "Original ", result = result))
-                        appendLine("-----------------")
-                    }
-                }.also(printStream::println)
-
-                throw (shrunkResult ?: result).failure
+                testReporter.reportFailure(
+                    seed = seed,
+                    failedIteration = iteration,
+                    originalFailure = testResult,
+                    shrunkFailure = shrunkResult
+                )
+                throw (shrunkResult ?: testResult).failure
             }
         }
     }
 
-    printStream.println("Success: $iterations iterations succeeded")
+    testReporter.reportSuccess(seed, iterations)
 }

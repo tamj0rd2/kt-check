@@ -22,8 +22,7 @@ class ShrinkingChallenge {
         test(
             arb = checkAll(gen) { initial -> expectThat(initial.reversed()).isEqualTo(initial) },
             seed = seed,
-            showAllDiagnostics = false,
-            printStream = printStream
+            testReporter = PrintingTestReporter(printStream, false),
         )
     }
 
@@ -35,8 +34,7 @@ class ShrinkingChallenge {
                     expectThat(ls.sumOf { it.size }).isLessThanOrEqualTo(10)
                 },
                 seed = seed,
-                showAllDiagnostics = false,
-                printStream = printStream
+                testReporter = PrintingTestReporter(printStream, false),
             )
         }
 
@@ -47,8 +45,7 @@ class ShrinkingChallenge {
         test(
             arb = checkAll(gen) { ls -> expectThat(ls.max()).isLessThan(900) },
             seed = seed,
-            showAllDiagnostics = false,
-            printStream = printStream
+            testReporter = PrintingTestReporter(printStream, false),
         )
     }
 
