@@ -18,7 +18,7 @@ typealias Property = Gen<TestResult>
 
 fun test(
     property: Property,
-    // todo: make default configurable via a system property
+    // todo: make default configurable via a system property. also, extract this into some Config object?
     iterations: Int = 1000,
     seed: Long = Random.nextLong(),
     testReporter: TestReporter = PrintingTestReporter(),

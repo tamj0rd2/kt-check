@@ -11,13 +11,12 @@ import strikt.api.expectThrows
 import strikt.assertions.isEqualTo
 import strikt.assertions.isLessThan
 import strikt.assertions.isLessThanOrEqualTo
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
+import strikt.assertions.isNotNull
 
 // based on https://github.com/jlink/shrinking-challenge/tree/main/challenges
 class ShrinkingChallenge {
     @Test
-    fun reverse() = expectShrunkOutput("Arg 0 -> [0, 1]") { seed, testReporter ->
+    fun reverse() = expectShrunkArgs(mapOf(0 to listOf(0, 1))) { seed, testReporter ->
         val gen = Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list(0..10000)
         test(
             property = checkAll(gen) { initial -> expectThat(initial.reversed()).isEqualTo(initial) },
@@ -28,7 +27,10 @@ class ShrinkingChallenge {
 
     @Test
     fun nestedLists() =
-        expectShrunkOutput("Arg 0 -> [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]", minConfidence = 80.0) { seed, testReporter ->
+        expectShrunkArgs(
+            mapOf(0 to listOf(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))),
+            minConfidence = 80.0
+        ) { seed, testReporter ->
             test(
                 property = checkAll(Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()) { ls ->
                     expectThat(ls.sumOf { it.size }).isLessThanOrEqualTo(10)
@@ -40,7 +42,7 @@ class ShrinkingChallenge {
 
     @Test
     // Most of the time the shrinker provides a much smaller counter example, but very rarely the minimal one.
-    fun lengthList() = expectShrunkOutput("Arg 0 -> [900]", minConfidence = 5.0) { seed, testReporter ->
+    fun lengthList() = expectShrunkArgs(mapOf(0 to listOf(900)), minConfidence = 5.0) { seed, testReporter ->
         val gen = Gen.int(0..1000).list(1..100)
         test(
             property = checkAll(gen) { ls -> expectThat(ls.max()).isLessThan(900) },
@@ -50,8 +52,8 @@ class ShrinkingChallenge {
     }
 
     // runs the property as property so we can assert on confidence levels of shrinking.
-    private fun expectShrunkOutput(
-        expected: String,
+    private fun expectShrunkArgs(
+        expected: Map<Int, Any?>,
         minConfidence: Double = 100.0,
         block: (Long, TestReporter) -> Unit,
     ) {
@@ -59,18 +61,43 @@ class ShrinkingChallenge {
         val seedGen = Gen.int(0..Int.MAX_VALUE).map { it.toLong() }
         withStats { stats ->
             test(checkAll(seedGen) { seed ->
-                val outputStream = ByteArrayOutputStream()
-                val printStream = PrintStream(outputStream)
-                expectThrows<AssertionError> { block(seed, PrintingTestReporter(printStream, false)) }
+                val spyTestReporter = SpyTestReporter()
+                expectThrows<AssertionError> { block(seed, spyTestReporter) }
 
-                val relevantLine = outputStream.toString().lines().single { it.startsWith("Arg 0 -> ") }
-                val containedExpectedString = relevantLine.contains(expected)
-                stats.collect(containedExpectedString.toString())
+                val reportedFailure = expectThat(spyTestReporter.reportedFailure).isNotNull().subject
+                val shrunkArgs = expectThat(reportedFailure).get { shrunkArgs }.isNotNull().subject
+                val argsAreEqual = shrunkArgs == expected.entries.sortedBy { it.key }.map { it.value }
+                stats.collect(argsAreEqual.toString())
 
-                if (!containedExpectedString) println("Bad sample for seed $seed: $relevantLine")
+                if (!argsAreEqual) println("Bad sample $reportedFailure")
             }, iterations = 100)
 
             stats.checkPercentages(mapOf("true" to minConfidence))
+        }
+    }
+
+    private class SpyTestReporter : TestReporter {
+        override fun reportSuccess(seed: Long, iterations: Int) {}
+
+        data class ReportedFailure(
+            val seed: Long,
+            val originalArgs: List<Any?>,
+            val shrunkArgs: List<Any?>?,
+        )
+
+        var reportedFailure: ReportedFailure? = null
+
+        override fun reportFailure(
+            seed: Long,
+            failedIteration: Int,
+            originalFailure: TestResult.Failure,
+            shrunkFailure: TestResult.Failure?,
+        ) {
+            this.reportedFailure = ReportedFailure(
+                seed = seed,
+                originalArgs = originalFailure.args,
+                shrunkArgs = shrunkFailure?.args,
+            )
         }
     }
 }
