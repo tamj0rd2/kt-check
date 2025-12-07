@@ -8,6 +8,10 @@ sealed class ChoiceSequence {
 
     abstract fun randomInt(range: IntRange): Int
 
+    override fun toString(): String {
+        return history.toString()
+    }
+
     companion object {
         fun ChoiceSequence.shrink(): Sequence<ChoiceSequence> {
             return sequence {
@@ -45,7 +49,7 @@ class ReadOnlyChoiceSequence(private val inheritedHistory: List<Int>) : ChoiceSe
         get() = inheritedHistory.take(marker)
 
     override fun randomInt(range: IntRange): Int {
-        if (marker >= inheritedHistory.size) {
+        if (marker > inheritedHistory.lastIndex) {
             throw InvalidReplay("No more choices left in ReadOnlyChoiceSequence")
         }
 

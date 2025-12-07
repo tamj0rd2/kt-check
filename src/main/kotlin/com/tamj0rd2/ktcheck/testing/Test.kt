@@ -5,6 +5,7 @@ import com.tamj0rd2.ktcheck.gen.ChoiceSequence.Companion.shrink
 import com.tamj0rd2.ktcheck.gen.Gen
 import com.tamj0rd2.ktcheck.gen.InvalidReplay
 import com.tamj0rd2.ktcheck.gen.WritableChoiceSequence
+import java.io.PrintStream
 import kotlin.random.Random
 
 data class TestResult(val failure: Throwable?, val args: List<Any?>) {
@@ -13,7 +14,13 @@ data class TestResult(val failure: Throwable?, val args: List<Any?>) {
 
 typealias Property = Gen<TestResult>
 
-fun test(arb: Property, iterations: Int = 1000, seed: Long = Random.nextLong(), showAllDiagnostics: Boolean = true) {
+fun test(
+    arb: Property,
+    iterations: Int = 1000,
+    seed: Long = Random.nextLong(),
+    showAllDiagnostics: Boolean = true,
+    printStream: PrintStream = System.out,
+) {
     val rand = Random(seed)
 
     fun getSmallestCounterExample(choices: ChoiceSequence): TestResult? {
@@ -67,10 +74,10 @@ fun test(arb: Property, iterations: Int = 1000, seed: Long = Random.nextLong(), 
                     appendLine("-----------------")
                 }
             }
-            .also(::println)
+            .also(printStream::println)
 
         throw (shrunkResult ?: result).failure!!
     }
 
-    println("Success: $iterations iterations succeeded")
+    printStream.println("Success: $iterations iterations succeeded")
 }
