@@ -18,10 +18,7 @@ class ShrinkingChallenge {
     @Test
     fun reverse() = expectShrunkArgs(mapOf(0 to listOf(0, 1))) { config ->
         val gen = Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list(0..10000)
-        test(
-            property = checkAll(gen) { initial -> expectThat(initial.reversed()).isEqualTo(initial) },
-            config = config,
-        )
+        test(config, checkAll(gen) { initial -> expectThat(initial.reversed()).isEqualTo(initial) })
     }
 
     @Test
@@ -30,22 +27,16 @@ class ShrinkingChallenge {
             mapOf(0 to listOf(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))),
             minConfidence = 80.0
         ) { config ->
-            test(
-                property = checkAll(Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()) { ls ->
-                    expectThat(ls.sumOf { it.size }).isLessThanOrEqualTo(10)
-                },
-                config = config,
-            )
+            test(config, checkAll(Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()) { ls ->
+                expectThat(ls.sumOf { it.size }).isLessThanOrEqualTo(10)
+            })
         }
 
     @Test
     // Most of the time the shrinker provides a much smaller counter example, but very rarely the minimal one.
     fun lengthList() = expectShrunkArgs(mapOf(0 to listOf(900)), minConfidence = 5.0) { config ->
         val gen = Gen.int(0..1000).list(1..100)
-        test(
-            property = checkAll(gen) { ls -> expectThat(ls.max()).isLessThan(900) },
-            config = config,
-        )
+        test(config, checkAll(gen) { ls -> expectThat(ls.max()).isLessThan(900) })
     }
 
     // runs the property as property so we can assert on confidence levels of shrinking.
@@ -57,7 +48,7 @@ class ShrinkingChallenge {
         // todo: make an actual Long generator.
         val seedGen = Gen.int(0..Int.MAX_VALUE).map { it.toLong() }
         withStats { stats ->
-            test(checkAll(seedGen) { seed ->
+            test(TestConfig(iterations = 100), checkAll(seedGen) { seed ->
                 val spyTestReporter = SpyTestReporter()
                 expectThrows<AssertionError> { block(TestConfig(seed = seed, testReporter = spyTestReporter)) }
 
@@ -67,7 +58,7 @@ class ShrinkingChallenge {
                 stats.collect(argsAreEqual.toString())
 
                 if (!argsAreEqual) println("Bad sample $reportedFailure")
-            }, TestConfig(iterations = 100))
+            })
 
             stats.checkPercentages(mapOf("true" to minConfidence))
         }

@@ -24,8 +24,8 @@ data class TestConfig(
 )
 
 fun test(
-    property: Property,
     config: TestConfig = TestConfig(),
+    property: Property,
 ) {
     val seed = config.seed
     val iterations = config.iterations
