@@ -74,14 +74,14 @@ private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
             is TestResult.Success -> return@forEach
 
             is TestResult.Failure -> {
-                val shrunkResult = testResultsGen.getSmallestCounterExample(choices)
+                val shrunkResult = testResultsGen.getSmallestCounterExample(choices) ?: testResult
                 testReporter.reportFailure(
                     seed = seed,
                     failedIteration = iteration,
                     originalFailure = testResult,
-                    shrunkFailure = shrunkResult
+                    shrunkFailure = shrunkResult,
                 )
-                throw (shrunkResult ?: testResult).failure
+                throw shrunkResult.failure
             }
         }
     }

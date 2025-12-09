@@ -9,7 +9,7 @@ interface TestReporter {
         seed: Long,
         failedIteration: Int,
         originalFailure: TestResult.Failure,
-        shrunkFailure: TestResult.Failure?,
+        shrunkFailure: TestResult.Failure,
     )
 }
 
@@ -25,8 +25,9 @@ class PrintingTestReporter(
         seed: Long,
         failedIteration: Int,
         originalFailure: TestResult.Failure,
-        shrunkFailure: TestResult.Failure?
+        shrunkFailure: TestResult.Failure,
     ) {
+        val shrunkFailure = shrunkFailure.takeIf { it != originalFailure }
         val output = buildString {
             appendLine("Seed: $seed - failed on iteration $failedIteration\n")
 

@@ -64,7 +64,7 @@ class TestTest {
             seed: Long,
             failedIteration: Int,
             originalFailure: TestResult.Failure,
-            shrunkFailure: TestResult.Failure?,
+            shrunkFailure: TestResult.Failure,
         ) {
             reporting = Reporting.ReportedFailure(originalFailure.failure)
         }
