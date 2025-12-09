@@ -10,11 +10,28 @@ import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.api.expectThrows
 import strikt.assertions.isEqualTo
+import strikt.assertions.isGreaterThan
 import strikt.assertions.isLessThan
 import strikt.assertions.isLessThanOrEqualTo
 import strikt.assertions.isNotNull
 
 class Shrinking {
+
+    @Test
+    fun `can shrink a positive number`() = expectShrunkArgs(
+        expected = mapOf(0 to 1),
+    ) { config ->
+        val gen = Gen.int(1..100)
+        checkAll(config, gen) { expectThat(it).isGreaterThan(100) }
+    }
+
+    @Test
+    fun `can shrink a negative number`() = expectShrunkArgs(
+        expected = mapOf(0 to -1),
+    ) { config ->
+        val gen = Gen.int(-100..-1)
+        checkAll(config, gen) { expectThat(it).isLessThan(-1) }
+    }
 
     // based on https://github.com/jlink/shrinking-challenge/tree/main/challenges
     @Nested
