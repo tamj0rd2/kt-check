@@ -11,35 +11,43 @@ sealed interface Gen<T> {
     companion object
 }
 
-// todo: gradually remove this while migrating to individual primitive generators
-private class AllPurposeGenerator<T>(private val fn: (ChoiceSequence) -> T) : Gen<T> {
+private class BuilderGenerator<T>(private val fn: (ChoiceSequence) -> T) : Gen<T> {
     override fun generate(choices: ChoiceSequence): T = fn(choices)
 }
 
-data class GenContext(private val choices: ChoiceSequence) {
-    fun <T> Gen<T>.bind() = generate(choices)
+private class MappingGenerator<T, R>(
+    private val base: Gen<T>,
+    private val fn: (T) -> R,
+) : Gen<R> {
+    override fun generate(choices: ChoiceSequence): R = fn(base.generate(choices))
 }
 
-fun <T> gen(fn: GenContext.() -> T): Gen<T> {
-    return AllPurposeGenerator { cs -> GenContext(cs).fn() }
+private class FlatMappingGenerator<T, R>(
+    private val base: Gen<T>,
+    private val fn: (T) -> Gen<R>,
+) : Gen<R> {
+    override fun generate(choices: ChoiceSequence): R = fn(base.generate(choices)).generate(choices)
 }
 
-fun <T> Gen<T>.sample(random: Random = Random.Default): T = generate(WritableChoiceSequence(random))
+private class FilteringGenerator<T>(
+    private val base: Gen<T>,
+    private val predicate: (T) -> Boolean,
+) : Gen<T> {
+    override fun generate(choices: ChoiceSequence): T =
+        generateSequence { base.generate(choices) }.first { predicate(it) }
+}
 
-fun <T, R> Gen<T>.map(fn: (T) -> R): Gen<R> = AllPurposeGenerator { cs -> fn(generate(cs)) }
-
-fun <T, R> Gen<T>.flatMap(fn: (T) -> Gen<R>): Gen<R> = AllPurposeGenerator { cs -> fn(generate(cs)).generate(cs) }
-
-fun <T> Gen<T>.filter(predicate: (T) -> Boolean): Gen<T> =
-    AllPurposeGenerator { cs -> generateSequence { generate(cs) }.filter { predicate(it) }.first() }
-
-fun <T> Gen<T>.ignoreExceptions(klass: KClass<out Throwable>, threshold: Int = 1000): Gen<T> {
-    var exceptionCount = 0
-    return AllPurposeGenerator { cs ->
-        sequence {
+private class ExceptionSuppressingGenerator<T>(
+    private val base: Gen<T>,
+    private val klass: KClass<out Throwable>,
+    private val threshold: Int,
+) : Gen<T> {
+    override fun generate(choices: ChoiceSequence): T {
+        var exceptionCount = 0
+        return sequence {
             while (true) {
                 try {
-                    yield(generate(cs))
+                    yield(generate(choices))
                 } catch (e: Throwable) {
                     exceptionCount++
                     when {
@@ -53,6 +61,39 @@ fun <T> Gen<T>.ignoreExceptions(klass: KClass<out Throwable>, threshold: Int = 1
     }
 }
 
+private class MapNGenerator<T, R>(
+    private val gens: List<Gen<T>>,
+    private val fn: (List<T>) -> R,
+) : Gen<R> {
+    override fun generate(choices: ChoiceSequence): R =
+        fn(gens.map { gen -> gen.generate(choices) })
+}
+
+private class ConstantGenerator<T>(private val value: T) : Gen<T> {
+    override fun generate(choices: ChoiceSequence): T = value
+}
+
+private class IntGenerator(private val range: IntRange) : Gen<Int> {
+    override fun generate(choices: ChoiceSequence): Int = choices.randomInt(range)
+}
+
+data class GenContext(private val choices: ChoiceSequence) {
+    fun <T> Gen<T>.bind() = generate(choices)
+}
+
+fun <T> gen(fn: GenContext.() -> T): Gen<T> = BuilderGenerator { cs -> GenContext(cs).fn() }
+
+fun <T> Gen<T>.sample(random: Random = Random.Default): T = generate(WritableChoiceSequence(random))
+
+fun <T, R> Gen<T>.map(fn: (T) -> R): Gen<R> = MappingGenerator(this, fn)
+
+fun <T, R> Gen<T>.flatMap(fn: (T) -> Gen<R>): Gen<R> = FlatMappingGenerator(this, fn)
+
+fun <T> Gen<T>.filter(predicate: (T) -> Boolean): Gen<T> = FilteringGenerator(this, predicate)
+
+fun <T> Gen<T>.ignoreExceptions(klass: KClass<out Throwable>, threshold: Int = 1000): Gen<T> =
+    ExceptionSuppressingGenerator(this, klass, threshold)
+
 fun <T> Gen<T>.list(size: Int): Gen<List<T>> = Gen.mapN(List(size) { this }) { it }
 
 fun <T> Gen<T>.list(size: IntRange = 0..100): Gen<List<T>> = Gen.int(size).flatMap { size -> list(size) }
@@ -61,12 +102,11 @@ fun Gen<Char>.string(size: Int): Gen<String> = list(size).map { it.joinToString(
 
 fun Gen<Char>.string(size: IntRange = 0..100): Gen<String> = Gen.int(size).flatMap { size -> string(size) }
 
-fun <T> Gen.Companion.constant(value: T): Gen<T> = AllPurposeGenerator { value }
+fun <T> Gen.Companion.constant(value: T): Gen<T> = ConstantGenerator(value)
 
-fun <T, R> Gen.Companion.mapN(gens: List<Gen<T>>, fn: (List<T>) -> R): Gen<R> =
-    AllPurposeGenerator { cs -> fn(gens.map { gen -> gen.generate(cs) }) }
+fun <T, R> Gen.Companion.mapN(gens: List<Gen<T>>, fn: (List<T>) -> R): Gen<R> = MapNGenerator(gens, fn)
 
-fun Gen.Companion.int(range: IntRange): Gen<Int> = AllPurposeGenerator { cs -> cs.randomInt(range) }
+fun Gen.Companion.int(range: IntRange): Gen<Int> = IntGenerator(range)
 
 fun <T> Gen.Companion.oneOf(gens: List<Gen<T>>): Gen<T> {
     if (gens.isEmpty()) throw OneOfEmpty()
