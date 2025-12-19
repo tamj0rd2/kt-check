@@ -120,28 +120,7 @@ fun <T> Gen.Companion.of(values: Collection<T>): Gen<T> = Gen.oneOf(values.map(:
 // shrinks toward the smallest value
 fun <T : Comparable<T>> Gen.Companion.of(values: Collection<T>): Gen<T> = Gen.oneOf(values.sorted().map(::constant))
 
-class SizeExceeded : IllegalStateException()
-
 class OneOfEmpty : IllegalStateException("Gen.oneOf() called with no generators")
 
 class ExceptionLimitReached(threshold: Int, override val cause: Throwable) :
     IllegalStateException("Gen.ignoreExceptions() exceeded the threshold of $threshold exceptions")
-
-@JvmInline
-value class Size(val value: Int) {
-    init {
-        if (value < 0) throw SizeExceeded()
-    }
-
-    operator fun plus(other: Size) = Size(this.value + other.value)
-
-    operator fun compareTo(other: Size): Int = this.value.compareTo(other.value)
-
-    operator fun minus(other: Size): Size = Size(this.value - other.value)
-
-    companion object {
-        val zero = Size(0)
-    }
-}
-
-operator fun Size?.minus(size: Size): Size? = this?.let { it - size }

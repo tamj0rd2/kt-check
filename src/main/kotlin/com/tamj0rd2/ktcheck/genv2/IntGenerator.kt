@@ -3,15 +3,15 @@ package com.tamj0rd2.ktcheck.genv2
 import kotlin.math.abs
 import kotlin.math.floor
 
-fun Gen2.Companion.int(range: IntRange = Int.MIN_VALUE..Int.MAX_VALUE): Gen2<Int> {
+fun Gen.Companion.int(range: IntRange = Int.MIN_VALUE..Int.MAX_VALUE): Gen<Int> {
     val origin = if (range.first <= 0 && range.last >= 0) 0 else range.first
     return int(range, origin)
 }
 
-fun Gen2.Companion.int(range: IntRange, origin: Int): Gen2<Int> {
+fun Gen.Companion.int(range: IntRange, origin: Int): Gen<Int> {
     require(origin in range) { "Origin must be within $range" }
 
-    return Gen2.sample().map { sample ->
+    return Gen.sample().map { sample ->
         val min = range.first
         val max = range.last
 
