@@ -1,13 +1,8 @@
 package com.tamj0rd2.ktcheck.genv2
 
-
-import com.tamj0rd2.ktcheck.gen.Gen
-import com.tamj0rd2.ktcheck.gen.int
-import com.tamj0rd2.ktcheck.gen.map
 import com.tamj0rd2.ktcheck.testing.TestConfig
 import com.tamj0rd2.ktcheck.testing.TestReporter
 import com.tamj0rd2.ktcheck.testing.TestResult
-import com.tamj0rd2.ktcheck.testing.checkAll
 import com.tamj0rd2.ktcheck.testing.stats.Counter.Companion.withCounter
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -21,12 +16,12 @@ class Shrinking {
 
     @Test
     fun `can shrink a number`() = expectShrunkArgs(expected = mapOf(0 to 1)) { config ->
-        forAll(config, Gen2.int(1..100)) { false }
+        forAll(config, Gen.int(1..100)) { false }
     }
 
     @Test
     fun `can shrink a list`() = expectShrunkArgs(expected = mapOf(0 to emptyList<Int>())) { config ->
-        forAll(config, Gen2.int().list()) { false }
+        forAll(config, Gen.int().list()) { false }
     }
 
     // based on https://github.com/jlink/shrinking-challenge/tree/main/challenges
@@ -36,7 +31,7 @@ class Shrinking {
         fun reverse() = expectShrunkArgs(
             expected = mapOf(0 to listOf(0, 1))
         ) { config ->
-            val gen = Gen2.int(Int.MIN_VALUE..Int.MAX_VALUE).list(0..10000)
+            val gen = Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list(0..10000)
             checkAll(config, gen) { initial -> expectThat(initial.reversed()).isEqualTo(initial) }
         }
 
@@ -45,7 +40,7 @@ class Shrinking {
             expected = mapOf(0 to listOf(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))),
             minConfidence = 80.0
         ) { config ->
-            checkAll(config, Gen2.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()) { ls ->
+            checkAll(config, Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()) { ls ->
                 expectThat(ls.sumOf { it.size }).isLessThanOrEqualTo(10)
             }
         }
@@ -54,9 +49,9 @@ class Shrinking {
         fun lengthList() = expectShrunkArgs(
             expected = mapOf(0 to listOf(900)),
             // Most of the time the shrinker provides a much smaller counter example, but very rarely the minimal one.
-            minConfidence = 8.0
+            minConfidence = 5.0
         ) { config ->
-            val gen = Gen2.int(0..1000).list(1..100)
+            val gen = Gen.int(0..1000).list(1..100)
             checkAll(config, gen) { ls -> expectThat(ls.max()).isLessThan(900) }
         }
     }

@@ -9,14 +9,14 @@ import com.tamj0rd2.ktcheck.util.Tuple
 import kotlin.random.Random
 
 @Suppress("unused")
-fun <T> forAll(gen: Gen2<T>, test: TestByBool<T>) = forAll(TestConfig(), gen, test)
-fun <T> forAll(config: TestConfig, gen: Gen2<T>, test: TestByBool<T>) = test(config, gen, test as Test<T>)
+fun <T> forAll(gen: Gen<T>, test: TestByBool<T>) = forAll(TestConfig(), gen, test)
+fun <T> forAll(config: TestConfig, gen: Gen<T>, test: TestByBool<T>) = test(config, gen, test as Test<T>)
 
 @Suppress("unused")
-fun <T> checkAll(gen: Gen2<T>, test: TestByThrowing<T>) = checkAll(TestConfig(), gen, test)
-fun <T> checkAll(config: TestConfig, gen: Gen2<T>, test: TestByThrowing<T>) = test(config, gen, test as Test<T>)
+fun <T> checkAll(gen: Gen<T>, test: TestByThrowing<T>) = checkAll(TestConfig(), gen, test)
+fun <T> checkAll(config: TestConfig, gen: Gen<T>, test: TestByThrowing<T>) = test(config, gen, test as Test<T>)
 
-private fun <T> test(config: TestConfig, gen: Gen2<T>, test: Test<T>) {
+private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
     val testResultsGen = gen.map { test.getResultFor(it) }
     val seed = config.seed
     val iterations = config.iterations
@@ -56,7 +56,7 @@ private fun <T> Test<T>.getResultFor(t: T): TestResult {
     return TestResult.Failure(args, failure)
 }
 
-private tailrec fun Gen2<TestResult>.getSmallestCounterExample(
+private tailrec fun Gen<TestResult>.getSmallestCounterExample(
     testResult: TestResult.Failure,
     iterator: Iterator<SampleTree>,
 ): TestResult.Failure {
