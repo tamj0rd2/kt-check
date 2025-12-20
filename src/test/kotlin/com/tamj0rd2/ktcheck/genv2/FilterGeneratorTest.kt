@@ -1,5 +1,6 @@
 package com.tamj0rd2.ktcheck.genv2
 
+import com.tamj0rd2.ktcheck.genv2.Gen.Companion.samples
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.api.expectThrows

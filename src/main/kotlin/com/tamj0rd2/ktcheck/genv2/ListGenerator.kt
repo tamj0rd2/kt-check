@@ -4,15 +4,19 @@ private class ListGenerator<T>(
     private val size: Int,
     private val gen: Gen<T>,
 ) : Gen<List<T>>() {
+    init {
+        require(size >= 0) { "Size must be non-negative" }
+    }
+
     override fun generate(tree: SampleTree): GenResult<List<T>> = when (size) {
         1 -> list1().generate(tree)
         2 -> list2().generate(tree)
         else -> listN(tree)
     }
 
-    private fun list1(): Gen<List<T>> = gen.map(::listOf)
+    private fun list1() = gen.map(::listOf)
 
-    private fun list2(): Gen<List<T>> = (gen + gen).map { (a, b) -> listOf(a, b) }
+    private fun list2() = (gen + gen).map { (a, b) -> listOf(a, b) }
 
     private tailrec fun listN(
         currentTree: SampleTree,
@@ -33,6 +37,9 @@ private class ListGenerator<T>(
     }
 }
 
+/**
+ * Generates a list of values, shrinking both the size and elements.
+ */
 fun <T> Gen<T>.list(size: IntRange = 0..100): Gen<List<T>> = list(Gen.int(size))
 
 fun <T> Gen<T>.list(size: Gen<Int>): Gen<List<T>> = size.flatMap(::list)
