@@ -7,7 +7,8 @@ data class GenResult<T>(val value: T, val shrinks: Sequence<SampleTree>)
 sealed class Gen<T> {
     internal abstract fun generate(tree: SampleTree): GenResult<T>
 
-    fun sample(random: Random = Random.Default): T = sample(random.nextLong())
+    fun sample(random: Random = Random.Default): T = samples(random).first()
+    fun samples(random: Random = Random.Default) = generateSequence { sample(random.nextLong()) }
     fun sample(seed: Long): T = generate(SampleTree.from(seed)).value
 
     fun <R> map(fn: (T) -> R): Gen<R> = Gen { tree ->

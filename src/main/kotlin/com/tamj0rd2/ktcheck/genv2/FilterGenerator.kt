@@ -1,50 +1,58 @@
 package com.tamj0rd2.ktcheck.genv2
 
+import com.tamj0rd2.ktcheck.genv2.PredicateResult.Failed
+import com.tamj0rd2.ktcheck.genv2.PredicateResult.Succeeded
 import kotlin.reflect.KClass
 
-@Suppress("unused")
-fun <T> Gen<T>.filter(predicate: (T) -> Boolean): Gen<T> = filter(100, predicate)
-
-fun <T> Gen<T>.filter(threshold: Int, predicate: (T) -> Boolean): Gen<T> = Gen { tree ->
-    var attempts = 0
-    var currentTree = tree
-
-    while (attempts < threshold) {
-        val (value, shrinks) = generate(currentTree.left)
-        if (predicate(value)) return@Gen GenResult(value, shrinks)
-
-        attempts++
-        currentTree = currentTree.right
-    }
-
-    throw FilterLimitReached(threshold)
+private sealed interface PredicateResult<T> {
+    data class Succeeded<T>(val genResult: GenResult<T>) : PredicateResult<T>
+    data class Failed<T>(val failure: Exception? = null) : PredicateResult<T>
 }
 
-@Suppress("unused")
-class FilterLimitReached(threshold: Int) :
-    IllegalStateException("Gen.filter() exceeded the threshold of misses")
+private class FilterGenerator<T>(
+    private val threshold: Int,
+    private val getResult: (SampleTree) -> PredicateResult<T>,
+) : Gen<T>() {
+    override fun generate(tree: SampleTree): GenResult<T> {
+        var attempts = 0
+        var currentTree = tree
+        var lastFailure: Exception? = null
 
-fun <T> Gen<T>.ignoreExceptions(klass: KClass<out Throwable>, threshold: Int = 100): Gen<T> = Gen { tree ->
-    var exceptionCount = 0
-    var currentTree = tree
+        while (attempts < threshold) {
+            attempts++
 
-    while (exceptionCount < threshold) {
+            when (val result = getResult(currentTree.left)) {
+                is Succeeded<T> -> return result.genResult
+                is Failed -> {
+                    currentTree = currentTree.right
+                    lastFailure = result.failure
+                }
+            }
+        }
+
+        throw FilterLimitReached(threshold, lastFailure)
+    }
+}
+
+class FilterLimitReached(threshold: Int, cause: Throwable?) :
+    IllegalStateException("Filter failed $threshold times", cause)
+
+fun <T> Gen<T>.filter(predicate: (T) -> Boolean) = filter(100, predicate)
+
+fun <T> Gen<T>.filter(threshold: Int, predicate: (T) -> Boolean): Gen<T> = FilterGenerator(threshold) { tree ->
+    val result = generate(tree)
+    if (predicate(result.value)) Succeeded(result) else Failed()
+}
+
+fun <T> Gen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int = 100): Gen<T> =
+    FilterGenerator(threshold) { tree ->
         try {
-            return@Gen generate(currentTree.left)
-        } catch (e: Throwable) {
-            exceptionCount++
-
+            val result = generate(tree)
+            Succeeded(result)
+        } catch (e: Exception) {
             when {
                 !klass.isInstance(e) -> throw e
-                exceptionCount >= threshold -> throw ExceptionLimitReached(threshold, e)
-                else -> currentTree = currentTree.right
+                else -> Failed(e)
             }
         }
     }
-
-    throw ExceptionLimitReached(threshold, IllegalStateException("Threshold reached"))
-}
-
-@Suppress("unused")
-class ExceptionLimitReached(threshold: Int, override val cause: Throwable) :
-    IllegalStateException("Gen.ignoreExceptions() exceeded the threshold of $threshold exceptions")
