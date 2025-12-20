@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.gen
 
 import kotlin.random.Random
 import kotlin.random.nextULong

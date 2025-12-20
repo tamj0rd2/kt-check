@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.gen
 
 private class SampleGenerator : Gen<Sample>() {
     override fun generate(tree: SampleTree): GenResult<Sample> = GenResult(

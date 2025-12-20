@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.gen
 
 fun <T> Gen.Companion.constant(value: T): Gen<T> = sample().map { value }
 

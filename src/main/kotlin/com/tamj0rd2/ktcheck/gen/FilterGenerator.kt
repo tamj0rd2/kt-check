@@ -1,7 +1,7 @@
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.genv2.PredicateResult.Failed
-import com.tamj0rd2.ktcheck.genv2.PredicateResult.Succeeded
+import com.tamj0rd2.ktcheck.gen.PredicateResult.Failed
+import com.tamj0rd2.ktcheck.gen.PredicateResult.Succeeded
 import kotlin.reflect.KClass
 
 private sealed interface PredicateResult<T> {

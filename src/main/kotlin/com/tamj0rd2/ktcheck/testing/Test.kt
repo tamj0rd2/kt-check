@@ -1,10 +1,7 @@
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.testing
 
-import com.tamj0rd2.ktcheck.testing.Test
-import com.tamj0rd2.ktcheck.testing.TestByBool
-import com.tamj0rd2.ktcheck.testing.TestByThrowing
-import com.tamj0rd2.ktcheck.testing.TestConfig
-import com.tamj0rd2.ktcheck.testing.TestResult
+import com.tamj0rd2.ktcheck.gen.Gen
+import com.tamj0rd2.ktcheck.gen.SampleTree
 import com.tamj0rd2.ktcheck.util.Tuple
 import kotlin.random.Random
 

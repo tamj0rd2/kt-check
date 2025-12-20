@@ -1,9 +1,11 @@
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.gen
 
+import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.testing.TestConfig
 import com.tamj0rd2.ktcheck.testing.TestReporter
 import com.tamj0rd2.ktcheck.testing.TestResult
-import com.tamj0rd2.ktcheck.testing.stats.Counter.Companion.withCounter
+import com.tamj0rd2.ktcheck.testing.checkAll
+import com.tamj0rd2.ktcheck.testing.forAll
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat

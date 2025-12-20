@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.util.Tuple2
 import com.tamj0rd2.ktcheck.util.Tuple3

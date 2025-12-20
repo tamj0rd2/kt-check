@@ -1,6 +1,6 @@
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.genv2.Gen.Companion.sample
+import com.tamj0rd2.ktcheck.gen.Gen.Companion.sample
 import org.junit.jupiter.api.Test
 
 class ListGeneratorTest {

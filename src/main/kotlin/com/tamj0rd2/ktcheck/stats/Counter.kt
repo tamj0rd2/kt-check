@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.testing.stats
+package com.tamj0rd2.ktcheck.stats
 
 import kotlin.math.roundToInt
 
