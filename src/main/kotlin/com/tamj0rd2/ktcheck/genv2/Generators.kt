@@ -1,7 +1,5 @@
 package com.tamj0rd2.ktcheck.genv2
 
-import com.tamj0rd2.ktcheck.gen.OneOfEmpty
-
 fun <T> Gen.Companion.constant(value: T): Gen<T> = sample().map { value }
 
 // todo:does this distribute appropriately?
