@@ -6,18 +6,17 @@ import kotlin.random.nextULong
 sealed interface Sample {
     val value: ULong
 
-    data class Original(override val value: ULong) : Sample
-    data class Shrunk(override val value: ULong) : Sample
+    @JvmInline
+    value class Original(override val value: ULong) : Sample
+
+    @JvmInline
+    value class Shrunk(override val value: ULong) : Sample
 }
 
 sealed interface SampleTree {
     val sample: Sample
     val left: SampleTree
     val right: SampleTree
-
-    fun withSample(next: Sample): SampleTree
-    fun withLeft(left: SampleTree): SampleTree
-    fun withRight(right: SampleTree): SampleTree
 
     companion object {
         internal fun from(seed: Long): SampleTree = LazySampleTree(
@@ -46,20 +45,12 @@ internal data class LazySampleTree(
 ) : SampleTree {
     override val left: SampleTree by lazyLeft
     override val right: SampleTree by lazyRight
-
-    override fun withSample(next: Sample): SampleTree = copy(sample = next)
-    override fun withLeft(left: SampleTree): SampleTree = copy(lazyLeft = lazyOf(left))
-    override fun withRight(right: SampleTree): SampleTree = copy(lazyRight = lazyOf(right))
 }
 
 internal data object MinimalSampleTree : SampleTree {
     override val sample = Sample.Shrunk(0UL)
     override val left = this
     override val right = this
-
-    override fun withSample(next: Sample) = this
-    override fun withLeft(left: SampleTree) = this
-    override fun withRight(right: SampleTree) = this
 }
 
 internal fun combineShrinks(
@@ -79,4 +70,19 @@ internal fun combineShrinks(
 
         if (derivedShrinks.any()) sequenceOf(MinimalSampleTree) + derivedShrinks else derivedShrinks
     }
+}
+
+internal fun SampleTree.withSample(sample: Sample): SampleTree = when (this) {
+    is MinimalSampleTree -> this
+    is LazySampleTree -> copy(sample = sample)
+}
+
+private fun SampleTree.withLeft(left: SampleTree): SampleTree = when (this) {
+    is MinimalSampleTree -> this
+    is LazySampleTree -> copy(lazyLeft = lazyOf(left))
+}
+
+private fun SampleTree.withRight(right: SampleTree): SampleTree = when (this) {
+    is MinimalSampleTree -> this
+    is LazySampleTree -> copy(lazyRight = lazyOf(right))
 }
