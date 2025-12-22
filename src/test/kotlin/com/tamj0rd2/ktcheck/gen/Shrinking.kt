@@ -63,17 +63,17 @@ class Shrinking {
         private fun expectShrunkArgs(
             expected: Map<Int, Any?>,
             minConfidence: Double = 100.0,
-            iterations: Int = 100,
             block: (TestConfig) -> Unit,
         ) {
             // todo: make an actual Long generator.
             val seedGen = Gen.int(0..Int.MAX_VALUE).map { it.toLong() }
             val failures = mutableListOf<SpyTestReporter.ReportedFailure>()
             val counter = withCounter {
-                checkAll(TestConfig(iterations = iterations), seedGen) { seed ->
+                checkAll(TestConfig().withIterations(100), seedGen) { seed ->
                     println("seed: $seed")
                     val spyTestReporter = SpyTestReporter()
-                    val x = runCatching { block(TestConfig(seed = seed, reporter = spyTestReporter)) }.exceptionOrNull()
+                    val x = runCatching { block(TestConfig().withSeed(seed).withReporter(spyTestReporter)) }
+                        .exceptionOrNull()
                     when (x) {
                         null -> error("Expected property to fail for seed $seed, but succeeded")
                         !is AssertionError -> throw x

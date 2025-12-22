@@ -17,4 +17,9 @@ class TestConfigTest {
         System.clearProperty(SYSTEM_PROPERTY_TEST_ITERATIONS)
         expectThat(TestConfig()).get { iterations }.isEqualTo(1000)
     }
+
+    @Test
+    fun `can overwrite the default iterations via the constructor`() {
+        expectThat(TestConfig().withIterations(iterations = 123)).get { iterations }.isEqualTo(123)
+    }
 }

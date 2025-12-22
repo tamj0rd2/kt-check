@@ -9,14 +9,36 @@ sealed interface TestResult {
     data class Failure(override val args: List<Any?>, val failure: AssertionError) : TestResult
 }
 
-data class TestConfig(
-    val iterations: Int = defaultIterations,
-    val seed: Long = Random.nextLong(),
-    val reporter: TestReporter = PrintingTestReporter(),
-) {
-    companion object {
-        val defaultIterations get() = System.getProperty(SYSTEM_PROPERTY_TEST_ITERATIONS)?.toIntOrNull() ?: 1000
+@RequiresOptIn(
+    message = "Indicates that test configuration has been hardcoded for this test, which should only be done for local debugging purposes.",
+    level = RequiresOptIn.Level.WARNING
+)
+annotation class HardcodedTestConfig
 
+@ConsistentCopyVisibility
+data class TestConfig private constructor(
+    internal val iterations: Int,
+    internal val seed: Long,
+    internal val replayIteration: Int?,
+    internal val reporter: TestReporter,
+) {
+    constructor() : this(
+        iterations = System.getProperty(SYSTEM_PROPERTY_TEST_ITERATIONS)?.toIntOrNull() ?: 1000,
+        seed = Random.nextLong(),
+        replayIteration = null,
+        reporter = PrintingTestReporter(),
+    )
+
+    fun withIterations(iterations: Int) = copy(iterations = iterations)
+
+    fun withSeed(seed: Long) = copy(seed = seed)
+
+    @HardcodedTestConfig
+    fun replay(seed: Long, iteration: Int) = copy(iterations = 1, seed = seed, replayIteration = iteration)
+
+    fun withReporter(reporter: TestReporter) = copy(reporter = reporter)
+
+    companion object {
         internal const val SYSTEM_PROPERTY_TEST_ITERATIONS = "ktcheck.test.iterations"
     }
 }

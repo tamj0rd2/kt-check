@@ -31,12 +31,13 @@ sealed interface SampleTree {
             lazyRight = lazy { constant(value) },
         )
 
-        private const val SPLIT_MIX_64_MULTIPLIER = 6364136223846793005L
-
-        private fun deriveSeed(parentSeed: Long, offset: Int): Long =
-            parentSeed * SPLIT_MIX_64_MULTIPLIER + offset
     }
 }
+
+private const val SPLIT_MIX_64_MULTIPLIER = 6364136223846793005L
+
+internal fun deriveSeed(parentSeed: Long, offset: Int): Long =
+    parentSeed * SPLIT_MIX_64_MULTIPLIER + offset
 
 internal data class LazySampleTree(
     override val sample: Sample,
