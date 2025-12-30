@@ -93,7 +93,7 @@ sealed class Gen<T> {
          * @param seed The seed to use for sampling.
          * @return A sampled value of type T.
          */
-        fun <T> Gen<T>.sample(seed: Long = Random.nextLong()): T = generate(ChoiceTree.from(seed)).value
+        fun <T> Gen<T>.sample(seed: Long = Random.nextLong()): T = generate(ChoiceTree(seed)).value
     }
 }
 

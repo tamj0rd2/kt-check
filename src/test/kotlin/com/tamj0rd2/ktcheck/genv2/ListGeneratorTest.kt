@@ -20,7 +20,7 @@ class ListGeneratorTest {
     fun `shrinks a list of 1 element depth first`() {
         val gen = Gen.int(0..4).list(1)
 
-        val (value, shrunkValues) = gen.generateAllIncludingShrinks(ChoiceTree.from(0))
+        val (value, shrunkValues) = gen.generateAllIncludingShrinks(ChoiceTree(0))
         expectThat(value).isEqualTo(listOf(4))
 
         expectThat(shrunkValues.distinct().toList()).isEqualTo(
@@ -41,7 +41,7 @@ class ListGeneratorTest {
     fun `shrinks a list of 2 elements depth first`() {
         val gen = Gen.int(0..5).list(2)
 
-        val (value, shrunkValues) = gen.generateAllIncludingShrinks(ChoiceTree.from(1))
+        val (value, shrunkValues) = gen.generateAllIncludingShrinks(ChoiceTree(1))
         expectThat(value).isEqualTo(listOf(1, 4))
 
         // 4 shrinks to 0, 2, 3
@@ -68,7 +68,7 @@ class ListGeneratorTest {
     fun `shrinks a list of 3 elements depth first`() {
         val gen = Gen.int(0..4).list(3)
 
-        val (value, shrunkValues) = gen.generateAllIncludingShrinks(ChoiceTree.from(2))
+        val (value, shrunkValues) = gen.generateAllIncludingShrinks(ChoiceTree(2))
         expectThat(value).isEqualTo(listOf(2, 0, 3))
 
         // 3 shrinks to 0 and 2
@@ -97,7 +97,7 @@ class ListGeneratorTest {
         TestConfig().withIterations(100),
         Gen.int(1..100),
     ) { size ->
-        val (originalList, shrunkLists) = Gen.int().list(size).generateAllIncludingShrinks(ChoiceTree.from(0))
+        val (originalList, shrunkLists) = Gen.int().list(size).generateAllIncludingShrinks(ChoiceTree(0))
         expectThat(originalList.size).isEqualTo(size)
 
         assertTimeoutPreemptively(Duration.ofMillis(100)) {
@@ -113,7 +113,7 @@ class ListGeneratorTest {
         Gen.int(1..100),
     ) { size ->
         val (originalList, shrunkLists) = Gen.int().list(size)
-            .generateAllIncludingShrinks(ChoiceTree.from(0), maxDepth = 1)
+            .generateAllIncludingShrinks(ChoiceTree(0), maxDepth = 1)
 
         assertTimeoutPreemptively(Duration.ofMillis(100)) {
             shrunkLists.forEach { shrunkList ->

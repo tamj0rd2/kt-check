@@ -81,14 +81,14 @@ class IntGeneratorV2Test {
     inner class Shrinking {
         private fun toGenUnderTest(range: IntRange): Pair<Int, List<Int>> {
             val gen = GenV2.int(range)
-            val (originalValue, shrinks) = gen.generate(ChoiceTree.from(0))
+            val (originalValue, shrinks) = gen.generate(ChoiceTree(0))
             return originalValue to shrinks.map { gen.generate(it).value }.toList()
         }
 
         @Test
         fun `shrinks appropriately for a fixed seed`() {
             val gen = GenV2.int(0..10)
-            val (originalValue, shrinks) = gen.generate(ChoiceTree.from(0))
+            val (originalValue, shrinks) = gen.generate(ChoiceTree(0))
             expectThat(originalValue).isEqualTo(10)
 
             val shrunkValues = shrinks.map { gen.generate(it).value }.toList()
