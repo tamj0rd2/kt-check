@@ -1,6 +1,9 @@
 package com.tamj0rd2.ktcheck.genv2
 
 import com.tamj0rd2.ktcheck.gen.deriveSeed
+import com.tamj0rd2.ktcheck.genv2.Value.Predetermined
+import com.tamj0rd2.ktcheck.genv2.Value.Predetermined.Choice.BooleanChoice
+import com.tamj0rd2.ktcheck.genv2.Value.Predetermined.Choice.IntChoice
 import kotlin.random.Random
 import kotlin.random.nextInt
 
@@ -16,20 +19,23 @@ internal sealed interface Value {
         override fun bool(): Boolean = random.nextBoolean()
     }
 
-    data class Predetermined(val value: Any?) : Value {
-        init {
-            if (value is Value) error("Nested Value instances are not allowed. Developer error?")
+    data class Predetermined(val choice: Choice) : Value {
+        sealed interface Choice {
+            val value: Any?
+
+            data class IntChoice(override val value: Int) : Choice
+            data class BooleanChoice(override val value: Boolean) : Choice
         }
 
-        override fun int(range: IntRange): Int = when (value) {
-            !is Int -> TODO("handle this")
-            !in range -> TODO("handle int out of range")
-            else -> value
+        override fun int(range: IntRange): Int {
+            if (choice !is IntChoice) TODO("handle non-int choice $choice")
+            if (choice.value !in range) TODO("handle int out of range ${choice.value} not in $range")
+            return choice.value
         }
 
         override fun bool(): Boolean {
-            if (value !is Boolean) TODO("handle this")
-            return value
+            if (choice !is BooleanChoice) TODO("handle non-bool choice $choice")
+            return choice.value
         }
     }
 }
@@ -51,7 +57,8 @@ internal data class ValueTree private constructor(
     val left: ValueTree by lazyLeft
     val right: ValueTree by lazyRight
 
-    internal fun withValue(value: Any?) = copy(value = Value.Predetermined(value))
+    internal fun withValue(value: Int) = copy(value = Predetermined(IntChoice(value)))
+    internal fun withValue(value: Boolean) = copy(value = Predetermined(BooleanChoice(value)))
 
     internal fun withLeft(left: ValueTree) = copy(lazyLeft = lazyOf(left))
 
@@ -70,7 +77,7 @@ internal data class ValueTree private constructor(
 
             val displayValue = when (val value = tree.value) {
                 is Value.Undetermined -> "seed(${value.seed})"
-                is Value.Predetermined -> "value(${value.value})"
+                is Predetermined -> "value(${value.choice})"
             }
 
             fun visualiseBranch(lazyTree: Lazy<ValueTree>, side: String): String? {
