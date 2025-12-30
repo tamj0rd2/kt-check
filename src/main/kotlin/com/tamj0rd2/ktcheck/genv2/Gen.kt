@@ -43,7 +43,10 @@ sealed class Gen<T> {
     fun <R> flatMap(fn: (T) -> Gen<R>): Gen<R> = CombinatorGenerator { tree ->
         val (leftValue, leftShrinks) = generate(tree.left)
         val (rightValue, rightShrinks) = fn(leftValue).generate(tree.right)
-        GenResult(rightValue, combineShrinks(tree, leftShrinks, rightShrinks))
+        GenResult(
+            value = rightValue,
+            shrinks = tree.combineShrinks(leftShrinks, rightShrinks)
+        )
     }
 
     /**
@@ -63,19 +66,14 @@ sealed class Gen<T> {
         val (nextValue, nextShrinks) = nextGen.generate(tree.right)
         GenResult(
             value = combine(thisValue, nextValue),
-            shrinks = combineShrinks(tree, thisShrinks, nextShrinks)
+            shrinks = tree.combineShrinks(thisShrinks, nextShrinks)
         )
     }
 
-    private fun combineShrinks(
-        tree: ChoiceTree,
+    private fun ChoiceTree.combineShrinks(
         leftShrinks: Sequence<ChoiceTree>,
         rightShrinks: Sequence<ChoiceTree>,
-    ): Sequence<ChoiceTree> {
-        val leftChoices = leftShrinks.map { tree.withLeft(it) }
-        val rightChoices = rightShrinks.map { tree.withRight(it) }
-        return leftChoices + rightChoices
-    }
+    ): Sequence<ChoiceTree> = leftShrinks.map { withLeft(it) } + rightShrinks.map { withRight(it) }
 
     companion object {
         /**

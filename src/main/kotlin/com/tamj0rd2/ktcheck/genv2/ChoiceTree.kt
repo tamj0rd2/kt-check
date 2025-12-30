@@ -55,7 +55,7 @@ internal data class ChoiceTree private constructor(
     internal fun withRight(right: ChoiceTree) = copy(lazyRight = lazyOf(right))
 
     @Suppress("unused")
-    internal fun ChoiceTree.visualise(maxDepth: Int = 3, forceEval: Boolean = false): String {
+    internal fun visualise(maxDepth: Int = 3, forceEval: Boolean = false): String {
         fun visualise(
             tree: ChoiceTree,
             indent: String,
