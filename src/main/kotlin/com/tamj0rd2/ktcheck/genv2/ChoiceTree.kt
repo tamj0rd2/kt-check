@@ -15,11 +15,65 @@ internal sealed interface ChoiceTree {
             lazyLeft = lazy { from(deriveSeed(seed, 1)) },
             lazyRight = lazy { from(deriveSeed(seed, 2)) },
         )
+
+        @Suppress("unused")
+        internal fun ChoiceTree.visualise(maxDepth: Int = 3, forceEval: Boolean = false): String = visualise(
+            indent = "",
+            prefix = "",
+            isLast = null,
+            currentDepth = 0,
+            maxDepth = maxDepth,
+            forceEval = forceEval,
+        )
+
+        private fun ChoiceTree.visualise(
+            indent: String,
+            prefix: String,
+            isLast: Boolean?,
+            currentDepth: Int,
+            maxDepth: Int,
+            forceEval: Boolean,
+        ): String {
+            if (currentDepth >= maxDepth) return "${indent}${prefix}...\n"
+
+            val displayValue = when (this) {
+                is RandomTree -> "seed(${seed})"
+                is RecordedChoiceTree<*> -> "choice(${choice})"
+            }
+
+            val lazyLeft = when (this) {
+                is RandomTree -> lazyLeft
+                is RecordedChoiceTree<*> -> lazyLeft
+            }
+
+            val lazyRight = when (this) {
+                is RandomTree -> lazyRight
+                is RecordedChoiceTree<*> -> lazyRight
+            }
+
+            fun visualise(lazyTree: Lazy<ChoiceTree>, side: String): String? {
+                val newIndent = when (isLast) {
+                    null -> "" // Root level, no indentation
+                    true -> "$indent    "
+                    false -> "$indent│   "
+                }
+
+                if (!lazyTree.isInitialized() && !forceEval) return null
+
+                return lazyTree.value.visualise(newIndent, "├─$side: ", false, currentDepth + 1, maxDepth, forceEval)
+            }
+
+            return buildString {
+                appendLine("${indent}${prefix}${displayValue}")
+                visualise(lazyLeft, "L")?.let(::append)
+                visualise(lazyRight, "R")?.let(::append)
+            }
+        }
     }
 }
 
 internal data class RandomTree(
-    private val seed: Long,
+    internal val seed: Long,
     internal val lazyLeft: Lazy<ChoiceTree>,
     internal val lazyRight: Lazy<ChoiceTree>,
 ) : ChoiceTree {
@@ -32,7 +86,7 @@ internal data class RandomTree(
 }
 
 internal data class RecordedChoiceTree<out T>(
-    private val choice: T,
+    internal val choice: T,
     internal val lazyLeft: Lazy<ChoiceTree>,
     internal val lazyRight: Lazy<ChoiceTree>,
 ) : ChoiceTree {
@@ -44,16 +98,6 @@ internal data class RecordedChoiceTree<out T>(
         if (choice !in range) TODO("handle int out of range")
         return choice
     }
-}
-
-internal fun combineShrinks(
-    tree: ChoiceTree,
-    leftShrinks: Sequence<ChoiceTree>,
-    rightShrinks: Sequence<ChoiceTree>,
-): Sequence<ChoiceTree> {
-    val leftChoices = leftShrinks.map { tree.withLeft(it) }
-    val rightChoices = rightShrinks.map { tree.withRight(it) }
-    return leftChoices + rightChoices
 }
 
 internal fun <T> ChoiceTree.withChoice(value: T): ChoiceTree = when (this) {
@@ -70,12 +114,12 @@ internal fun <T> ChoiceTree.withChoice(value: T): ChoiceTree = when (this) {
     )
 }
 
-private fun ChoiceTree.withLeft(left: ChoiceTree): ChoiceTree = when (this) {
+internal fun ChoiceTree.withLeft(left: ChoiceTree): ChoiceTree = when (this) {
     is RandomTree -> copy(lazyLeft = lazyOf(left))
     is RecordedChoiceTree<*> -> copy(lazyLeft = lazyOf(left))
 }
 
-private fun ChoiceTree.withRight(right: ChoiceTree): ChoiceTree = when (this) {
+internal fun ChoiceTree.withRight(right: ChoiceTree): ChoiceTree = when (this) {
     is RandomTree -> copy(lazyRight = lazyOf(right))
     is RecordedChoiceTree<*> -> copy(lazyRight = lazyOf(right))
 }

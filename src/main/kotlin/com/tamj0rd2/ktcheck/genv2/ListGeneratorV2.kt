@@ -9,9 +9,10 @@ private class ListGenerator<T>(
     }
 
     override fun generate(tree: ChoiceTree): GenResult<List<T>> = when (size) {
+        0 -> GenResult(emptyList(), emptySequence())
         1 -> list1().generate(tree)
         2 -> list2().generate(tree)
-        else -> listN(tree)
+        else -> listN(rootTree = tree)
     }
 
     private fun list1() = gen.map(::listOf)
@@ -19,22 +20,43 @@ private class ListGenerator<T>(
     private fun list2() = (gen + gen).map { (a, b) -> listOf(a, b) }
 
     private tailrec fun listN(
-        currentTree: ChoiceTree,
-        remaining: Int = size,
-        acc: List<T> = emptyList(),
-        shrinks: Sequence<ChoiceTree> = emptySequence(),
+        rootTree: ChoiceTree,
+        currentTree: ChoiceTree = rootTree,
+        index: Int = 0,
+        values: List<T> = emptyList(),
+        shrinksByIndex: List<Sequence<ChoiceTree>> = emptyList(),
     ): GenResult<List<T>> {
-        if (remaining == 0) return GenResult(acc, shrinks)
+        if (index == size) return GenResult(value = values, shrinks = rootTree.combineShrinks(shrinksByIndex))
 
-        val (value, valueShrinks) = gen.generate(currentTree.left)
+        val (value, shrinks) = gen.generate(currentTree.left)
 
         return listN(
+            rootTree = rootTree,
             currentTree = currentTree.right,
-            remaining = remaining - 1,
-            acc = acc + value,
-            shrinks = combineShrinks(currentTree, shrinks, valueShrinks)
+            index = index + 1,
+            values = values + value,
+            shrinksByIndex = shrinksByIndex + listOf(shrinks)
         )
     }
+
+    private fun ChoiceTree.combineShrinks(
+        shrinksByIndex: List<Sequence<ChoiceTree>>,
+    ): Sequence<ChoiceTree> = shrinksByIndex.asSequence().flatMapIndexed { i, shrinks ->
+        shrinks.map { shrunkTree ->
+            reconstructTreeWithShrinkAtIndex(this, i, shrunkTree)
+        }
+    }
+
+    private fun reconstructTreeWithShrinkAtIndex(
+        rootTree: ChoiceTree,
+        index: Int,
+        shrunkTree: ChoiceTree,
+    ): ChoiceTree =
+        if (index == 0) {
+            rootTree.withLeft(shrunkTree)
+        } else {
+            rootTree.withRight(reconstructTreeWithShrinkAtIndex(rootTree.right, index - 1, shrunkTree))
+        }
 }
 
 /**

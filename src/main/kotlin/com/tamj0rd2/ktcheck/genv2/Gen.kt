@@ -67,6 +67,16 @@ sealed class Gen<T> {
         )
     }
 
+    private fun combineShrinks(
+        tree: ChoiceTree,
+        leftShrinks: Sequence<ChoiceTree>,
+        rightShrinks: Sequence<ChoiceTree>,
+    ): Sequence<ChoiceTree> {
+        val leftChoices = leftShrinks.map { tree.withLeft(it) }
+        val rightChoices = rightShrinks.map { tree.withRight(it) }
+        return leftChoices + rightChoices
+    }
+
     companion object {
         /**
          * Produces an infinite sequence of samples from the generator using the provided seed.
