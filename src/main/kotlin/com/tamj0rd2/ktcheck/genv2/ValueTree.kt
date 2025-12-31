@@ -64,6 +64,11 @@ internal data class ValueTree private constructor(
 
     internal fun withRight(right: ValueTree) = copy(lazyRight = lazyOf(right))
 
+    fun combineShrinks(
+        leftShrinks: Sequence<ValueTree>,
+        rightShrinks: Sequence<ValueTree>,
+    ): Sequence<ValueTree> = leftShrinks.map { withLeft(it) } + rightShrinks.map { withRight(it) }
+
     override fun toString(): String = visualise()
 
     @Suppress("unused")
