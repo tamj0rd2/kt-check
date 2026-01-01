@@ -19,7 +19,7 @@ internal sealed interface Value {
         override fun bool(): Boolean = random.nextBoolean()
     }
 
-    data class Predetermined(val choice: Choice) : Value {
+    data class Predetermined(private val choice: Choice) : Value {
         sealed interface Choice {
             val value: Any?
 
@@ -27,18 +27,20 @@ internal sealed interface Value {
             data class BooleanChoice(override val value: Boolean) : Choice
         }
 
-        override fun int(range: IntRange): Int {
-            if (choice !is IntChoice) TODO("handle non-int choice $choice")
-            if (choice.value !in range) TODO("handle int out of range ${choice.value} not in $range")
-            return choice.value
+        override fun int(range: IntRange): Int = when {
+            choice !is IntChoice -> throw InvalidReplay("Expected IntChoice but got ${choice::class.simpleName}")
+            choice.value !in range -> throw InvalidReplay("IntChoice value ${choice.value} not in range $range")
+            else -> choice.value
         }
 
-        override fun bool(): Boolean {
-            if (choice !is BooleanChoice) TODO("handle non-bool choice $choice")
-            return choice.value
+        override fun bool(): Boolean = when (choice) {
+            !is BooleanChoice -> throw InvalidReplay("Expected BooleanChoice but got ${choice::class.simpleName}")
+            else -> choice.value
         }
     }
 }
+
+internal class InvalidReplay(message: String) : IllegalStateException(message)
 
 @ConsistentCopyVisibility
 internal data class ValueTree private constructor(
@@ -64,6 +66,11 @@ internal data class ValueTree private constructor(
 
     internal fun withRight(right: ValueTree) = copy(lazyRight = lazyOf(right))
 
+    fun combineShrinks(
+        leftShrinks: Sequence<ValueTree>,
+        rightShrinks: Sequence<ValueTree>,
+    ): Sequence<ValueTree> = leftShrinks.map { withLeft(it) } + rightShrinks.map { withRight(it) }
+
     override fun toString(): String = visualise()
 
     @Suppress("unused")
@@ -76,11 +83,6 @@ internal data class ValueTree private constructor(
             currentDepth: Int,
         ): String {
             if (currentDepth >= maxDepth) return "${indent}${prefix}...\n"
-
-            val displayValue = when (val value = tree.value) {
-                is Value.Undetermined -> "seed(${value.seed})"
-                is Predetermined -> "value(${value.choice})"
-            }
 
             fun visualiseBranch(lazyTree: Lazy<ValueTree>, side: String): String? {
                 val newIndent = when (isLast) {
@@ -101,7 +103,7 @@ internal data class ValueTree private constructor(
             }
 
             return buildString {
-                appendLine("${indent}${prefix}${displayValue}")
+                appendLine("${indent}${prefix}${tree.value}")
                 visualiseBranch(tree.lazyLeft, "L")?.let(::append)
                 visualiseBranch(tree.lazyRight, "R")?.let(::append)
             }

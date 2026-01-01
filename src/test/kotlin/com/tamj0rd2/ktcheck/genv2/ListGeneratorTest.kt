@@ -23,7 +23,7 @@ class ListGeneratorTest {
         val (value, shrunkValues) = gen.generateAllIncludingShrinks(ValueTree.fromSeed(0))
         expectThat(value).isEqualTo(listOf(4))
 
-        expectThat(shrunkValues.distinct().toList()).isEqualTo(
+        expectThat(shrunkValues).isEqualTo(
             listOf(
                 // first shrink of 4 is 0
                 listOf(0),
@@ -49,7 +49,7 @@ class ListGeneratorTest {
         // 2 shrinks to 0, 1
         // 1 shrinks to 0
 
-        expectThat(shrunkValues.distinct().toList()).isEqualTo(
+        expectThat(shrunkValues).isEqualTo(
             listOf(
                 listOf(0, 4),
                 listOf(0, 0),
@@ -141,7 +141,7 @@ class ListGeneratorTest {
         internal fun <T> Gen<T>.generateAllIncludingShrinks(
             tree: ValueTree,
             maxDepth: Int? = null,
-        ): Pair<T, Sequence<T>> {
+        ): Pair<T, List<T>> {
             val collection = sequence {
                 // Stack of iterators tracking our position in each level of the tree
                 val stack = ArrayDeque<Iterator<ValueTree>>()
@@ -173,7 +173,8 @@ class ListGeneratorTest {
             }
 
             // todo: when shrinking, there are millions of duplicates being produced. it might just be the reality of depth first shrinking though.
-            return collection.first() to collection.drop(1).take(1000).distinct()
+            val all = collection.take(1000).toList().distinct()
+            return all.first() to all.drop(1)
         }
     }
 }

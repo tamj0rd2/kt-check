@@ -70,11 +70,6 @@ sealed class Gen<T> {
         )
     }
 
-    private fun ValueTree.combineShrinks(
-        leftShrinks: Sequence<ValueTree>,
-        rightShrinks: Sequence<ValueTree>,
-    ): Sequence<ValueTree> = leftShrinks.map { withLeft(it) } + rightShrinks.map { withRight(it) }
-
     companion object {
         /**
          * Produces an infinite sequence of samples from the generator using the provided seed.
