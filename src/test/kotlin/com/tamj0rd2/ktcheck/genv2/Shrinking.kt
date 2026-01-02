@@ -2,17 +2,13 @@ package com.tamj0rd2.ktcheck.genv2
 
 import com.tamj0rd2.ktcheck.stats.Counter
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
-import com.tamj0rd2.ktcheck.testing.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.testing.TestByBool
 import com.tamj0rd2.ktcheck.testing.TestConfig
 import com.tamj0rd2.ktcheck.testing.TestReporter
 import com.tamj0rd2.ktcheck.testing.TestResult
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import strikt.api.expectThat
 import strikt.api.expectThrows
-import strikt.assertions.isLessThan
 
 class Shrinking {
 
@@ -29,16 +25,6 @@ class Shrinking {
         test = { false },
         didShrinkCorrectly = { it.isEmpty() },
     )
-
-    @OptIn(HardcodedTestConfig::class)
-    @Test
-    @Disabled
-    fun `lengthList repro`() {
-        val gen = Gen.int(0..1000).list(1..100)
-        expectThrows<AssertionError> {
-            checkAll(TestConfig().replay(-781415703, 1), gen) { ls -> expectThat(ls.max()).isLessThan(900) }
-        }
-    }
 
     // based on https://github.com/jlink/shrinking-challenge/tree/main/challenges
     @Nested
@@ -69,8 +55,6 @@ class Shrinking {
                 gen = Gen.int(0..1000).list(1..100),
                 test = { it.max() < 900 },
                 didShrinkCorrectly = { it == listOf(900) },
-                // Most of the time the shrinker provides a much smaller counter example, but very rarely the minimal one.
-                minConfidence = 5.0,
             )
         }
     }
