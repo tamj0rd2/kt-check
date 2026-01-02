@@ -3,6 +3,7 @@ package com.tamj0rd2.ktcheck.testing
 import com.tamj0rd2.ktcheck.gen.Gen
 import com.tamj0rd2.ktcheck.gen.SampleTree
 import com.tamj0rd2.ktcheck.gen.deriveSeed
+import com.tamj0rd2.ktcheck.genv2.PropertyFalsifiedException
 
 @Suppress("unused")
 fun <T> forAll(gen: Gen<T>, test: TestByBool<T>) = forAll(TestConfig(), gen, test)
@@ -24,14 +25,20 @@ private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
             is TestResult.Success -> return
 
             is TestResult.Failure -> {
-                val shrunkResult = testResultsGen.getSmallestCounterExample(testResult, shrinks.iterator())
-                config.reporter.reportFailure(
-                    seed = config.seed,
-                    failedIteration = iteration,
-                    originalFailure = testResult,
-                    shrunkFailure = shrunkResult,
+                val (shrunkResult, shrinkSteps) = testResultsGen.getSmallestCounterExample(
+                    testResult,
+                    shrinks.iterator()
                 )
-                throw shrunkResult.failure
+                PropertyFalsifiedException(
+                    seed = config.seed,
+                    iteration = iteration,
+                    originalResult = testResult,
+                    shrunkResult = shrunkResult,
+                    shrinkSteps = shrinkSteps
+                ).also {
+                    config.reporter.reportFailure(it)
+                    throw it
+                }
             }
         }
     }
@@ -54,15 +61,16 @@ private fun <T> Test<T>.getResultFor(t: T): TestResult<*> {
 private tailrec fun Gen<TestResult<*>>.getSmallestCounterExample(
     testResult: TestResult.Failure<*>,
     iterator: Iterator<SampleTree>,
-): TestResult.Failure<*> {
-    if (!iterator.hasNext()) return testResult
+    steps: Int = 0,
+): Pair<TestResult.Failure<*>, Int> {
+    if (!iterator.hasNext()) return testResult to steps
 
     val shrunkTree = iterator.next()
     val (shrunkTestResult, newShrinks) = generate(shrunkTree)
 
     return if (shrunkTestResult is TestResult.Failure) {
-        getSmallestCounterExample(shrunkTestResult, newShrinks.iterator())
+        getSmallestCounterExample(shrunkTestResult, newShrinks.iterator(), steps + 1)
     } else {
-        getSmallestCounterExample(testResult, iterator)
+        getSmallestCounterExample(testResult, iterator, steps + 1)
     }
 }

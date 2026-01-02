@@ -1,9 +1,9 @@
 package com.tamj0rd2.ktcheck.gen
 
+import com.tamj0rd2.ktcheck.genv2.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.testing.TestConfig
 import com.tamj0rd2.ktcheck.testing.TestReporter
-import com.tamj0rd2.ktcheck.testing.TestResult
 import com.tamj0rd2.ktcheck.testing.checkAll
 import com.tamj0rd2.ktcheck.testing.forAll
 import org.junit.jupiter.api.Nested
@@ -112,16 +112,11 @@ class Shrinking {
 
         var reportedFailure: ReportedFailure? = null
 
-        override fun reportFailure(
-            seed: Long,
-            failedIteration: Int,
-            originalFailure: TestResult.Failure<*>,
-            shrunkFailure: TestResult.Failure<*>,
-        ) {
-            this.reportedFailure = ReportedFailure(
-                seed = seed,
-                originalArgs = originalFailure.args,
-                shrunkArgs = shrunkFailure.args,
+        override fun reportFailure(exception: PropertyFalsifiedException) {
+            reportedFailure = ReportedFailure(
+                seed = exception.seed,
+                originalArgs = exception.originalResult.args,
+                shrunkArgs = exception.shrunkResult.args,
             )
         }
     }

@@ -1,16 +1,12 @@
 package com.tamj0rd2.ktcheck.testing
 
+import com.tamj0rd2.ktcheck.genv2.PropertyFalsifiedException
 import java.io.PrintStream
 
 interface TestReporter {
     fun reportSuccess(iterations: Int)
 
-    fun reportFailure(
-        seed: Long,
-        failedIteration: Int,
-        originalFailure: TestResult.Failure<*>,
-        shrunkFailure: TestResult.Failure<*>,
-    )
+    fun reportFailure(exception: PropertyFalsifiedException)
 }
 
 class PrintingTestReporter(
@@ -21,15 +17,11 @@ class PrintingTestReporter(
         printStream.println("Success: $iterations iterations succeeded\n")
     }
 
-    override fun reportFailure(
-        seed: Long,
-        failedIteration: Int,
-        originalFailure: TestResult.Failure<*>,
-        shrunkFailure: TestResult.Failure<*>,
-    ) {
-        val shrunkFailure = shrunkFailure.takeIf { it != originalFailure }
+    override fun reportFailure(exception: PropertyFalsifiedException) {
+        val shrunkFailure = exception.shrunkResult.takeIf { it != exception.originalResult }
+
         val output = buildString {
-            appendLine("Seed: $seed - failed on iteration $failedIteration\n")
+            appendLine("Seed: ${exception.seed} - failed on iteration ${exception.iteration}\n")
 
             if (shrunkFailure != null) {
                 appendLine(formatFailure(prefix = "Shrunk ", result = shrunkFailure))
@@ -39,7 +31,7 @@ class PrintingTestReporter(
 
             if (showAllDiagnostics || shrunkFailure == null) {
                 appendLine()
-                appendLine(formatFailure(prefix = "Original ", result = originalFailure))
+                appendLine(formatFailure(prefix = "Original ", result = exception.originalResult))
                 appendLine("-----------------")
             }
         }

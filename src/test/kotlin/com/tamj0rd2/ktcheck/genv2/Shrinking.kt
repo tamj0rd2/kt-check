@@ -5,7 +5,6 @@ import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.testing.TestByBool
 import com.tamj0rd2.ktcheck.testing.TestConfig
 import com.tamj0rd2.ktcheck.testing.TestReporter
-import com.tamj0rd2.ktcheck.testing.TestResult
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import strikt.api.expectThrows
@@ -59,7 +58,6 @@ class Shrinking {
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun <T> testShrinking(
         testConfig: TestConfig = TestConfig().withIterations(500),
         gen: Gen<T>,
@@ -76,15 +74,23 @@ class Shrinking {
                     forAll(TestConfig().withSeed(seed).withReporter(NoOpTestReporter), gen, test)
                 }.subject
 
+                @Suppress("UNCHECKED_CAST")
                 val originalArgs = exception.originalResult.input as T
+
+                @Suppress("UNCHECKED_CAST")
                 val shrunkArgs = exception.shrunkResult.input as T
 
                 val fullyShrunk = didShrinkCorrectly(shrunkArgs)
-                collect("shrunk fully", fullyShrunk)
-                categoriseShrinks(fullyShrunk, originalArgs, shrunkArgs)
+                collect("fully shrunk", fullyShrunk)
 
-                if (fullyShrunk) collect("fully shrunk args", shrunkArgs.toString())
-                else exceptionsWithBadShrinks.add(exception)
+                if (fullyShrunk) {
+                    collect("fully shrunk steps", exception.shrinkSteps.bucket(size = 50))
+                    collect("fully shrunk args", shrunkArgs.toString())
+                } else {
+                    exceptionsWithBadShrinks.add(exception)
+                }
+
+                categoriseShrinks(fullyShrunk, originalArgs, shrunkArgs)
             }
         }
 
@@ -97,7 +103,13 @@ class Shrinking {
                 .forEach { println(it.asBadShrinkExample()) }
         }
 
-        counter.checkPercentages("shrunk fully", mapOf(true to minConfidence))
+        counter.checkPercentages("fully shrunk", mapOf(true to minConfidence))
+    }
+
+    private fun Int.bucket(size: Int): String {
+        val lowerBound = (this / size) * size
+        val upperBound = lowerBound + size
+        return "$lowerBound-$upperBound"
     }
 
     private fun PropertyFalsifiedException.asBadShrinkExample(): String {
@@ -116,12 +128,6 @@ class Shrinking {
 
     private object NoOpTestReporter : TestReporter {
         override fun reportSuccess(iterations: Int) {}
-        override fun reportFailure(
-            seed: Long,
-            failedIteration: Int,
-            originalFailure: TestResult.Failure<*>,
-            shrunkFailure: TestResult.Failure<*>,
-        ) {
-        }
+        override fun reportFailure(exception: PropertyFalsifiedException) {}
     }
 }

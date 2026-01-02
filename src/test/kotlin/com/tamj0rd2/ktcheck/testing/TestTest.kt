@@ -3,10 +3,12 @@ package com.tamj0rd2.ktcheck.testing
 import com.tamj0rd2.ktcheck.gen.Gen
 import com.tamj0rd2.ktcheck.gen.constant
 import com.tamj0rd2.ktcheck.gen.int
+import com.tamj0rd2.ktcheck.genv2.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.testing.TestTest.SpyTestReporter.Reporting
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.api.expectThrows
+import strikt.assertions.cause
 import strikt.assertions.isA
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
@@ -43,7 +45,12 @@ class TestTest {
     @Test
     fun `checkAll reports a failure if the property threw an assertion error`() {
         val theError = AssertionError("boom!")
-        expectThrows<AssertionError> { checkAll(testConfig, Gen.constant(theError)) { throw it } }.isEqualTo(theError)
+        expectThrows<PropertyFalsifiedException> {
+            checkAll(
+                testConfig,
+                Gen.constant(theError)
+            ) { throw it }
+        }.cause.isEqualTo(theError)
         expectThat(spyTestReporter.reporting).isA<Reporting.ReportedFailure>().get { error }.isEqualTo(theError)
     }
 
@@ -94,13 +101,8 @@ class TestTest {
             reporting = Reporting.ReportedSuccess(iterations)
         }
 
-        override fun reportFailure(
-            seed: Long,
-            failedIteration: Int,
-            originalFailure: TestResult.Failure<*>,
-            shrunkFailure: TestResult.Failure<*>,
-        ) {
-            reporting = Reporting.ReportedFailure(originalFailure.failure)
+        override fun reportFailure(exception: PropertyFalsifiedException) {
+            reporting = Reporting.ReportedFailure(exception.originalResult.failure)
         }
 
         sealed interface Reporting {

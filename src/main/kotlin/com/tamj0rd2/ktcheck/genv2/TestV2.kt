@@ -28,20 +28,21 @@ private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
             is TestResult.Success -> return
 
             is TestResult.Failure -> {
-                val shrunkResult = testResultsGen.getSmallestCounterExample(testResult, shrinks.iterator())
-                config.reporter.reportFailure(
-                    seed = config.seed,
-                    failedIteration = iteration,
-                    originalFailure = testResult,
-                    shrunkFailure = shrunkResult,
+                val (shrunkResult, shrinkSteps) = testResultsGen.getSmallestCounterExample(
+                    testResult,
+                    shrinks.iterator()
                 )
 
-                throw PropertyFalsifiedException(
+                PropertyFalsifiedException(
                     seed = config.seed,
                     iteration = iteration,
                     originalResult = testResult,
                     shrunkResult = shrunkResult,
-                )
+                    shrinkSteps = shrinkSteps
+                ).also {
+                    config.reporter.reportFailure(it)
+                    throw it
+                }
             }
         }
     }
@@ -58,24 +59,27 @@ private fun <T> Test<T>.getResultFor(t: T): TestResult<T> {
 private tailrec fun <T> Gen<TestResult<T>>.getSmallestCounterExample(
     testResult: TestResult.Failure<T>,
     iterator: Iterator<ValueTree>,
-): TestResult.Failure<T> {
-    if (!iterator.hasNext()) return testResult
+    steps: Int = 0,
+): Pair<TestResult.Failure<T>, Int> {
+    if (!iterator.hasNext()) return testResult to steps
 
     val shrunkTree = iterator.next()
     val (shrunkTestResult, newShrinks) = generate(shrunkTree)
 
     return if (shrunkTestResult is TestResult.Failure) {
-        getSmallestCounterExample(shrunkTestResult, newShrinks.iterator())
+        getSmallestCounterExample(shrunkTestResult, newShrinks.iterator(), steps + 1)
     } else {
-        getSmallestCounterExample(testResult, iterator)
+        getSmallestCounterExample(testResult, iterator, steps + 1)
     }
 }
 
-internal class PropertyFalsifiedException(
+// todo: I wish this all lived inside of TestResult. having an extra things seems... extra
+class PropertyFalsifiedException(
     val seed: Long,
     val iteration: Int,
     val originalResult: TestResult.Failure<*>,
     val shrunkResult: TestResult.Failure<*>,
+    val shrinkSteps: Int,
 ) : AssertionError() {
     override val cause: Throwable = shrunkResult.failure
 }
