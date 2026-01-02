@@ -18,10 +18,10 @@ internal data class ValueTree private constructor(
     val right: ValueTree by lazyRight
 
     internal fun withValue(value: Int) =
-        copy(producer = PredeterminedValue(PredeterminedValue.Choice.IntChoice(value)))
+        copy(producer = PredeterminedValue(Choice.Int(value)))
 
     internal fun withValue(value: Boolean) =
-        copy(producer = PredeterminedValue(PredeterminedValue.Choice.BooleanChoice(value)))
+        copy(producer = PredeterminedValue(Choice.Bool(value)))
 
     internal fun withLeft(left: ValueTree) = copy(lazyLeft = lazyOf(left))
 
