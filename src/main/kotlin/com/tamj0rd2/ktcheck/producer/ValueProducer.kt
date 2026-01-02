@@ -25,15 +25,13 @@ internal sealed interface Primitive {
 
 internal data class PredeterminedValue(private val primitive: Primitive) : ValueProducer {
     override fun int(range: IntRange): Int = when {
-        primitive !is Primitive.Int -> throw InvalidReplay("Expected IntChoice but got ${primitive::class.simpleName}")
-        primitive.value !in range -> throw InvalidReplay("IntChoice value ${primitive.value} not in range $range")
+        primitive !is Primitive.Int -> error("Expected IntChoice but got ${primitive::class.simpleName}")
+        primitive.value !in range -> error("IntChoice value ${primitive.value} not in range $range")
         else -> primitive.value
     }
 
     override fun bool(): Boolean = when (primitive) {
-        !is Primitive.Bool -> throw InvalidReplay("Expected BooleanChoice but got ${primitive::class.simpleName}")
+        !is Primitive.Bool -> error("Expected BooleanChoice but got ${primitive::class.simpleName}")
         else -> primitive.value
     }
 }
-
-internal class InvalidReplay(message: String) : IllegalStateException(message)
