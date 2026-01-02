@@ -11,11 +11,6 @@ import strikt.assertions.isNotEqualTo
 import java.time.Duration
 
 class ListGeneratorTest {
-    private fun <T> ValueTree.Companion.`that will generate value`(gen: Gen<T>, value: T) =
-        generateSequence(0) { it + 1 }
-            .map { ValueTree.fromSeed(it.toLong()) }
-            .first { gen.generate(it).value == value }
-
     @Test
     fun `can generate a long list without stack overflow`() {
         Gen.constant(1).list(10_000).sample()
@@ -25,7 +20,7 @@ class ListGeneratorTest {
     fun `shrinks a list of 1 element depth first`() {
         val gen = Gen.int(0..4).list(1)
 
-        val tree = ValueTree.`that will generate value`(gen, listOf(4))
+        val tree = ValueTree.`that will generate`(listOf(4), from = gen)
         val (value, shrunkValues) = gen.generateAllIncludingShrinks(tree)
         expectThat(value).isEqualTo(listOf(4))
 
@@ -47,7 +42,7 @@ class ListGeneratorTest {
     fun `shrinks a list of 2 elements depth first`() {
         val gen = Gen.int(0..5).list(2)
 
-        val tree = ValueTree.`that will generate value`(gen, listOf(1, 4))
+        val tree = ValueTree.`that will generate`(listOf(1, 4), from = gen)
         val (value, shrunkValues) = gen.generateAllIncludingShrinks(tree)
         expectThat(value).isEqualTo(listOf(1, 4))
 
@@ -75,7 +70,7 @@ class ListGeneratorTest {
     fun `shrinks a list of 3 elements depth first`() {
         val gen = Gen.int(0..4).list(3)
 
-        val tree = ValueTree.`that will generate value`(gen, listOf(2, 0, 3))
+        val tree = ValueTree.`that will generate`(listOf(2, 0, 3), from = gen)
         val (value, shrunkValues) = gen.generateAllIncludingShrinks(tree)
         expectThat(value).isEqualTo(listOf(2, 0, 3))
 
@@ -144,6 +139,10 @@ class ListGeneratorTest {
                 if (passedCount == count) pass() else fail()
             }
 
+        internal fun <T> ValueTree.Companion.`that will generate`(value: T, from: Gen<T>) =
+            generateSequence(0) { it + 1 }
+                .map { ValueTree.fromSeed(it.toLong()) }
+                .first { from.generate(it).value == value }
 
         // generates the value and all shrinks depth-first. its done this way to avoid stack overflows and OOMs on large shrink trees.
         internal fun <T> Gen<T>.generateAllIncludingShrinks(
