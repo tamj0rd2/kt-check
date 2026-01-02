@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.gen
 
 private const val SPLIT_MIX_64_MULTIPLIER = 6364136223846793005L
 

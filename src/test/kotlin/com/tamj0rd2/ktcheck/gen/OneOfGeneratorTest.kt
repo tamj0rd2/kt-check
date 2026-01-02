@@ -1,7 +1,7 @@
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.genv2.Gen.Companion.samples
-import com.tamj0rd2.ktcheck.genv2.ListGeneratorTest.Companion.generateAllIncludingShrinks
+import com.tamj0rd2.ktcheck.gen.Gen.Companion.samples
+import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateAllIncludingShrinks
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat

@@ -1,8 +1,8 @@
 package com.tamj0rd2.ktcheck.testing
 
-import com.tamj0rd2.ktcheck.genv2.Gen
-import com.tamj0rd2.ktcheck.genv2.ValueTree
-import com.tamj0rd2.ktcheck.genv2.deriveSeed
+import com.tamj0rd2.ktcheck.gen.Gen
+import com.tamj0rd2.ktcheck.gen.ValueTree
+import com.tamj0rd2.ktcheck.gen.deriveSeed
 
 @Suppress("unused")
 fun <T> forAll(gen: Gen<T>, test: TestByBool<T>) = forAll(TestConfig(), gen, test)

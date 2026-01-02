@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.genv2
+package com.tamj0rd2.ktcheck.gen
 
 /**
  * A generator that chooses between multiple generators using an index. Shrinks towards
