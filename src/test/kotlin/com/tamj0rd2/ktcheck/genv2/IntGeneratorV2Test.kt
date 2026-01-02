@@ -38,7 +38,7 @@ class IntGeneratorV2Test {
 
             return testCases.map { (desc, range) ->
                 DynamicTest.dynamicTest(desc) {
-                    GenV2.int(range)
+                    Gen.int(range)
                         .samples()
                         .take(10000)
                         .forEach { expectThat(it).isIn(range) }
@@ -49,7 +49,7 @@ class IntGeneratorV2Test {
         @Test
         fun `generates both positive and negative integers over multiple runs`() {
             withCounter {
-                GenV2.int(-100..100).samples().take(10000).forEach { value ->
+                Gen.int(-100..100).samples().take(10000).forEach { value ->
                     collect(
                         when {
                             value > 0 -> "positive"
@@ -70,7 +70,7 @@ class IntGeneratorV2Test {
         @Test
         fun `using the same seed generates the same values`() {
             val seed = 12345L
-            val gen = GenV2.int(-1000..1000)
+            val gen = Gen.int(-1000..1000)
             val firstRun = gen.samples(seed).take(100).toList()
             val secondRun = gen.samples(seed).take(100).toList()
             expectThat(secondRun).isEqualTo(firstRun)
@@ -81,7 +81,7 @@ class IntGeneratorV2Test {
     inner class Shrinking {
         @Test
         fun `shrinks appropriately for a fixed seed`() {
-            val gen = GenV2.int(0..10)
+            val gen = Gen.int(0..10)
             val (originalValue, shrinks) = gen.generate(ValueTree.fromSeed(0))
             expectThat(originalValue).isEqualTo(10)
 

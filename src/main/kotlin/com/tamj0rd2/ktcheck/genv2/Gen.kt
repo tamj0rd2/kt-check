@@ -99,5 +99,3 @@ internal data class GenResult<T>(val value: T, val shrinks: Sequence<ValueTree>)
 private class CombinatorGenerator<T>(private val generator: (ValueTree) -> GenResult<T>) : Gen<T>() {
     override fun generate(tree: ValueTree): GenResult<T> = generator(tree)
 }
-
-typealias GenV2 = Gen.Companion

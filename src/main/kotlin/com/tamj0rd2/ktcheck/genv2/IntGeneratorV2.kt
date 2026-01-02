@@ -25,7 +25,7 @@ internal fun shrink(value: Int): Sequence<Int> = sequence {
     }
 }
 
-fun GenV2.int(range: IntRange = Int.MIN_VALUE..Int.MAX_VALUE): Gen<Int> = IntGeneratorV2(range)
+fun Gen.Companion.int(range: IntRange = Int.MIN_VALUE..Int.MAX_VALUE): Gen<Int> = IntGeneratorV2(range)
 
 // todo: implement this property
 internal fun Gen.Companion.long() = Gen.int().map { it.toLong() }
