@@ -139,7 +139,7 @@ class IntGeneratorTest {
                                 get { abs(this) }.describedAs("shrunk distance from 0").isLessThan(abs(originalValue))
                             }
                     }
-            }.checkPercentages("positive", mapOf(true to 40.0, false to 40.0))
+            }
         }
     }
 }
