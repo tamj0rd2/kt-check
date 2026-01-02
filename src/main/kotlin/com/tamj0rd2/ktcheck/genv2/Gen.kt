@@ -1,6 +1,5 @@
 package com.tamj0rd2.ktcheck.genv2
 
-import com.tamj0rd2.ktcheck.gen.deriveSeed
 import kotlin.random.Random
 
 /**

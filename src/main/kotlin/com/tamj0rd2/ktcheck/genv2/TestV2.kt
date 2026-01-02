@@ -1,6 +1,5 @@
 package com.tamj0rd2.ktcheck.genv2
 
-import com.tamj0rd2.ktcheck.gen.deriveSeed
 import com.tamj0rd2.ktcheck.testing.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.testing.Test
 import com.tamj0rd2.ktcheck.testing.TestByBool
@@ -47,7 +46,8 @@ private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
         }
     }
 
-    (1..config.iterations).forEach(::runIteration)
+    val startingIteration = (config.replayIteration ?: 1)
+    (startingIteration..<startingIteration + config.iterations).forEach(::runIteration)
     config.reporter.reportSuccess(config.iterations)
 }
 
