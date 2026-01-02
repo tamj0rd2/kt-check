@@ -17,13 +17,15 @@ class Counter {
     fun checkPercentages(expected: Map<Any?, Double>) = checkPercentages(null, expected)
 
     fun checkPercentages(label: String?, expected: Map<Any?, Double>) = apply {
-        expected.forEach { (key, minPercentage) ->
-            val actualPercentage =
-                percentage(label, key) ?: throw AssertionError("no recorded statistics for the value '$key'")
+        expected.forEach { (value, minPercentage) ->
+            val displayLabel = label.asLabelForDisplay()
+
+            val actualPercentage = percentage(label, value)
+                ?: throw AssertionError("'$displayLabel' has no recorded statistics for the value '$value'")
 
             if (actualPercentage < minPercentage) {
                 throw AssertionError(
-                    "expected the recorded percentage for '$key' to be at least $minPercentage% but was $actualPercentage%"
+                    "expected the recorded percentage for '$value' under label '$displayLabel' to be at least $minPercentage% but was $actualPercentage%"
                 )
             }
         }
@@ -36,13 +38,15 @@ class Counter {
         return (count.toDouble() / totalStatsRecorded) * 100
     }
 
+    private fun String?.asLabelForDisplay(): String = this ?: "unlabelled"
+
     override fun toString(): String {
         val sections = recorded.map { (label, recorded) ->
             val maxKeyLength = recorded.keys.maxOfOrNull { it.toString().length } ?: 0
             val maxCountLength = recorded.values.maxOrNull()?.toString()?.length ?: 0
 
             val sortedEntries = recorded.entries.sortedByDescending { it.value }
-            val heading = if (label == null) "Stats (unlabelled)" else "Stats ($label)"
+            val heading = "Stats (${label.asLabelForDisplay()})"
 
             "$heading:\n" +
                     sortedEntries.joinToString("\n") { (key, count) ->

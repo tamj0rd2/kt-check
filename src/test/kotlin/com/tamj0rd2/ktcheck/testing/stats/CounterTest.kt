@@ -65,7 +65,7 @@ class CounterTest {
             expectThrows<AssertionError> {
                 counter.checkPercentages(mapOf("value1" to 50.0))
             }.get { message }.isEqualTo(
-                "expected the recorded percentage for 'value1' to be at least 50.0% but was 30.0%"
+                "expected the recorded percentage for 'value1' under label 'unlabelled' to be at least 50.0% but was 30.0%"
             )
         }
 
@@ -76,7 +76,7 @@ class CounterTest {
 
             expectThrows<AssertionError> {
                 counter.checkPercentages(mapOf("nonexistent" to 1.0))
-            }.get { message }.isEqualTo("no recorded statistics for the value 'nonexistent'")
+            }.get { message }.isEqualTo("'unlabelled' has no recorded statistics for the value 'nonexistent'")
         }
 
         @Test
@@ -142,7 +142,7 @@ class CounterTest {
             expectThrows<AssertionError> {
                 counter.checkPercentages("myLabel", mapOf("value1" to 50.0))
             }.get { message }.isEqualTo(
-                "expected the recorded percentage for 'value1' to be at least 50.0% but was 25.0%"
+                "expected the recorded percentage for 'value1' under label 'myLabel' to be at least 50.0% but was 25.0%"
             )
         }
     }

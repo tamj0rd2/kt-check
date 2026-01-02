@@ -1,6 +1,8 @@
 package com.tamj0rd2.ktcheck.genv2
 
+import com.tamj0rd2.ktcheck.stats.Counter
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
+import com.tamj0rd2.ktcheck.testing.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.testing.TestConfig
 import com.tamj0rd2.ktcheck.testing.TestReporter
 import com.tamj0rd2.ktcheck.testing.TestResult
@@ -8,28 +10,32 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
+import strikt.api.expectThrows
 import strikt.assertions.isEqualTo
 import strikt.assertions.isLessThan
 import strikt.assertions.isLessThanOrEqualTo
-import strikt.assertions.isNotNull
 
 class Shrinking {
 
     @Test
-    fun `can shrink a number`() = expectShrunkArgs(expected = mapOf(0 to 1)) { config ->
-        forAll(config, Gen.int(1..100)) { false }
-    }
+    fun `can shrink a number`() = testShrinking(
+        test = { testConfig -> forAll(testConfig, Gen.int(1..100)) { false } },
+        didShrinkCorrectly = { it.single() == 1 },
+    )
 
     @Test
-    fun `can shrink a list`() = expectShrunkArgs(expected = mapOf(0 to emptyList<Int>())) { config ->
-        forAll(config, Gen.int().list()) { false }
-    }
+    fun `can shrink a list`() = testShrinking(
+        test = { testConfig -> forAll(testConfig, Gen.int().list()) { false } },
+        didShrinkCorrectly = { it.single() == emptyList<Int>() },
+    )
 
+    @OptIn(HardcodedTestConfig::class)
     @Test
-    @Disabled("todo: fix this next")
-    fun repro() {
-        checkAll(TestConfig().replay(778317316, 2), Gen.int(0..5).list(0..5).list(0..5)) { ls ->
-            expectThat(ls.sumOf { it.size }).isLessThanOrEqualTo(10)
+    @Disabled
+    fun `lengthList repro`() {
+        val gen = Gen.int(0..1000).list(1..100)
+        expectThrows<AssertionError> {
+            checkAll(TestConfig().replay(-781415703, 1), gen) { ls -> expectThat(ls.max()).isLessThan(900) }
         }
     }
 
@@ -37,120 +43,106 @@ class Shrinking {
     @Nested
     inner class Challenges {
         @Test
-        fun reverse() = expectShrunkArgs(
-            expected = mapOf(0 to {
-                (it as List<*>) in setOf(
-                    listOf(0, 1),
-                    listOf(1, 0),
-                    listOf(-1, 0),
-                    listOf(0, -1)
-                )
-            })
-        ) { config ->
-            val gen = Gen.int().list()
-            checkAll(config, gen) { initial -> expectThat(initial.reversed()).isEqualTo(initial) }
+        fun reverse() = testShrinking(
+            test = { testConfig ->
+                checkAll(testConfig, Gen.int().list()) {
+                    expectThat(it.reversed()).isEqualTo(it)
+                }
+            },
+            didShrinkCorrectly = { it.single() in setOf(listOf(0, 1), listOf(0, -1)) },
+        )
+
+        @Test
+        fun nestedLists() {
+            testShrinking(
+                test = { testConfig ->
+                    val gen = Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()
+                    checkAll(testConfig, gen) { listOfLists ->
+                        expectThat(listOfLists.sumOf { it.size }).isLessThanOrEqualTo(10)
+                    }
+                },
+                didShrinkCorrectly = { it.single() == listOf(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)) },
+                minConfidence = 85.0,
+            )
         }
 
         @Test
         @Disabled
-        fun nestedLists() = expectShrunkArgs(
-            expected = mapOf(0 to listOf(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))),
-            minConfidence = 80.0
-        ) { config ->
-            checkAll(config, Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list()) { ls ->
-                expectThat(ls.sumOf { it.size }).isLessThanOrEqualTo(10)
-            }
-        }
-
-        @Test
-        @Disabled
-        fun lengthList() = expectShrunkArgs(
-            expected = mapOf(0 to listOf(900)),
-            // Most of the time the shrinker provides a much smaller counter example, but very rarely the minimal one.
-            minConfidence = 1.0
-        ) { config ->
-            val gen = Gen.int(0..1000).list(1..100)
-            checkAll(config, gen) { ls -> expectThat(ls.max()).isLessThan(900) }
+        fun lengthList() {
+            testShrinking(
+                test = { testConfig ->
+                    val gen = Gen.int(0..1000).list(1..100)
+                    checkAll(testConfig, gen) { ls -> expectThat(ls.max()).isLessThan(900) }
+                },
+                didShrinkCorrectly = { it.single() == listOf(900) },
+                // Most of the time the shrinker provides a much smaller counter example, but very rarely the minimal one.
+                minConfidence = 5.0,
+            )
         }
     }
 
-    companion object {
-        @JvmName("expectShrunkArgsSimple")
-        private fun expectShrunkArgs(
-            expected: Map<Int, Any?>,
-            minConfidence: Double = 100.0,
-            block: (TestConfig) -> Unit,
-        ) = expectShrunkArgs(
-            expected = expected.mapValues { (_, expected) -> { it == expected } },
-            minConfidence = minConfidence,
-            block = block
-        )
+    private fun testShrinking(
+        testConfig: TestConfig = TestConfig().withIterations(500),
+        test: (TestConfig) -> Unit,
+        didShrinkCorrectly: (List<Any?>) -> Boolean,
+        minConfidence: Double = 100.0,
+        categoriseBadShrinks: Counter.(List<Any?>, List<Any?>) -> Unit = { _, _ -> },
+    ) {
+        val exceptionsWithBadShrinks = mutableListOf<PropertyFalsifiedException>()
 
-        // runs the property as property so we can assert on confidence levels of shrinking.
-        private fun expectShrunkArgs(
-            expected: Map<Int, (Any?) -> Boolean>,
-            minConfidence: Double = 100.0,
-            block: (TestConfig) -> Unit,
-        ) {
-            val seedGen = Gen.long()
-            val failures = mutableListOf<SpyTestReporter.ReportedFailure>()
-            val counter = withCounter {
-                checkAll(TestConfig().withIterations(100), seedGen) { seed ->
-                    val spyTestReporter = SpyTestReporter()
-                    val x = runCatching { block(TestConfig().withSeed(seed).withReporter(spyTestReporter)) }
-                        .exceptionOrNull()
-                    when (x) {
-                        null -> error("Expected property to fail for seed $seed, but succeeded")
-                        !is AssertionError -> throw x
-                    }
+        val counter = withCounter {
+            checkAll(testConfig, Gen.long()) { seed ->
+                val exception = expectThrows<PropertyFalsifiedException> {
+                    test(TestConfig().withSeed(seed).withReporter(NoOpTestReporter))
+                }.subject
 
-                    val reportedFailure = expectThat(spyTestReporter.reportedFailure).isNotNull().subject
-                    val shrunkArgs = expectThat(reportedFailure).get { shrunkArgs }.subject
-                    val results = expected.entries.map { (key, fn) -> fn(shrunkArgs[key]) }
-                    val expectationsMet = results.all { it }
-                    collect("shrank-as-expected", expectationsMet)
+                val originalArgs = exception.originalResult.args
+                val shrunkArgs = exception.shrunkResult.args
 
-                    if (!expectationsMet) failures.add(reportedFailure)
+                val fullyShrunk = didShrinkCorrectly(shrunkArgs)
+                collect("shrunk fully", fullyShrunk)
+
+                if (!fullyShrunk) {
+                    exceptionsWithBadShrinks.add(exception)
+                    categoriseBadShrinks(originalArgs, shrunkArgs)
                 }
             }
-
-            if (failures.isNotEmpty()) {
-                println("Example failures:")
-                failures
-                    .sortedBy { it.shrunkArgs.toString().length }
-                    .take(5)
-                    .forEach { println("$it\n") }
-            }
-
-            counter.checkPercentages("shrank-as-expected", mapOf(true to minConfidence))
-
         }
+
+        if (exceptionsWithBadShrinks.isNotEmpty()) {
+            println("\nSome bad shrinks encountered:")
+
+            exceptionsWithBadShrinks
+                .sortedBy { it.shrunkResult.args.toString().length }
+                .take(5)
+                .forEach { println(it.asBadShrinkExample()) }
+        }
+
+        counter.checkPercentages("shrunk fully", mapOf(true to minConfidence))
     }
 
-    private class SpyTestReporter : TestReporter {
+    private fun PropertyFalsifiedException.asBadShrinkExample(): String {
+        val shortenedOriginalArgs = originalResult.args.toString().let {
+            if (it.length > 100) it.take(100) + " (remaining args truncated)" else it
+        }
+
+        return """
+            |----
+            |Seed: $seed
+            |Iteration: $iteration
+            |Original args: $shortenedOriginalArgs
+            |Shrunk args: ${shrunkResult.args}
+            """.trimMargin()
+    }
+
+    private object NoOpTestReporter : TestReporter {
         override fun reportSuccess(iterations: Int) {}
-
-        data class ReportedFailure(
-            val seed: Long,
-            val iteration: Int,
-            val originalArgs: List<Any?>,
-            val shrunkArgs: List<Any?>,
-        )
-
-        var reportedFailure: ReportedFailure? = null
-
         override fun reportFailure(
             seed: Long,
             failedIteration: Int,
             originalFailure: TestResult.Failure,
             shrunkFailure: TestResult.Failure,
         ) {
-            this.reportedFailure = ReportedFailure(
-                seed = seed,
-                iteration = failedIteration,
-                originalArgs = originalFailure.args,
-                shrunkArgs = shrunkFailure.args,
-            )
         }
     }
 }

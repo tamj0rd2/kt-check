@@ -18,7 +18,7 @@ class PrintingTestReporter(
     private val showAllDiagnostics: Boolean = true,
 ) : TestReporter {
     override fun reportSuccess(iterations: Int) {
-        printStream.println("Success: $iterations iterations succeeded")
+        printStream.println("Success: $iterations iterations succeeded\n")
     }
 
     override fun reportFailure(

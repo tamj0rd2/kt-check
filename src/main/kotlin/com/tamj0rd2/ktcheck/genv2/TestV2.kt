@@ -36,15 +36,15 @@ private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
                     originalFailure = testResult,
                     shrunkFailure = shrunkResult,
                 )
-                throw shrunkResult.failure
+
+                throw PropertyFalsifiedException(
+                    seed = config.seed,
+                    iteration = iteration,
+                    originalResult = testResult,
+                    shrunkResult = shrunkResult,
+                )
             }
         }
-    }
-
-    if (config.replayIteration != null) {
-        runIteration(config.replayIteration)
-        config.reporter.reportSuccess(1)
-        return
     }
 
     (1..config.iterations).forEach(::runIteration)
@@ -75,4 +75,13 @@ private tailrec fun Gen<TestResult>.getSmallestCounterExample(
     } else {
         getSmallestCounterExample(testResult, iterator)
     }
+}
+
+internal class PropertyFalsifiedException(
+    val seed: Long,
+    val iteration: Int,
+    val originalResult: TestResult.Failure,
+    val shrunkResult: TestResult.Failure,
+) : AssertionError() {
+    override val cause: Throwable = shrunkResult.failure
 }
