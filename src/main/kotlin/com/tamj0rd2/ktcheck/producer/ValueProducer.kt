@@ -16,23 +16,23 @@ internal data class RandomValueProducer(val seed: Long) : ValueProducer {
     override fun bool(): Boolean = random.nextBoolean()
 }
 
-internal sealed interface Choice {
+internal sealed interface Primitive {
     val value: Any?
 
-    data class Int(override val value: kotlin.Int) : Choice
-    data class Bool(override val value: Boolean) : Choice
+    data class Int(override val value: kotlin.Int) : Primitive
+    data class Bool(override val value: Boolean) : Primitive
 }
 
-internal data class PredeterminedValue(private val choice: Choice) : ValueProducer {
+internal data class PredeterminedValue(private val primitive: Primitive) : ValueProducer {
     override fun int(range: IntRange): Int = when {
-        choice !is Choice.Int -> throw InvalidReplay("Expected IntChoice but got ${choice::class.simpleName}")
-        choice.value !in range -> throw InvalidReplay("IntChoice value ${choice.value} not in range $range")
-        else -> choice.value
+        primitive !is Primitive.Int -> throw InvalidReplay("Expected IntChoice but got ${primitive::class.simpleName}")
+        primitive.value !in range -> throw InvalidReplay("IntChoice value ${primitive.value} not in range $range")
+        else -> primitive.value
     }
 
-    override fun bool(): Boolean = when (choice) {
-        !is Choice.Bool -> throw InvalidReplay("Expected BooleanChoice but got ${choice::class.simpleName}")
-        else -> choice.value
+    override fun bool(): Boolean = when (primitive) {
+        !is Primitive.Bool -> throw InvalidReplay("Expected BooleanChoice but got ${primitive::class.simpleName}")
+        else -> primitive.value
     }
 }
 
