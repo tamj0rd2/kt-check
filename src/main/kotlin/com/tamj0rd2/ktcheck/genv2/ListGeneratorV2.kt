@@ -8,16 +8,7 @@ private class ListGenerator<T>(
         require(size >= 0) { "Size must be non-negative" }
     }
 
-    override fun generate(tree: ValueTree): GenResult<List<T>> = when (size) {
-        0 -> GenResult(emptyList(), emptySequence())
-        1 -> list1().generate(tree)
-        2 -> list2().generate(tree)
-        else -> listN(rootTree = tree)
-    }
-
-    private fun list1() = gen.map(::listOf)
-
-    private fun list2() = (gen + gen).map { (a, b) -> listOf(a, b) }
+    override fun generate(tree: ValueTree): GenResult<List<T>> = listN(rootTree = tree)
 
     /**
      * Generates a list of N elements using a left-right tree traversal pattern, where left is used to generate data,

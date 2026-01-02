@@ -11,6 +11,11 @@ import strikt.assertions.isNotEqualTo
 import java.time.Duration
 
 class ListGeneratorTest {
+    private fun <T> ValueTree.Companion.`that will generate value using left tree`(gen: Gen<T>, value: T) =
+        generateSequence(0) { it + 1 }
+            .map { ValueTree.fromSeed(it.toLong()) }
+            .first { gen.generate(it).value == value }
+
     @Test
     fun `can generate a long list without stack overflow`() {
         Gen.constant(1).list(10_000).sample()
@@ -20,7 +25,8 @@ class ListGeneratorTest {
     fun `shrinks a list of 1 element depth first`() {
         val gen = Gen.int(0..4).list(1)
 
-        val (value, shrunkValues) = gen.generateAllIncludingShrinks(ValueTree.fromSeed(0))
+        val tree = ValueTree.`that will generate value using left tree`(gen, listOf(4))
+        val (value, shrunkValues) = gen.generateAllIncludingShrinks(tree)
         expectThat(value).isEqualTo(listOf(4))
 
         expectThat(shrunkValues).isEqualTo(
@@ -41,7 +47,8 @@ class ListGeneratorTest {
     fun `shrinks a list of 2 elements depth first`() {
         val gen = Gen.int(0..5).list(2)
 
-        val (value, shrunkValues) = gen.generateAllIncludingShrinks(ValueTree.fromSeed(1))
+        val tree = ValueTree.`that will generate value using left tree`(gen, listOf(1, 4))
+        val (value, shrunkValues) = gen.generateAllIncludingShrinks(tree)
         expectThat(value).isEqualTo(listOf(1, 4))
 
         // 4 shrinks to 0, 2, 3

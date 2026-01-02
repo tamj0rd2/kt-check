@@ -64,7 +64,6 @@ class Shrinking {
         }
 
         @Test
-        @Disabled
         fun lengthList() {
             testShrinking(
                 gen = Gen.int(0..1000).list(1..100),
