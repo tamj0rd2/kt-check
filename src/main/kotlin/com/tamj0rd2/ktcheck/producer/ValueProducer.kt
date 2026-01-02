@@ -8,8 +8,8 @@ internal sealed interface ValueProducer {
     fun bool(): Boolean
 }
 
-internal data class RandomValueProducer(val seed: Long) : ValueProducer {
-    private val random get() = Random(seed)
+internal data class RandomValueProducer(val seed: Seed) : ValueProducer {
+    private val random get() = Random(seed.value)
 
     override fun int(range: IntRange): Int = random.nextInt(range)
 

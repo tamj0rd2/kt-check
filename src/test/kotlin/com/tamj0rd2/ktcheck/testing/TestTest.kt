@@ -81,7 +81,7 @@ class TestTest {
 
         var replayedIterations = 0
         var valueOnRetry: Int? = null
-        val replayConfig = initialConfig.replay(initialConfig.seed, 5)
+        val replayConfig = initialConfig.replay(initialConfig.seed.value, 5)
 
         forAll(replayConfig, gen) {
             replayedIterations++

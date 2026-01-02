@@ -2,7 +2,6 @@ package com.tamj0rd2.ktcheck.testing
 
 import com.tamj0rd2.ktcheck.gen.Gen
 import com.tamj0rd2.ktcheck.producer.ProducerTree
-import com.tamj0rd2.ktcheck.producer.deriveSeed
 
 @Suppress("unused")
 fun <T> forAll(gen: Gen<T>, test: TestByBool<T>) = forAll(TestConfig(), gen, test)
@@ -17,7 +16,7 @@ private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
     val testResultsGen = gen.map { test.getResultFor(it) }
 
     fun runIteration(iteration: Int) {
-        val sampleTree = ProducerTree.fromSeed(deriveSeed(config.seed, iteration))
+        val sampleTree = ProducerTree.fromSeed(config.seed.next(iteration))
         val (testResult, shrinks) = testResultsGen.generate(sampleTree)
 
         when (testResult) {
@@ -30,7 +29,7 @@ private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
                 )
 
                 PropertyFalsifiedException(
-                    seed = config.seed,
+                    seed = config.seed.value,
                     iteration = iteration,
                     originalResult = testResult,
                     shrunkResult = shrunkResult,

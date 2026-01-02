@@ -1,5 +1,6 @@
 package com.tamj0rd2.ktcheck.testing
 
+import com.tamj0rd2.ktcheck.producer.Seed
 import com.tamj0rd2.ktcheck.util.Tuple
 import kotlin.random.Random
 
@@ -28,23 +29,27 @@ annotation class HardcodedTestConfig
 @ConsistentCopyVisibility
 data class TestConfig private constructor(
     internal val iterations: Int,
-    internal val seed: Long,
+    internal val seed: Seed,
     internal val replayIteration: Int?,
     internal val reporter: TestReporter,
 ) {
     constructor() : this(
         iterations = System.getProperty(SYSTEM_PROPERTY_TEST_ITERATIONS)?.toIntOrNull() ?: 1000,
-        seed = Random.nextLong(),
+        seed = Seed(Random.nextLong()),
         replayIteration = null,
         reporter = PrintingTestReporter(),
     )
 
     fun withIterations(iterations: Int) = copy(iterations = iterations)
 
-    fun withSeed(seed: Long) = copy(seed = seed)
+    fun withSeed(seed: Long) = copy(seed = Seed(seed))
 
     @HardcodedTestConfig
-    fun replay(seed: Long, iteration: Int) = copy(iterations = 1, seed = seed, replayIteration = iteration)
+    fun replay(seed: Long, iteration: Int) = copy(
+        iterations = 1,
+        seed = Seed(seed),
+        replayIteration = iteration
+    )
 
     fun withReporter(reporter: TestReporter) = copy(reporter = reporter)
 

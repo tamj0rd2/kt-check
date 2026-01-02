@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.producer.ProducerTree
-import com.tamj0rd2.ktcheck.producer.deriveSeed
+import com.tamj0rd2.ktcheck.producer.Seed
 import kotlin.random.Random
 
 /**
@@ -79,7 +79,7 @@ sealed class Gen<T> {
          * @return A sequence of sampled values of type T.
          */
         fun <T> Gen<T>.samples(seed: Long = Random.nextLong()) =
-            generateSequence(seed) { prev -> deriveSeed(prev, 0) }.map { sample(it) }
+            generateSequence(Seed(seed)) { it.next(0) }.map { sample(it.value) }
 
         /**
          * Samples a value from the generator using the provided seed.
@@ -87,7 +87,7 @@ sealed class Gen<T> {
          * @param seed The seed to use for sampling.
          * @return A sampled value of type T.
          */
-        fun <T> Gen<T>.sample(seed: Long = Random.nextLong()): T = generate(ProducerTree.fromSeed(seed)).value
+        fun <T> Gen<T>.sample(seed: Long = Random.nextLong()): T = generate(ProducerTree.fromSeed(Seed(seed))).value
     }
 }
 

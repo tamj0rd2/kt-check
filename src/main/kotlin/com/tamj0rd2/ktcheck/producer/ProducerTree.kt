@@ -7,10 +7,12 @@ internal data class ProducerTree private constructor(
     private val lazyRight: Lazy<ProducerTree>,
 ) {
     companion object {
-        internal fun fromSeed(seed: Long): ProducerTree = ProducerTree(
+        internal fun fromSeed(seed: Long) = fromSeed(Seed(seed))
+
+        internal fun fromSeed(seed: Seed): ProducerTree = ProducerTree(
             producer = RandomValueProducer(seed),
-            lazyLeft = lazy { fromSeed(deriveSeed(seed, 1)) },
-            lazyRight = lazy { fromSeed(deriveSeed(seed, 2)) },
+            lazyLeft = lazy { fromSeed(seed.next(1)) },
+            lazyRight = lazy { fromSeed(seed.next(2)) },
         )
     }
 
