@@ -19,7 +19,7 @@ import strikt.assertions.isNotEmpty
 import kotlin.math.abs
 import kotlin.random.Random
 
-class IntGeneratorV2Test {
+class IntGeneratorTest {
     @Nested
     inner class Generation {
         @TestFactory
