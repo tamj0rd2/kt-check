@@ -5,7 +5,7 @@ private class ListGenerator<T>(
     private val gen: Gen<T>,
 ) : Gen<List<T>>() {
     override fun generate(tree: ValueTree): GenResult<List<T>> {
-        val size = tree.left.value.int(sizeRange)
+        val size = tree.left.producer.int(sizeRange)
         val (list, listValueShrinks) = listN(rootTree = tree.right, targetSize = size)
 
         return GenResult(

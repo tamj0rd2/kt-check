@@ -1,56 +1,18 @@
 package com.tamj0rd2.ktcheck.genv2
 
 import com.tamj0rd2.ktcheck.gen.deriveSeed
-import com.tamj0rd2.ktcheck.genv2.Value.Predetermined
-import com.tamj0rd2.ktcheck.genv2.Value.Predetermined.Choice.BooleanChoice
-import com.tamj0rd2.ktcheck.genv2.Value.Predetermined.Choice.IntChoice
-import kotlin.random.Random
-import kotlin.random.nextInt
-
-internal sealed interface Value {
-    fun int(range: IntRange): Int
-    fun bool(): Boolean
-
-    data class Undetermined(val seed: Long) : Value {
-        private val random get() = Random(seed)
-
-        override fun int(range: IntRange): Int = random.nextInt(range)
-
-        override fun bool(): Boolean = random.nextBoolean()
-    }
-
-    data class Predetermined(private val choice: Choice) : Value {
-        sealed interface Choice {
-            val value: Any?
-
-            data class IntChoice(override val value: Int) : Choice
-            data class BooleanChoice(override val value: Boolean) : Choice
-        }
-
-        override fun int(range: IntRange): Int = when {
-            choice !is IntChoice -> throw InvalidReplay("Expected IntChoice but got ${choice::class.simpleName}")
-            choice.value !in range -> throw InvalidReplay("IntChoice value ${choice.value} not in range $range")
-            else -> choice.value
-        }
-
-        override fun bool(): Boolean = when (choice) {
-            !is BooleanChoice -> throw InvalidReplay("Expected BooleanChoice but got ${choice::class.simpleName}")
-            else -> choice.value
-        }
-    }
-}
 
 internal class InvalidReplay(message: String) : IllegalStateException(message)
 
 @ConsistentCopyVisibility
 internal data class ValueTree private constructor(
-    internal val value: Value,
+    internal val producer: ValueProducer,
     private val lazyLeft: Lazy<ValueTree>,
     private val lazyRight: Lazy<ValueTree>,
 ) {
     companion object {
         internal fun fromSeed(seed: Long): ValueTree = ValueTree(
-            value = Value.Undetermined(seed),
+            producer = RandomValueProducer(seed),
             lazyLeft = lazy { fromSeed(deriveSeed(seed, 1)) },
             lazyRight = lazy { fromSeed(deriveSeed(seed, 2)) },
         )
@@ -59,8 +21,11 @@ internal data class ValueTree private constructor(
     val left: ValueTree by lazyLeft
     val right: ValueTree by lazyRight
 
-    internal fun withValue(value: Int) = copy(value = Predetermined(IntChoice(value)))
-    internal fun withValue(value: Boolean) = copy(value = Predetermined(BooleanChoice(value)))
+    internal fun withValue(value: Int) =
+        copy(producer = PredeterminedValue(PredeterminedValue.Choice.IntChoice(value)))
+
+    internal fun withValue(value: Boolean) =
+        copy(producer = PredeterminedValue(PredeterminedValue.Choice.BooleanChoice(value)))
 
     internal fun withLeft(left: ValueTree) = copy(lazyLeft = lazyOf(left))
 
@@ -103,7 +68,7 @@ internal data class ValueTree private constructor(
             }
 
             return buildString {
-                appendLine("${indent}${prefix}${tree.value}")
+                appendLine("${indent}${prefix}${tree.producer}")
                 visualiseBranch(tree.lazyLeft, "L")?.let(::append)
                 visualiseBranch(tree.lazyRight, "R")?.let(::append)
             }

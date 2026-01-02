@@ -23,8 +23,8 @@ class OneOfGeneratorTest {
     fun `shrinking a oneOf generator can shrink between types without failure`() {
         val treeChoosingGenAtIndex1AndFirstIntAs4 = generateSequence(0L) { it + 1 }
             .first {
-                ValueTree.fromSeed(it).left.value.int(0..1) == 1 &&
-                        ValueTree.fromSeed(it).right.value.int(0..4) == 4
+                ValueTree.fromSeed(it).left.producer.int(0..1) == 1 &&
+                        ValueTree.fromSeed(it).right.producer.int(0..4) == 4
             }
             .let { ValueTree.fromSeed(it) }
 

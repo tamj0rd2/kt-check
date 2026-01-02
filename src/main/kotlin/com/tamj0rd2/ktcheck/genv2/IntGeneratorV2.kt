@@ -4,7 +4,7 @@ private data class IntGeneratorV2(
     private val range: IntRange,
 ) : Gen<Int>() {
     override fun generate(tree: ValueTree): GenResult<Int> {
-        val value = tree.value.int(range)
+        val value = tree.producer.int(range)
 
         // todo: isn't there a potential optimisation here - don't shrink if already shrunk? isn't that why I end up
         //  with millions of shrink candidates?
