@@ -7,3 +7,7 @@ private class ConstantGenerator<T>(private val value: T) : Gen<T>() {
 }
 
 fun <T> Gen.Companion.constant(value: T): Gen<T> = ConstantGenerator(value)
+
+fun Gen.Companion.char(
+    chars: Iterable<Char> = Char.MIN_VALUE..Char.MAX_VALUE,
+): Gen<Char> = Gen.oneOfValues(chars.distinct().sorted())

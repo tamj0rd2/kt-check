@@ -18,6 +18,7 @@ import strikt.assertions.isEqualTo
 import strikt.assertions.isLessThan
 import strikt.assertions.isNotEmpty
 
+// todo: most these tests could be made more generic and framed around the oneOfValues generator
 class CharGeneratorTest {
     @Nested
     inner class Generation {
@@ -83,7 +84,7 @@ class CharGeneratorTest {
         fun `shrinks toward the smallest character, smallest first`() {
             val chars = 'a'..'d'
             val gen = Gen.char(chars)
-            val tree = ProducerTree.new().withValue('d')
+            val tree = ProducerTree.new().withValue(chars.indexOf('d'))
 
             val (originalValue, shrunkValues) = gen.generateWithDepthFirstShrinks(tree)
             expectThat(originalValue).isEqualTo('d')
@@ -95,7 +96,7 @@ class CharGeneratorTest {
         fun `if the smallest character was generated, it won't yield any shrinks`() {
             val chars = 'a'..'d'
             val gen = Gen.char(chars)
-            val tree = ProducerTree.new().withValue('a')
+            val tree = ProducerTree.new().withValue(chars.indexOf('a'))
 
             val (originalValue, shrunkValues) = gen.generateWithDepthFirstShrinks(tree)
             expectThat(originalValue).isEqualTo('a')

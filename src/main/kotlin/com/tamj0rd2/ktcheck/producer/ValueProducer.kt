@@ -6,7 +6,6 @@ import kotlin.random.nextInt
 internal sealed interface ValueProducer {
     fun int(range: IntRange): Int
     fun bool(): Boolean
-    fun char(chars: Set<Char>): Char
 }
 
 @JvmInline
@@ -16,8 +15,6 @@ internal value class RandomValueProducer(val seed: Seed) : ValueProducer {
     override fun int(range: IntRange): Int = random.nextInt(range)
 
     override fun bool(): Boolean = random.nextBoolean()
-
-    override fun char(chars: Set<Char>): Char = chars.random(random)
 }
 
 @JvmInline
@@ -26,7 +23,6 @@ internal value class PredeterminedValue(val value: Any) : ValueProducer {
         when (value) {
             is Int,
             is Boolean,
-            is Char,
                 -> Unit
 
             else -> throw IllegalArgumentException("Unsupported predetermined value type: ${value::class.simpleName}")
@@ -36,6 +32,4 @@ internal value class PredeterminedValue(val value: Any) : ValueProducer {
     override fun int(range: IntRange): Int = value as Int
 
     override fun bool(): Boolean = value as Boolean
-
-    override fun char(chars: Set<Char>): Char = value as Char
 }
