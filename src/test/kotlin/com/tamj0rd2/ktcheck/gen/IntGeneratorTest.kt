@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.samples
+import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
 import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateWithDepthFirstShrinks
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
@@ -84,10 +85,8 @@ class IntGeneratorTest {
             val gen = Gen.int(0..10)
             val tree = ProducerTree.new().withValue(10)
 
-            val (originalValue, shrinks) = gen.generate(tree)
+            val (originalValue, shrunkValues) = gen.generateWithShrunkValues(tree)
             expectThat(originalValue).isEqualTo(10)
-
-            val shrunkValues = shrinks.map { gen.generate(it).value }.toList()
             expectThat(shrunkValues).isEqualTo(listOf(0, 5, 8, 9))
         }
 

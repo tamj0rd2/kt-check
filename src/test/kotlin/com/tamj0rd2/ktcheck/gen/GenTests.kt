@@ -124,4 +124,12 @@ class GenTests {
             expectThat(secondRun).isEqualTo(firstRun)
         }
     }
+
+    companion object {
+        /** For testing purposes only: generates a value along with all its shrunk values as a list. */
+        internal fun <T> Gen<T>.generateWithShrunkValues(tree: ProducerTree): Pair<T, List<T>> {
+            val (value, shrinks) = generate(tree)
+            return value to shrinks.map { generate(it).value }.toList()
+        }
+    }
 }
