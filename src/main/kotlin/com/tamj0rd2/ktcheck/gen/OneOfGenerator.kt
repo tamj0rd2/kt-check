@@ -29,7 +29,7 @@ private class OneOfGenerator<T>(
 
         val shrinks = sequence {
             // allows switching between generators by shrinking the index with a fresh (undetermined) right tree
-            yieldAll(indexShrinks.map { tree.withLeft(it).withRight(tree.right.left) })
+            yieldAll(indexShrinks.map { tree.withLeft(it).withRight(tree.right.right) })
 
             yieldAll(valueShrinks.map { tree.withRight(it) })
         }

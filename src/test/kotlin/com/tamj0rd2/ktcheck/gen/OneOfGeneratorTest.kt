@@ -22,27 +22,19 @@ class OneOfGeneratorTest {
 
     @Test
     fun `shrinking a oneOf generator can shrink between types without failure`() {
-        val treeChoosingGenAtIndex1AndFirstIntAs4 = generateSequence(0L) { it + 1 }
-            .first {
-                ProducerTree.fromSeed(it).left.producer.int(0..1) == 1 &&
-                        ProducerTree.fromSeed(it).right.producer.int(0..4) == 4
-            }
-            .let { ProducerTree.fromSeed(it) }
-
         val multiTypeGen = Gen.oneOf(
             Gen.bool().map { it as Any },
             Gen.int(0..4).map { it as Any },
         )
 
-        val (originalValue, shrinks) = multiTypeGen.generateAllIncludingShrinks(treeChoosingGenAtIndex1AndFirstIntAs4)
+        // chooses gen at index 1 (int generator) and will produce value 4
+        val tree = ProducerTree.fromSeed(0L)
+            .withLeft(ProducerTree.fromSeed(0L).withValue(1))
+            .withRight(ProducerTree.fromSeed(0L).withValue(4))
 
-        /*
-         * Choice = Which generator to pick.
-         * Value = The value from the chosen generator.
-         * Here, Choice = 1 (int generator), Value = 4
-         */
+        val (originalValue, shrinks) = multiTypeGen.generateAllIncludingShrinks(tree)
+
         expectThat(originalValue).isEqualTo(4)
-
         expectThat(shrinks.toList()).isEqualTo(
             listOf(
                 // Choice shrunk from 1 to 0. So generating a Boolean value:
