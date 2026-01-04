@@ -35,20 +35,9 @@ internal sealed interface Primitive {
 
 @JvmInline
 internal value class PredeterminedValue(private val primitive: Primitive) : ValueProducer {
-    override fun int(range: IntRange): Int = when {
-        primitive !is Primitive.Int -> error("Expected IntChoice but got ${primitive::class.simpleName}")
-        primitive.value !in range -> error("IntChoice value ${primitive.value} not in range $range")
-        else -> primitive.value
-    }
+    override fun int(range: IntRange): Int = (primitive as Primitive.Int).value
 
-    override fun bool(): Boolean = when (primitive) {
-        !is Primitive.Bool -> error("Expected BooleanChoice but got ${primitive::class.simpleName}")
-        else -> primitive.value
-    }
+    override fun bool(): Boolean = (primitive as Primitive.Bool).value
 
-    override fun char(chars: Set<Char>): Char = when {
-        primitive !is Primitive.Char -> error("Expected CharChoice but got ${primitive::class.simpleName}")
-        primitive.value !in chars -> error("CharChoice value ${primitive.value} not in set $chars")
-        else -> primitive.value
-    }
+    override fun char(chars: Set<Char>): Char = (primitive as Primitive.Char).value
 }
