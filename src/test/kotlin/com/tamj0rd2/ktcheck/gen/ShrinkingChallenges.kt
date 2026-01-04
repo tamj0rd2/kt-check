@@ -62,7 +62,7 @@ class ShrinkingChallenges {
                 val originalArgs = exception.originalResult.input as T
 
                 @Suppress("UNCHECKED_CAST")
-                val shrunkArgs = exception.shrunkResult.input as T
+                val shrunkArgs = exception.smallestResult.input as T
 
                 val fullyShrunk = didShrinkCorrectly(shrunkArgs)
                 collect("fully shrunk", fullyShrunk)
@@ -82,7 +82,7 @@ class ShrinkingChallenges {
             println("\nSome bad shrinks encountered:")
 
             exceptionsWithBadShrinks
-                .sortedBy { it.shrunkResult.args.toString().length }
+                .sortedBy { it.smallestResult.args.toString().length }
                 .take(5)
                 .forEach { println(it.asBadShrinkExample()) }
         }
@@ -106,7 +106,7 @@ class ShrinkingChallenges {
             |Seed: $seed
             |Iteration: $iteration
             |Original args: $shortenedOriginalArgs
-            |Shrunk args: ${shrunkResult.args}
+            |Shrunk args: ${smallestResult.args}
             """.trimMargin()
     }
 

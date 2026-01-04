@@ -49,4 +49,4 @@ fun <T> Gen.Companion.oneOf(gens: Collection<Gen<T>>): Gen<T> = OneOfGenerator(g
 fun <T> Gen.Companion.oneOf(values: Iterable<T>): Gen<T> = Gen.oneOf(values.map { Gen.constant(it) })
 
 @Suppress("unused")
-class OneOfEmpty : IllegalStateException("Gen.oneOf() called with no generators")
+class OneOfEmpty : GenerationException("Gen.oneOf() called with no generators")

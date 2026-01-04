@@ -39,7 +39,7 @@ private class FilterGenerator<T>(
 }
 
 class FilterLimitReached(threshold: Int, cause: Throwable?) :
-    IllegalStateException("Filter failed $threshold times", cause)
+    GenerationException("Filter failed after $threshold misses", cause)
 
 fun <T> Gen<T>.filter(predicate: (T) -> Boolean) = filter(100, predicate)
 

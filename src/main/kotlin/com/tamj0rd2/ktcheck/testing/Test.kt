@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.testing
 
 import com.tamj0rd2.ktcheck.gen.Gen
+import com.tamj0rd2.ktcheck.gen.GenerationException
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 
 @Suppress("unused")
@@ -32,7 +33,7 @@ private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
                     seed = config.seed.value,
                     iteration = iteration,
                     originalResult = testResult,
-                    shrunkResult = shrunkResult,
+                    shrunkResult = shrunkResult.takeIf { it.args != testResult.args },
                     shrinkSteps = shrinkSteps
                 ).also {
                     config.reporter.reportFailure(it)
@@ -59,13 +60,23 @@ private tailrec fun <T> Gen<TestResult<T>>.getSmallestCounterExample(
 ): Pair<TestResult.Failure<T>, Int> {
     if (!iterator.hasNext()) return testResult to steps
 
-    val shrunkTree = iterator.next()
-    val (shrunkTestResult, newShrinks) = generate(shrunkTree)
+    val genResult = try {
+        generate(iterator.next())
+    } catch (_: GenerationException) {
+        null
+    }
 
-    return if (shrunkTestResult is TestResult.Failure) {
-        getSmallestCounterExample(shrunkTestResult, newShrinks.iterator(), steps + 1)
-    } else {
-        getSmallestCounterExample(testResult, iterator, steps + 1)
+    return when (genResult) {
+        null -> getSmallestCounterExample(testResult, iterator, steps + 1)
+        else -> {
+            val (shrunkTestResult, newShrinks) = genResult
+
+            if (shrunkTestResult is TestResult.Failure) {
+                getSmallestCounterExample(shrunkTestResult, newShrinks.iterator(), steps + 1)
+            } else {
+                getSmallestCounterExample(testResult, iterator, steps + 1)
+            }
+        }
     }
 }
 
@@ -74,8 +85,9 @@ class PropertyFalsifiedException(
     val seed: Long,
     val iteration: Int,
     val originalResult: TestResult.Failure<*>,
-    val shrunkResult: TestResult.Failure<*>,
+    val shrunkResult: TestResult.Failure<*>?,
     val shrinkSteps: Int,
 ) : AssertionError() {
-    override val cause: Throwable = shrunkResult.failure
+    internal val smallestResult = shrunkResult ?: originalResult
+    override val cause: Throwable = smallestResult.failure
 }

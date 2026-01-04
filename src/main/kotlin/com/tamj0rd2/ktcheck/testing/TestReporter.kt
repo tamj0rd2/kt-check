@@ -17,7 +17,7 @@ class PrintingTestReporter(
     }
 
     override fun reportFailure(exception: PropertyFalsifiedException) {
-        val shrunkFailure = exception.shrunkResult.takeIf { it != exception.originalResult }
+        val shrunkFailure = exception.shrunkResult
 
         val output = buildString {
             appendLine("Seed: ${exception.seed} - failed on iteration ${exception.iteration}\n")
