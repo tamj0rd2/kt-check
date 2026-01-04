@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.samples
-import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateAllIncludingShrinks
+import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateWithDepthFirstShrinks
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import org.junit.jupiter.api.DynamicTest
@@ -17,7 +17,6 @@ import strikt.assertions.isEmpty
 import strikt.assertions.isEqualTo
 import strikt.assertions.isLessThan
 import strikt.assertions.isNotEmpty
-import kotlin.random.Random
 
 class CharGeneratorTest {
     @Nested
@@ -84,9 +83,9 @@ class CharGeneratorTest {
         fun `shrinks toward the smallest character, smallest first`() {
             val chars = 'a'..'d'
             val gen = Gen.char(chars)
-            val tree = ProducerTree.fromSeed(0).withValue('d')
+            val tree = ProducerTree.new().withValue('d')
 
-            val (originalValue, shrunkValues) = gen.generateAllIncludingShrinks(tree)
+            val (originalValue, shrunkValues) = gen.generateWithDepthFirstShrinks(tree)
             expectThat(originalValue).isEqualTo('d')
             // index 0, 2, 1
             expectThat(shrunkValues).isEqualTo(listOf('a', 'c', 'b'))
@@ -96,9 +95,9 @@ class CharGeneratorTest {
         fun `if the smallest character was generated, it won't yield any shrinks`() {
             val chars = 'a'..'d'
             val gen = Gen.char(chars)
-            val tree = ProducerTree.fromSeed(0).withValue('a')
+            val tree = ProducerTree.new().withValue('a')
 
-            val (originalValue, shrunkValues) = gen.generateAllIncludingShrinks(tree)
+            val (originalValue, shrunkValues) = gen.generateWithDepthFirstShrinks(tree)
             expectThat(originalValue).isEqualTo('a')
             expectThat(shrunkValues).isEmpty()
         }
@@ -108,8 +107,7 @@ class CharGeneratorTest {
             val chars = ('a'..'z').toList()
             val gen = Gen.char(chars)
 
-            generateSequence { ProducerTree.fromSeed(Random.nextLong()) }
-                .map { gen.generateAllIncludingShrinks(it) }
+            Gen.tree().samples().map { gen.generateWithDepthFirstShrinks(it) }
                 .filter { (originalValue) -> originalValue != chars.first() }
                 .take(100)
                 .forEach { (_, shrunkValues) -> expectThat(shrunkValues).first().isEqualTo(chars.first()) }
@@ -120,8 +118,7 @@ class CharGeneratorTest {
             val chars = ('a'..'z').toList()
             val gen = Gen.char(chars)
 
-            generateSequence { ProducerTree.fromSeed(Random.nextLong()) }
-                .map { gen.generateAllIncludingShrinks(it) }
+            Gen.tree().samples().map { gen.generateWithDepthFirstShrinks(it) }
                 .take(100)
                 .forEach { (originalValue, shrunkValues) ->
                     expectThat(shrunkValues).doesNotContain(originalValue)
@@ -134,8 +131,7 @@ class CharGeneratorTest {
             val gen = Gen.char(chars)
             val lowestChar = chars.first()
 
-            generateSequence { ProducerTree.fromSeed(Random.nextLong()) }
-                .map { gen.generateAllIncludingShrinks(it) }
+            Gen.tree().samples().map { gen.generateWithDepthFirstShrinks(it) }
                 .filter { (originalValue) -> originalValue != lowestChar }
                 .take(100)
                 .forEach { (originalValue, shrunkValues) ->

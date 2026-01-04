@@ -6,25 +6,27 @@ internal data class ProducerTree private constructor(
     private val lazyLeft: Lazy<ProducerTree>,
     private val lazyRight: Lazy<ProducerTree>,
 ) {
-    companion object {
-        internal fun fromSeed(seed: Long) = fromSeed(Seed(seed))
-
-        internal fun fromSeed(seed: Seed): ProducerTree = ProducerTree(
-            producer = RandomValueProducer(seed),
-            lazyLeft = lazy { fromSeed(seed.next(1)) },
-            lazyRight = lazy { fromSeed(seed.next(2)) },
-        )
-    }
-
     val left: ProducerTree by lazyLeft
     val right: ProducerTree by lazyRight
 
-    internal fun withValue(value: Any) =
-        copy(producer = PredeterminedValue(value))
+    companion object {
+        internal fun new(seed: Seed = Seed.random()): ProducerTree = ProducerTree(
+            producer = RandomValueProducer(seed),
+            lazyLeft = lazy { new(seed.next(1)) },
+            lazyRight = lazy { new(seed.next(2)) },
+        )
+    }
+
+    internal fun withValue(value: Any) = copy(producer = PredeterminedValue(value))
 
     internal fun withLeft(left: ProducerTree) = copy(lazyLeft = lazyOf(left))
-
     internal fun withRight(right: ProducerTree) = copy(lazyRight = lazyOf(right))
+
+    internal fun withLeft(block: ProducerTree.() -> ProducerTree) = withLeft(block(left))
+    internal fun withRight(block: ProducerTree.() -> ProducerTree) = withRight(block(right))
+
+    internal fun withLeftValue(value: Any) = withLeft { withValue(value) }
+    internal fun withRightValue(value: Any) = withRight { withValue(value) }
 
     internal fun combineShrinks(
         leftShrinks: Sequence<ProducerTree>,

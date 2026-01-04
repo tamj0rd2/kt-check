@@ -17,7 +17,7 @@ private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
     val testResultsGen = gen.map { test.getResultFor(it) }
 
     fun runIteration(iteration: Int) {
-        val sampleTree = ProducerTree.fromSeed(config.seed.next(iteration))
+        val sampleTree = ProducerTree.new(config.seed.next(iteration))
         val (testResult, shrinks) = testResultsGen.generate(sampleTree)
 
         when (testResult) {

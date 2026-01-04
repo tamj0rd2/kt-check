@@ -19,33 +19,43 @@ class ListGeneratorTest {
     }
 
     @Test
-    fun `shrinks a list of 1 element depth first`() {
-        val gen = Gen.int(0..4).list(1)
+    fun `shrinks a list of 1 element`() {
+        val gen = Gen.int(0..4).list()
 
-        val tree = ProducerTree.`that will generate`(listOf(4), from = gen)
-        val (value, shrunkValues) = gen.generateAllIncludingShrinks(tree)
+        val tree = ProducerTree.new()
+            .withLeftValue(1)
+            .withRight { withLeftValue(4) }
+
+        val (value, shrunkValues) = gen.generateWithShrunkValues(tree)
         expectThat(value).isEqualTo(listOf(4))
 
         expectThat(shrunkValues).isEqualTo(
             listOf(
-                // first shrink of 4 is 0
+                // shrinks the size
+                emptyList(),
+                // shrinks the value
                 listOf(0),
-                // second shrink of 4 is 2
                 listOf(2),
-                // first shrink of 2 is 1
-                listOf(1),
-                // third shrink of 4 is 3
                 listOf(3),
             )
         )
     }
 
     @Test
-    fun `shrinks a list of 2 elements depth first`() {
-        val gen = Gen.int(0..5).list(2)
+    fun `shrinks a list of 2 elements`() {
+        val gen = Gen.int(0..5).list()
 
-        val tree = ProducerTree.`that will generate`(listOf(1, 4), from = gen)
-        val (value, shrunkValues) = gen.generateAllIncludingShrinks(tree)
+        val tree = ProducerTree.new()
+            .withLeftValue(2)
+            .withRight {
+                this
+                    .withLeftValue(1)
+                    .withRight {
+                        withLeftValue(4)
+                    }
+            }
+
+        val (value, shrunkValues) = gen.generateWithShrunkValues(tree)
         expectThat(value).isEqualTo(listOf(1, 4))
 
         // 4 shrinks to 0, 2, 3
@@ -55,26 +65,41 @@ class ListGeneratorTest {
 
         expectThat(shrunkValues).isEqualTo(
             listOf(
+                // tries reducing list size (now 0)
+                emptyList(),
+                // continues reducing list size (now 1). From tail first, then head.
+                listOf(1),
+                listOf(4),
+                // shrinks values, starting with index 1
                 listOf(0, 4),
-                listOf(0, 0),
-                listOf(0, 2),
-                listOf(0, 1),
-                listOf(0, 3),
+                // continues shrinking values at index 2
                 listOf(1, 0),
                 listOf(1, 2),
-                listOf(1, 1),
                 listOf(1, 3),
-            )
+            ).distinct()
         )
     }
 
     @Test
-    fun `shrinks a list of 3 elements depth first`() {
-        val gen = Gen.int(0..4).list(3)
+    fun `shrinks a list of 3 elements`() {
+        val gen = Gen.int(0..4).list()
 
-        val tree = ProducerTree.`that will generate`(listOf(2, 0, 3), from = gen)
-        val (value, shrunkValues) = gen.generateAllIncludingShrinks(tree)
-        expectThat(value).isEqualTo(listOf(2, 0, 3))
+        val tree = ProducerTree.new()
+            .withLeftValue(3)
+            .withRight {
+                this
+                    .withLeftValue(1)
+                    .withRight {
+                        this
+                            .withLeftValue(2)
+                            .withRight {
+                                withLeftValue(3)
+                            }
+                    }
+            }
+
+        val (value, shrunkValues) = gen.generateWithShrunkValues(tree)
+        expectThat(value).isEqualTo(listOf(1, 2, 3))
 
         // 3 shrinks to 0 and 2
         // 2 shrinks to 0 and 1
@@ -82,17 +107,18 @@ class ListGeneratorTest {
 
         expectThat(shrunkValues.toList()).isEqualTo(
             listOf(
-                listOf(0, 0, 3),
-                listOf(0, 0, 0),
-                listOf(0, 0, 2),
-                listOf(0, 0, 1),
+                // reduce list size (0)
+                listOf(),
+                // reduce list size (2), removing items at tail
+                listOf(1, 2),
+                // reduce list size (2), removing items at head
+                listOf(2, 3),
+                // shrink values
+                listOf(0, 2, 3),
                 listOf(1, 0, 3),
-                listOf(1, 0, 0),
-                listOf(1, 0, 2),
-                listOf(1, 0, 1),
-                listOf(2, 0, 0),
-                listOf(2, 0, 2),
-                listOf(2, 0, 1),
+                listOf(1, 1, 3),
+                listOf(1, 2, 0),
+                listOf(1, 2, 2),
             )
         )
     }
@@ -103,7 +129,7 @@ class ListGeneratorTest {
         Gen.int(1..100),
     ) { size ->
         val (originalList, shrunkLists) = Gen.int().list(size)
-            .generateAllIncludingShrinks(ProducerTree.fromSeed(0), limit = 1000)
+            .generateWithDepthFirstShrinks(ProducerTree.new(), limit = 1000)
         expectThat(originalList.size).isEqualTo(size)
 
         assertTimeoutPreemptively(Duration.ofMillis(100)) {
@@ -114,12 +140,11 @@ class ListGeneratorTest {
     }
 
     @Test
-    fun `when a fixed size list is shrunk by depth of 1, only one element changes at a time`() = checkAll(
+    fun `when a fixed size list is shrunk, only one element changes at a time`() = checkAll(
         TestConfig().withIterations(100),
         Gen.int(1..100),
     ) { size ->
-        val (originalList, shrunkLists) = Gen.int().list(size)
-            .generateAllIncludingShrinks(ProducerTree.fromSeed(0), maxDepth = 1, limit = 1000)
+        val (originalList, shrunkLists) = Gen.int().list(size).generateWithShrunkValues(ProducerTree.new())
 
         assertTimeoutPreemptively(Duration.ofMillis(100)) {
             shrunkLists.forEach { shrunkList ->
@@ -141,15 +166,9 @@ class ListGeneratorTest {
                 if (passedCount == count) pass() else fail()
             }
 
-        internal fun <T> ProducerTree.Companion.`that will generate`(value: T, from: Gen<T>) =
-            generateSequence(0) { it + 1 }
-                .map { ProducerTree.fromSeed(it.toLong()) }
-                .first { from.generate(it).value == value }
-
         // generates the value and all shrinks depth-first. its done this way to avoid stack overflows and OOMs on large shrink trees.
-        internal fun <T> Gen<T>.generateAllIncludingShrinks(
+        internal fun <T> Gen<T>.generateWithDepthFirstShrinks(
             tree: ProducerTree,
-            maxDepth: Int? = null,
             limit: Int = 100_000,
         ): Pair<T, List<T>> {
             val collection = sequence {
@@ -169,10 +188,6 @@ class ListGeneratorTest {
                     val currentTree = currentIterator.next()
                     val (value, shrinks) = generate(currentTree)
                     yield(value)
-
-                    if (maxDepth != null && stack.size > maxDepth) {
-                        continue
-                    }
 
                     // Push shrinks iterator onto stack to continue exploring depth-first
                     val shrinksIterator = shrinks.iterator()

@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.samples
-import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateAllIncludingShrinks
+import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateWithDepthFirstShrinks
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import org.junit.jupiter.api.DynamicTest
@@ -18,7 +18,6 @@ import strikt.assertions.isIn
 import strikt.assertions.isLessThan
 import strikt.assertions.isNotEmpty
 import kotlin.math.abs
-import kotlin.random.Random
 
 class IntGeneratorTest {
     @Nested
@@ -83,7 +82,9 @@ class IntGeneratorTest {
         @Test
         fun `shrinks appropriately for a fixed seed`() {
             val gen = Gen.int(0..10)
-            val (originalValue, shrinks) = gen.generate(ProducerTree.fromSeed(0))
+            val tree = ProducerTree.new().withValue(10)
+
+            val (originalValue, shrinks) = gen.generate(tree)
             expectThat(originalValue).isEqualTo(10)
 
             val shrunkValues = shrinks.map { gen.generate(it).value }.toList()
@@ -92,7 +93,8 @@ class IntGeneratorTest {
 
         @Test
         fun `shrinking zero produces no shrinks`() {
-            val (originalValue, shrinks) = Gen.int().generateAllIncludingShrinks(ProducerTree.fromSeed(0).withValue(0))
+            val tree = ProducerTree.new().withValue(0)
+            val (originalValue, shrinks) = Gen.int().generateWithDepthFirstShrinks(tree)
             expectThat(originalValue).isEqualTo(0)
             expectThat(shrinks).isEmpty()
         }
@@ -101,8 +103,7 @@ class IntGeneratorTest {
         fun `shrinks for non-zero numbers always include 0`() {
             val gen = Gen.int()
 
-            generateSequence { ProducerTree.fromSeed(Random.nextLong()) }
-                .map { gen.generateAllIncludingShrinks(it) }
+            Gen.tree().samples().map { gen.generateWithDepthFirstShrinks(it) }
                 .filter { (originalValue) -> originalValue != 0 }
                 .take(100)
                 .forEach { (_, shrunkValues) -> expectThat(shrunkValues).isNotEmpty().contains(0) }
@@ -112,8 +113,7 @@ class IntGeneratorTest {
         fun `the original generated number is not included in shrinks`() {
             val gen = Gen.int()
 
-            generateSequence { ProducerTree.fromSeed(Random.nextLong()) }
-                .map { gen.generateAllIncludingShrinks(it) }
+            Gen.tree().samples().map { gen.generateWithDepthFirstShrinks(it) }
                 .take(100)
                 .forEach { (originalValue, shrunkValues) ->
                     expectThat(shrunkValues).isNotEmpty().doesNotContain(originalValue)
@@ -125,8 +125,7 @@ class IntGeneratorTest {
             val gen = Gen.int(-50..50)
 
             withCounter {
-                generateSequence { ProducerTree.fromSeed(Random.nextLong()) }
-                    .map { gen.generateAllIncludingShrinks(it) }
+                Gen.tree().samples().map { gen.generateWithDepthFirstShrinks(it) }
                     .filter { (originalValue) -> originalValue != 0 }
                     .take(100)
                     .forEach { (originalValue, shrunkValues) ->

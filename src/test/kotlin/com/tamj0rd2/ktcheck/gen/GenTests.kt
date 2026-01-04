@@ -1,8 +1,7 @@
 package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.samples
-import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateAllIncludingShrinks
-import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.`that will generate`
+import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateWithDepthFirstShrinks
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -17,7 +16,7 @@ class GenTests {
         fun `map transforms generated values`() {
             val gen = Gen.int(0..10).map { it * 2 }
 
-            val tree = ProducerTree.fromSeed(0)
+            val tree = ProducerTree.new()
             val result = gen.generate(tree)
             val originalValue = Gen.int(0..10).generate(tree).value
 
@@ -29,10 +28,10 @@ class GenTests {
             val originalGen = Gen.int(0..10)
             val doublingGen = originalGen.map { it * 2 }
 
-            val tree = ProducerTree.`that will generate`(value = 5, from = originalGen)
-            val (originalNumber, originalShrinks) = originalGen.generateAllIncludingShrinks(tree)
+            val tree = ProducerTree.new()
+            val (originalNumber, originalShrinks) = originalGen.generateWithDepthFirstShrinks(tree)
+            val (doubledValue, doubledShrinks) = doublingGen.generateWithDepthFirstShrinks(tree)
 
-            val (doubledValue, doubledShrinks) = doublingGen.generateAllIncludingShrinks(tree)
             expectThat(doubledValue).isEqualTo(originalNumber * 2)
             expectThat(doubledShrinks).isEqualTo(originalShrinks.map { it * 2 })
         }
@@ -46,9 +45,9 @@ class GenTests {
             val bigGen = Gen.int(10..20)
             val gen = smallGen.flatMap { a -> bigGen.map { b -> a + b } }
 
-            val tree = ProducerTree.fromSeed(0)
-                .withLeft(ProducerTree.fromSeed(0).withValue(5))
-                .withRight(ProducerTree.fromSeed(0).withValue(20))
+            val tree = ProducerTree.new()
+                .withLeftValue(5)
+                .withRightValue(20)
 
             val value = gen.generate(tree).value
             expectThat(value).isEqualTo(25)
@@ -60,11 +59,11 @@ class GenTests {
             val biggerGen = Gen.int(4..6)
             val gen = smallGen.flatMap { a -> biggerGen.map { b -> a + b } }
 
-            val tree = ProducerTree.fromSeed(0)
-                .withLeft(ProducerTree.fromSeed(0).withValue(3))
-                .withRight(ProducerTree.fromSeed(0).withValue(6))
+            val tree = ProducerTree.new()
+                .withLeftValue(3)
+                .withRightValue(6)
 
-            val (value, shrinks) = gen.generateAllIncludingShrinks(tree, maxDepth = 1)
+            val (value, shrinks) = gen.generateWithShrunkValues(tree)
             expectThat(value).isEqualTo(9)
 
             val threeShrunk = shrink(3, range = 1..3)
@@ -83,9 +82,9 @@ class GenTests {
             val bigGen = Gen.int(10..20)
             val gen = smallGen.combineWith(bigGen) { a, b -> a + b }
 
-            val tree = ProducerTree.fromSeed(0)
-                .withLeft(ProducerTree.fromSeed(0).withValue(5))
-                .withRight(ProducerTree.fromSeed(1).withValue(20))
+            val tree = ProducerTree.new()
+                .withLeftValue(5)
+                .withRightValue(20)
 
             val value = gen.generate(tree).value
             expectThat(value).isEqualTo(25)
@@ -97,11 +96,11 @@ class GenTests {
             val bigGen = Gen.int(4..6)
             val gen = smallGen.combineWith(bigGen) { a, b -> a + b }
 
-            val tree = ProducerTree.fromSeed(0)
-                .withLeft(ProducerTree.fromSeed(0).withValue(3))
-                .withRight(ProducerTree.fromSeed(0).withValue(6))
+            val tree = ProducerTree.new()
+                .withLeftValue(3)
+                .withRightValue(6)
 
-            val (value, shrinks) = gen.generateAllIncludingShrinks(tree, maxDepth = 1)
+            val (value, shrinks) = gen.generateWithDepthFirstShrinks(tree)
             expectThat(value).isEqualTo(9)
 
             val threeShrunk = shrink(3, range = 1..3)

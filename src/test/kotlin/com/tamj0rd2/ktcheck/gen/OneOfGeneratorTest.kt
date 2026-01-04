@@ -1,8 +1,9 @@
 package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.samples
-import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateAllIncludingShrinks
+import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateWithDepthFirstShrinks
 import com.tamj0rd2.ktcheck.producer.ProducerTree
+import com.tamj0rd2.ktcheck.producer.Seed
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
@@ -27,12 +28,11 @@ class OneOfGeneratorTest {
             Gen.int(0..4).map { it as Any },
         )
 
-        // chooses gen at index 1 (int generator) and will produce value 4
-        val tree = ProducerTree.fromSeed(0L)
-            .withLeft(ProducerTree.fromSeed(0L).withValue(1))
-            .withRight(ProducerTree.fromSeed(0L).withValue(4))
+        val tree = ProducerTree.new(Seed(1))
+            .withLeftValue(1)
+            .withRightValue(4)
 
-        val (originalValue, shrinks) = multiTypeGen.generateAllIncludingShrinks(tree)
+        val (originalValue, shrinks) = multiTypeGen.generateWithDepthFirstShrinks(tree)
 
         expectThat(originalValue).isEqualTo(4)
         expectThat(shrinks.toList()).isEqualTo(
@@ -59,8 +59,8 @@ class OneOfGeneratorTest {
             gen.samples().take(100_000).forEach { collect(it) }
         }.checkPercentages(values.associateWith { 32.0 })
 
-        val tree = ProducerTree.fromSeed(0).withLeft(ProducerTree.fromSeed(0).withValue(2))
-        val (value, shrinks) = gen.generateAllIncludingShrinks(tree, maxDepth = 1)
+        val tree = ProducerTree.new().withLeftValue(2)
+        val (value, shrinks) = gen.generateWithDepthFirstShrinks(tree)
         expectThat(value).isEqualTo("cherry")
 
         expectThat(shrinks.toList()).isEqualTo(listOf("banana", "apple"))

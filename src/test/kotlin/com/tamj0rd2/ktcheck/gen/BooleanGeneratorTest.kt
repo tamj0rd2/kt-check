@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.samples
-import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateAllIncludingShrinks
+import com.tamj0rd2.ktcheck.gen.ListGeneratorTest.Companion.generateWithDepthFirstShrinks
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.testing.checkAll
@@ -28,7 +28,8 @@ class BooleanGeneratorTest {
         @Test
         fun `using the same seed generates the same value`() {
             val gen = Gen.bool()
-            val values = List(1000) { gen.generate(ProducerTree.fromSeed(0)).value }
+            val tree = ProducerTree.new()
+            val values = List(1000) { gen.generate(tree).value }
             val firstValue = values.first()
             expectThat(values.drop(1)).all { isEqualTo(firstValue) }
         }
@@ -40,8 +41,8 @@ class BooleanGeneratorTest {
         @Test
         fun `true shrinks to false`() {
             withCounter {
-                checkAll(Gen.long()) { seed ->
-                    val (value, shrinks) = Gen.bool().generateAllIncludingShrinks(ProducerTree.fromSeed(seed))
+                checkAll(Gen.tree()) { tree ->
+                    val (value, shrinks) = Gen.bool().generateWithDepthFirstShrinks(tree)
                     collect("original value", value)
 
                     // test only interested in true values.
@@ -55,8 +56,8 @@ class BooleanGeneratorTest {
         @Test
         fun `false does not shrink`() {
             withCounter {
-                checkAll(Gen.long()) { seed ->
-                    val (value, shrinks) = Gen.bool().generateAllIncludingShrinks(ProducerTree.fromSeed(seed))
+                checkAll(Gen.tree()) { tree ->
+                    val (value, shrinks) = Gen.bool().generateWithDepthFirstShrinks(tree)
                     collect("original value", value)
 
                     // test only interested in false values.
