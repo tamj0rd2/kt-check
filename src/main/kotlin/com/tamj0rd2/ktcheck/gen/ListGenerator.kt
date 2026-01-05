@@ -5,6 +5,7 @@ import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
 
 private class ListGenerator<T>(
     private val sizeRange: IntRange,
+    private val distinct: Boolean,
     private val gen: Gen<T>,
 ) : Gen<List<T>>() {
     override fun generate(tree: ProducerTree): GenResult<List<T>> {
@@ -65,10 +66,35 @@ private class ListGenerator<T>(
         index: Int = 0,
         values: List<T> = emptyList(),
         shrinksByIndex: List<Sequence<ProducerTree>> = emptyList(),
+        retriesRemaining: Int = 1000,
     ): GenResult<List<T>> {
         if (index == targetSize) return GenResult(value = values, shrinks = rootTree.combineShrinks(shrinksByIndex))
 
+        if (distinct && retriesRemaining == 0) {
+            throw ImpossibleSetSize(targetSize, values.size, 1000)
+        }
+
         val (value, shrinks) = gen.generate(currentTree.left)
+
+        // Handle duplicates when distinct=true
+        if (distinct && value in values) {
+            // If the current list size is within the acceptable range, accept the smaller list
+            // This prevents generating more complex values to fill back up to target size
+            if (values.size in sizeRange) {
+                return GenResult(value = values, shrinks = rootTree.combineShrinks(shrinksByIndex))
+            }
+
+            // Otherwise, skip duplicate and try to reach target size
+            return listN(
+                rootTree = rootTree,
+                targetSize = targetSize,
+                currentTree = currentTree.right,
+                index = index,
+                values = values,
+                shrinksByIndex = shrinksByIndex,
+                retriesRemaining = retriesRemaining - 1,
+            )
+        }
 
         return listN(
             rootTree = rootTree,
@@ -76,7 +102,8 @@ private class ListGenerator<T>(
             currentTree = currentTree.right,
             index = index + 1,
             values = values + value,
-            shrinksByIndex = shrinksByIndex + listOf(shrinks)
+            shrinksByIndex = shrinksByIndex + listOf(shrinks),
+            retriesRemaining = retriesRemaining,
         )
     }
 
@@ -110,6 +137,17 @@ private class ListGenerator<T>(
     }
 }
 
-fun <T> Gen<T>.list(size: IntRange = 0..100): Gen<List<T>> = ListGenerator(size, this)
+class ImpossibleSetSize(targetSize: Int, achievedSize: Int, attempts: Int) : GenerationException(
+    "Failed to generate a list of size $targetSize with distinct elements after $attempts attempts. Only achieved size $achievedSize."
+)
 
-fun <T> Gen<T>.list(size: Int): Gen<List<T>> = list(size..size)
+// todo: at this point, some kind of builder would help with optional parameters
+fun <T> Gen<T>.list(size: IntRange = 0..100, distinct: Boolean = false): Gen<List<T>> =
+    ListGenerator(sizeRange = size, distinct = distinct, gen = this)
+
+fun <T> Gen<T>.list(size: Int, distinct: Boolean = false): Gen<List<T>> = list(size..size, distinct)
+
+fun <T> Gen<T>.set(size: IntRange = 0..100): Gen<Set<T>> =
+    ListGenerator(sizeRange = size, distinct = true, gen = this).map { it.toSet() }
+
+fun <T> Gen<T>.set(size: Int): Gen<Set<T>> = set(size..size)
