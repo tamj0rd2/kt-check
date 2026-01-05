@@ -52,7 +52,7 @@ class OneOfGeneratorTest {
     @Test
     fun `oneOfValues shrinks toward first value in collection`() {
         val values = listOf("banana", "apple", "cherry")
-        val gen = Gen.oneOfValues(values)
+        val gen = Gen.oneOf(values)
 
         withCounter {
             gen.samples().take(100_000).forEach { collect(it) }

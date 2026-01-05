@@ -46,7 +46,7 @@ fun <T> Gen.Companion.oneOf(gens: Collection<Gen<T>>): Gen<T> = OneOfGenerator(g
 
 /** Shrinks toward the first value. Individual values will not be shrunk. */
 @JvmName("oneOfValues")
-fun <T> Gen.Companion.oneOfValues(values: Iterable<T>): Gen<T> {
+fun <T> Gen.Companion.oneOf(values: Iterable<T>): Gen<T> {
     val options = values.toList()
     if (options.isEmpty()) throw OneOfEmpty()
     return Gen.int(0..<options.size).map { options[it] }
