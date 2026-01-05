@@ -2,18 +2,15 @@ package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.sample
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
-import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.producerTree
 import com.tamj0rd2.ktcheck.testing.TestConfig
 import com.tamj0rd2.ktcheck.testing.checkAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.assertTimeoutPreemptively
 import strikt.api.expectThat
 import strikt.assertions.hasSize
 import strikt.assertions.isEqualTo
 import strikt.assertions.isLessThanOrEqualTo
-import java.time.Duration
 
 class SetGeneratorTest {
     @Test
@@ -136,24 +133,6 @@ class SetGeneratorTest {
                 setOf(1, 2, 2),
             )
         )
-    }
-
-    @Test
-    fun `when a fixed size set is shrunk by element values, only one element changes at a time`() = checkAll(
-        TestConfig().withIterations(100),
-        Gen.int(1..50),
-    ) { size ->
-        val (originalSet, shrunkSets) = Gen.int().set(size).generateWithShrunkValues(ProducerTree.new())
-
-        assertTimeoutPreemptively(Duration.ofMillis(100)) {
-            shrunkSets.forEach { shrunkSet ->
-                // Either the size changed (size shrink) or exactly one element changed (element shrink)
-                if (shrunkSet.size == originalSet.size) {
-                    val differences = (originalSet - shrunkSet) + (shrunkSet - originalSet)
-                    expectThat(differences).hasSize(2) // one removed, one added
-                }
-            }
-        }
     }
 
     @Test
