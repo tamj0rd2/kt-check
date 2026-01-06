@@ -113,3 +113,21 @@ src/main/kotlin/com/tamj0rd2/ktcheck/
 - `ktcheck.test.iterations` system property controls default iteration count (default: 1000)
 - Seed can be hardcoded for reproducible debugging via `TestConfig.replay(seed, iteration)`
 
+### TDD Approach
+
+**Critical: When implementing new features or fixing bugs involving tests:**
+
+1. **Verify test setup first** - Run the test to ensure it fails at the expected assertion, not due to setup issues
+2. **Work line-by-line** - Validate each assertion fails/passes as expected before proceeding
+3. **Fix test setup before production code** - If tests fail on unexpected lines, fix the test setup (e.g., tree
+   construction with `producerTree {}`)
+4. **Get feedback before changing production code** - Propose implementation approach and wait for confirmation
+5. **Never assume test setup is correct** - Question whether the test is exercising the code path you think it is
+
+**Example workflow:**
+
+- Run test → fails at line 10 (expected value)
+- Fix: adjust tree setup with `producerTree { left(expectedValue) }`
+- Re-run → fails at line 15 (expected shrinks)
+- Now ready to implement production code changes
+

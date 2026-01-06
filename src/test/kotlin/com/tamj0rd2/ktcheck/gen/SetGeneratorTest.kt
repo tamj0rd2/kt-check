@@ -1,23 +1,17 @@
 package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.sample
+import com.tamj0rd2.ktcheck.gen.GenTests.Companion.expectGenerationAndShrinkingToEventuallyComplete
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.producerTree
-import com.tamj0rd2.ktcheck.testing.NoOpTestReporter
-import com.tamj0rd2.ktcheck.testing.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.testing.TestConfig
 import com.tamj0rd2.ktcheck.testing.checkAll
-import com.tamj0rd2.ktcheck.testing.forAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.assertTimeoutPreemptively
 import strikt.api.expectThat
-import strikt.api.expectThrows
 import strikt.assertions.hasSize
 import strikt.assertions.isEqualTo
 import strikt.assertions.isLessThanOrEqualTo
-import strikt.assertions.isNotNull
-import java.time.Duration
 
 class SetGeneratorTest {
     @Test
@@ -145,26 +139,9 @@ class SetGeneratorTest {
 
     @Test
     fun `can shrink sets with a minimum size greater than 0`() {
-        fun <T> Gen<T>.generationAndShrinkingWillEventuallyComplete() {
-            var shrinksBeforeTimeout = -1
-            try {
-                assertTimeoutPreemptively(Duration.ofSeconds(1), "Shrinking took too long") {
-                    expectThrows<PropertyFalsifiedException> {
-                        forAll(TestConfig().withReporter(NoOpTestReporter), this) {
-                            shrinksBeforeTimeout += 1
-                            false
-                        }
-                    }.get { shrunkResult }.isNotNull()
-                }
-            } catch (e: Throwable) {
-                println("managed $shrinksBeforeTimeout shrinks before exploding")
-                throw e
-            }
-        }
-
-        Gen.int().set(1..2).generationAndShrinkingWillEventuallyComplete()
-        Gen.int().set(2..2).generationAndShrinkingWillEventuallyComplete()
-        Gen.int().set(2..5).generationAndShrinkingWillEventuallyComplete()
+        Gen.int().set(1..2).expectGenerationAndShrinkingToEventuallyComplete()
+        Gen.int().set(2..2).expectGenerationAndShrinkingToEventuallyComplete()
+        Gen.int().set(2..5).expectGenerationAndShrinkingToEventuallyComplete()
     }
 
     @Test

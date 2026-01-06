@@ -1,12 +1,20 @@
 package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.samples
+import com.tamj0rd2.ktcheck.gen.GenTests.Companion.expectGenerationAndShrinkingToEventuallyComplete
+import com.tamj0rd2.ktcheck.producer.PredeterminedValue
+import com.tamj0rd2.ktcheck.producer.ProducerTree
+import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.Test
+import strikt.api.Assertion
 import strikt.api.expectThat
 import strikt.api.expectThrows
 import strikt.assertions.all
 import strikt.assertions.isEqualTo
 import strikt.assertions.isFalse
+import strikt.assertions.isNotEmpty
+import strikt.assertions.isNotEqualTo
+
 
 class FilterGeneratorTest {
     @Test
@@ -34,6 +42,37 @@ class FilterGeneratorTest {
         val values = possiblyThrowingGen.samples().take(100).toList()
         expectThat(values).all { isFalse() }
     }
+
+    @Test
+    fun `ignore exceptions doesn't produce shrinks that would cause the exception, which would otherwise lead to infinite shrinking`() {
+        class TestException : Exception()
+
+        val possiblyThrowingGen = Gen.int(1..3)
+            .map {
+                when (it) {
+                    1 -> throw TestException()
+                    else -> it
+                }
+            }
+            .ignoreExceptions(TestException::class)
+
+        val tree = producerTree {
+            left(3)
+            right {
+                left(2)
+            }
+        }
+
+        val (value, shrunkTrees) = possiblyThrowingGen.generate(tree, GenMode.Initial)
+        expectThat(value).isEqualTo(3)
+        expectThat(shrunkTrees.toList())
+            .describedAs("shrunk trees")
+            .isNotEmpty()
+            .all { leftProducer.isNotEqualTo(PredeterminedValue(1)) }
+        possiblyThrowingGen.expectGenerationAndShrinkingToEventuallyComplete(shrunkValueRequired = false)
+    }
+
+    private val Assertion.Builder<ProducerTree>.leftProducer get() = get { left.producer }
 
     @Test
     fun `if an ignored exception is thrown more times than the threshold, throws an error`() {

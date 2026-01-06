@@ -3,11 +3,19 @@ package com.tamj0rd2.ktcheck.gen
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.samples
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.producerTree
+import com.tamj0rd2.ktcheck.testing.NoOpTestReporter
+import com.tamj0rd2.ktcheck.testing.PropertyFalsifiedException
+import com.tamj0rd2.ktcheck.testing.TestConfig
+import com.tamj0rd2.ktcheck.testing.forAll
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertTimeoutPreemptively
 import strikt.api.expectThat
+import strikt.api.expectThrows
 import strikt.assertions.contains
 import strikt.assertions.isEqualTo
+import strikt.assertions.isNotNull
+import java.time.Duration
 
 class GenTests {
     @Nested
@@ -123,6 +131,29 @@ class GenTests {
         internal fun <T> Gen<T>.generateWithShrunkValues(tree: ProducerTree): Pair<T, List<T>> {
             val (value, shrinks) = generate(tree, GenMode.Initial)
             return value to shrinks.map { generate(it, GenMode.Shrinking).value }.toList()
+        }
+
+        internal fun <T> Gen<T>.expectGenerationAndShrinkingToEventuallyComplete(
+            shrunkValueRequired: Boolean = true,
+        ) {
+            var shrinksBeforeTimeout = -1
+            try {
+                assertTimeoutPreemptively(Duration.ofSeconds(1), "Shrinking took too long") {
+                    val ex = expectThrows<PropertyFalsifiedException> {
+                        forAll(TestConfig().withReporter(NoOpTestReporter), this) {
+                            shrinksBeforeTimeout += 1
+                            false
+                        }
+                    }
+
+                    if (shrunkValueRequired) {
+                        ex.get { shrunkResult }.isNotNull()
+                    }
+                }
+            } catch (e: Throwable) {
+                println("managed $shrinksBeforeTimeout shrinks before exploding")
+                throw e
+            }
         }
     }
 }

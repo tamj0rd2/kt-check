@@ -26,7 +26,10 @@ private class FilterGenerator<T>(
             .map { getResult(GenContext(it.left, mode)) }
             .onEach { if (it is Failed) lastFailure = it.failure }
             .filterIsInstance<Succeeded<T>>()
-            .map { (genResult) -> genResult.copy(shrinks = emptySequence()) }
+            .map { (genResult) ->
+                val shrinks = genResult.shrinks.map { tree.withLeft(it) }
+                genResult.copy(shrinks = shrinks)
+            }
             .firstOrNull()
             ?: throw FilterLimitReached(threshold, lastFailure)
     }
@@ -48,18 +51,26 @@ fun <T> Gen<T>.filter(predicate: (T) -> Boolean) = filter(100, predicate)
 fun <T> Gen<T>.filter(threshold: Int, predicate: (T) -> Boolean): Gen<T> =
     FilterGenerator(threshold) {
         val result = generate(tree, mode)
-    if (predicate(result.value)) Succeeded(result) else Failed()
-}
+        if (predicate(result.value)) Succeeded(result) else Failed()
+    }
 
 /**
- * Ignores exceptions of type [klass] thrown during generation. Shrinking is not supported when using this generator.
- * Instead, use generators that only generate valid values.
+ * Ignores exceptions of type [klass] thrown during generation. Although this generator supports shrinking, it is very
+ * inefficient. Instead of using this generator, consider using generators that do not throw exceptions.
  */
 fun <T> Gen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int = 100): Gen<T> =
     FilterGenerator(threshold) {
         try {
-            val result = generate(tree, mode)
-            Succeeded(result)
+            val (value, shrinks) = generate(tree, mode)
+            val validShrinks = shrinks.filter { tree ->
+                try {
+                    generate(tree, GenMode.Shrinking)
+                    true
+                } catch (e: Exception) {
+                    false
+                }
+            }
+            Succeeded(GenResult(value, validShrinks))
         } catch (e: Exception) {
             when {
                 !klass.isInstance(e) -> throw e
