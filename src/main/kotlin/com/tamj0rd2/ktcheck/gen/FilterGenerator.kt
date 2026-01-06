@@ -38,7 +38,7 @@ private class FilterGenerator<T>(
     }
 }
 
-class FilterLimitReached(threshold: Int, cause: Throwable?) :
+class FilterLimitReached internal constructor(threshold: Int, cause: Throwable?) :
     GenerationException("Filter failed after $threshold misses", cause)
 
 /**

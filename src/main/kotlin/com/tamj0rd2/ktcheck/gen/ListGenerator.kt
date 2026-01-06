@@ -148,9 +148,10 @@ private class ListGenerator<T>(
     }
 }
 
-class DistinctCollectionSizeImpossible(targetSize: Int, achievedSize: Int, attempts: Int) : GenerationException(
-    "Failed to generate a list of size $targetSize with distinct elements after $attempts attempts. Only achieved size $achievedSize."
-)
+class DistinctCollectionSizeImpossible internal constructor(targetSize: Int, achievedSize: Int, attempts: Int) :
+    GenerationException(
+        "Failed to generate a list of size $targetSize with distinct elements after $attempts attempts. Only achieved size $achievedSize."
+    )
 
 // todo: at this point, some kind of builder would help with optional parameters
 fun <T> Gen<T>.list(size: IntRange = 0..100, distinct: Boolean = false): Gen<List<T>> =

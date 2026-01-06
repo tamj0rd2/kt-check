@@ -51,4 +51,4 @@ fun <T> Gen.Companion.oneOf(values: Iterable<T>): Gen<T> {
 }
 
 @Suppress("unused")
-class OneOfEmpty : GenerationException("Gen.oneOf() called with no generators")
+class OneOfEmpty internal constructor() : GenerationException("Gen.oneOf() called with no generators")
