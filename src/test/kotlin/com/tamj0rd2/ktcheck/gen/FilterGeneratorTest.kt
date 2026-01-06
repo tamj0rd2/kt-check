@@ -33,6 +33,20 @@ class FilterGeneratorTest {
 
             expectThrows<FilterLimitReached> { gen.samples().first() }
         }
+
+        @Test
+        fun `doesn't produce shrinks that would fail the predicate, which would otherwise lead to infinite shrinking`() {
+            val gen = Gen.int(1..4).filter { it > 2 }
+            val tree = producerTree { left(4) }
+
+            val (value, shrunkTrees) = gen.generate(tree, GenMode.Initial)
+            expectThat(value).isEqualTo(4)
+            expectThat(shrunkTrees.toList())
+                .describedAs("shrunk trees")
+                .isNotEmpty()
+                .all { leftProducer.isNotEqualTo(PredeterminedValue(1)).isNotEqualTo(PredeterminedValue(2)) }
+            gen.expectGenerationAndShrinkingToEventuallyComplete(shrunkValueRequired = false)
+        }
     }
 
     @Nested
@@ -50,7 +64,7 @@ class FilterGeneratorTest {
         }
 
         @Test
-        fun `ignore exceptions doesn't produce shrinks that would cause the exception, which would otherwise lead to infinite shrinking`() {
+        fun `doesn't produce shrinks that would cause the exception, which would otherwise lead to infinite shrinking`() {
             class TestException : Exception()
 
             val possiblyThrowingGen = Gen.int(1..3)
