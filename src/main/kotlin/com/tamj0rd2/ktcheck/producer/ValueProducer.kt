@@ -9,6 +9,7 @@ internal sealed interface ValueProducer {
     fun int(range: IntRange): Int
     fun long(range: LongRange): Long
     fun uInt(range: UIntRange): UInt
+    fun double(range: ClosedFloatingPointRange<Double>): Double
     fun bool(): Boolean
 }
 
@@ -22,6 +23,26 @@ internal value class RandomValueProducer(val seed: Seed) : ValueProducer {
 
     override fun uInt(range: UIntRange): UInt = random.nextUInt(range)
 
+    override fun double(range: ClosedFloatingPointRange<Double>): Double {
+        // Handle single-value range
+        if (range.start == range.endInclusive) return range.start
+
+        // Random.nextDouble(from, until) requires until to be finite and takes exclusive upper bound
+        // For a ClosedFloatingPointRange, we need endInclusive to be included in possible values
+        // We can use nextDouble(from, until) where until > endInclusive
+        // The simplest approach is to use a very small increment, but that's imprecise
+        // Better: use the next representable double after endInclusive
+        val until = if (range.endInclusive.isFinite()) {
+            // Math.nextUp would give us the next representable double, but we can approximate
+            // For practical purposes with finite ranges, adding Double.MIN_VALUE works
+            range.endInclusive + Math.ulp(range.endInclusive)
+        } else {
+            throw IllegalArgumentException("Range end must be finite for random generation: $range")
+        }
+
+        return random.nextDouble(range.start, until)
+    }
+
     override fun bool(): Boolean = random.nextBoolean()
 }
 
@@ -32,6 +53,7 @@ internal value class PredeterminedValue(val value: Any) : ValueProducer {
             is Int,
             is Long,
             is UInt,
+            is Double,
             is Boolean,
                 -> Unit
 
@@ -55,6 +77,14 @@ internal value class PredeterminedValue(val value: Any) : ValueProducer {
         val uInt = value as UInt
         check(uInt in range) { "$uInt not in range $range. Are you using conditionals inside a generator?" }
         return uInt
+    }
+
+    override fun double(range: ClosedFloatingPointRange<Double>): Double {
+        val double = value as Double
+        // Don't check range for non-finite values (NaN, Infinity)
+        if (!double.isFinite()) return double
+        check(double in range) { "$double not in range $range. Are you using conditionals inside a generator?" }
+        return double
     }
 
     override fun bool(): Boolean = value as Boolean
