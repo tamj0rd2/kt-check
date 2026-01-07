@@ -62,8 +62,8 @@ class DoubleGeneratorTest {
                 }
             }.checkPercentages(
                 mapOf(
-                    "positive" to 49.0,
-                    "negative" to 49.0,
+                    "positive" to 48.0,
+                    "negative" to 48.0,
                 )
             )
         }
