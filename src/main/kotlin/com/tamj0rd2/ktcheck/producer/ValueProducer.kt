@@ -10,6 +10,7 @@ internal sealed interface ValueProducer {
     fun long(range: LongRange): Long
     fun uInt(range: UIntRange): UInt
     fun double(range: ClosedFloatingPointRange<Double>): Double
+    fun float(range: ClosedFloatingPointRange<Float>): Float
     fun bool(): Boolean
 }
 
@@ -43,6 +44,21 @@ internal value class RandomValueProducer(val seed: Seed) : ValueProducer {
         return random.nextDouble(range.start, until)
     }
 
+    override fun float(range: ClosedFloatingPointRange<Float>): Float {
+        // Handle single-value range
+        if (range.start == range.endInclusive) return range.start
+
+        val until = if (range.endInclusive.isFinite()) {
+            range.endInclusive + Math.ulp(range.endInclusive)
+        } else {
+            throw IllegalArgumentException("Range end must be finite for random generation: $range")
+        }
+
+        val result = random.nextDouble(range.start.toDouble(), until.toDouble()).toFloat()
+        // Clamp result to range in case of overflow during double->float conversion
+        return result.coerceIn(range.start, range.endInclusive)
+    }
+
     override fun bool(): Boolean = random.nextBoolean()
 }
 
@@ -54,6 +70,7 @@ internal value class PredeterminedValue(val value: Any) : ValueProducer {
             is Long,
             is UInt,
             is Double,
+            is Float,
             is Boolean,
                 -> Unit
 
@@ -85,6 +102,14 @@ internal value class PredeterminedValue(val value: Any) : ValueProducer {
         if (!double.isFinite()) return double
         check(double in range) { "$double not in range $range. Are you using conditionals inside a generator?" }
         return double
+    }
+
+    override fun float(range: ClosedFloatingPointRange<Float>): Float {
+        val float = value as Float
+        // Don't check range for non-finite values (NaN, Infinity)
+        if (!float.isFinite()) return float
+        check(float in range) { "$float not in range $range. Are you using conditionals inside a generator?" }
+        return float
     }
 
     override fun bool(): Boolean = value as Boolean
