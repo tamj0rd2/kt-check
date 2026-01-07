@@ -46,5 +46,9 @@ class CombinerContext internal constructor(
  * ```
  * val gen = (Gen.int() + Gen.bool()).map { (x, y) -> x + y }
  * ```
+ *
+ * **Warning about conditionals:** The combiner requires that bind functions will be called in the same order each time.
+ * Conditionals that affect whether trailing [CombinerContext.bind] calls are called will shrink correctly.
+ * However, conditionals that skip non-trailing [CombinerContext.bind] calls will cause invalid shrinks.
  */
 fun <T> Gen.Companion.combine(block: CombinerContext.() -> T): Gen<T> = CombinerGenerator(block)

@@ -29,7 +29,11 @@ internal value class PredeterminedValue(val value: Any) : ValueProducer {
         }
     }
 
-    override fun int(range: IntRange): Int = value as Int
+    override fun int(range: IntRange): Int {
+        val int = value as Int
+        check(int in range) { "$int not in range $range. Are you using conditionals inside a generator?" }
+        return int
+    }
 
     override fun bool(): Boolean = value as Boolean
 }
