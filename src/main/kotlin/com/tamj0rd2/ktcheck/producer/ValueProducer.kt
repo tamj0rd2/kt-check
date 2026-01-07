@@ -4,11 +4,15 @@ import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.random.nextLong
 import kotlin.random.nextUInt
+import kotlin.random.nextULong
 
 internal sealed interface ValueProducer {
     fun int(range: IntRange): Int
     fun long(range: LongRange): Long
     fun uInt(range: UIntRange): UInt
+    fun uLong(range: ULongRange): ULong
+    fun byte(range: IntRange): Byte
+    fun short(range: IntRange): Short
     fun double(range: ClosedFloatingPointRange<Double>): Double
     fun float(range: ClosedFloatingPointRange<Float>): Float
     fun bool(): Boolean
@@ -23,6 +27,12 @@ internal value class RandomValueProducer(val seed: Seed) : ValueProducer {
     override fun long(range: LongRange): Long = random.nextLong(range)
 
     override fun uInt(range: UIntRange): UInt = random.nextUInt(range)
+
+    override fun uLong(range: ULongRange): ULong = random.nextULong(range)
+
+    override fun byte(range: IntRange): Byte = random.nextInt(range).toByte()
+
+    override fun short(range: IntRange): Short = random.nextInt(range).toShort()
 
     override fun double(range: ClosedFloatingPointRange<Double>): Double {
         // Handle single-value range
@@ -69,6 +79,9 @@ internal value class PredeterminedValue(val value: Any) : ValueProducer {
             is Int,
             is Long,
             is UInt,
+            is ULong,
+            is Byte,
+            is Short,
             is Double,
             is Float,
             is Boolean,
@@ -94,6 +107,24 @@ internal value class PredeterminedValue(val value: Any) : ValueProducer {
         val uInt = value as UInt
         check(uInt in range) { "$uInt not in range $range. Are you using conditionals inside a generator?" }
         return uInt
+    }
+
+    override fun uLong(range: ULongRange): ULong {
+        val uLong = value as ULong
+        check(uLong in range) { "$uLong not in range $range. Are you using conditionals inside a generator?" }
+        return uLong
+    }
+
+    override fun byte(range: IntRange): Byte {
+        val byte = value as Byte
+        check(byte.toInt() in range) { "$byte not in range $range. Are you using conditionals inside a generator?" }
+        return byte
+    }
+
+    override fun short(range: IntRange): Short {
+        val short = value as Short
+        check(short.toInt() in range) { "$short not in range $range. Are you using conditionals inside a generator?" }
+        return short
     }
 
     override fun double(range: ClosedFloatingPointRange<Double>): Double {
