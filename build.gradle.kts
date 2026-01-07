@@ -43,5 +43,6 @@ tasks.named<Test>("test") {
 
     testLogging {
         exceptionFormat = TestExceptionFormat.FULL
+        showStandardStreams = true
     }
 }

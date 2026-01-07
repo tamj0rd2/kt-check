@@ -17,28 +17,25 @@ import strikt.assertions.isEqualTo
 import strikt.assertions.isIn
 import strikt.assertions.isLessThan
 import strikt.assertions.isNotEmpty
-import kotlin.math.abs
 
-class IntGeneratorTest {
+class UIntGeneratorTest {
     @Nested
     inner class Generation {
         @TestFactory
-        fun `can generate an integer within a range`(): List<DynamicTest> {
+        fun `can generate a uint within a range`(): List<DynamicTest> {
             val testCases = mapOf(
-                "0 to 0" to 0..0,
-                "1 to 1" to 1..1,
-                "-1 to -1" to -1..-1,
-                "max to max" to Int.MAX_VALUE..Int.MAX_VALUE,
-                "min to min" to Int.MIN_VALUE..Int.MIN_VALUE,
-                "positive range" to 10..20,
-                "negative range" to -20..-10,
-                "mixed range" to -10..10,
-                "full int range" to Int.MIN_VALUE..Int.MAX_VALUE,
+                "0 to 0" to 0u..0u,
+                "1 to 1" to 1u..1u,
+                "max to max" to UInt.MAX_VALUE..UInt.MAX_VALUE,
+                "min to min" to UInt.MIN_VALUE..UInt.MIN_VALUE,
+                "small range" to 10u..20u,
+                "large range" to 1000u..2000u,
+                "full uint range" to UInt.MIN_VALUE..UInt.MAX_VALUE,
             )
 
             return testCases.map { (desc, range) ->
                 DynamicTest.dynamicTest(desc) {
-                    Gen.int(range)
+                    Gen.uInt(range)
                         .samples()
                         .take(10000)
                         .forEach { expectThat(it).isIn(range) }
@@ -47,21 +44,21 @@ class IntGeneratorTest {
         }
 
         @Test
-        fun `generates both positive and negative integers over multiple runs`() {
+        fun `generates various uints over multiple runs`() {
             withCounter {
-                Gen.int(-100..100).samples().take(10000).forEach { value ->
+                Gen.uInt(0u..100u).samples().take(10000).forEach { value ->
                     collect(
                         when {
-                            value > 0 -> "positive"
-                            value < 0 -> "negative"
-                            else -> "zero"
+                            value == 0u -> "zero"
+                            value < 50u -> "low"
+                            else -> "high"
                         }
                     )
                 }
             }.checkPercentages(
                 mapOf(
-                    "positive" to 45.0,
-                    "negative" to 45.0,
+                    "low" to 45.0,
+                    "high" to 45.0,
                     "zero" to 0.2
                 )
             )
@@ -70,7 +67,7 @@ class IntGeneratorTest {
         @Test
         fun `using the same seed generates the same values`() {
             val seed = 12345L
-            val gen = Gen.int(-1000..1000)
+            val gen = Gen.uInt(0u..1000u)
             val firstRun = gen.samples(seed).take(100).toList()
             val secondRun = gen.samples(seed).take(100).toList()
             expectThat(secondRun).isEqualTo(firstRun)
@@ -81,45 +78,35 @@ class IntGeneratorTest {
     inner class Shrinking {
         @Test
         fun `10 shrinks correctly`() {
-            val gen = Gen.int(0..10)
-            val tree = ProducerTree.new().withValue(10)
+            val gen = Gen.uInt(0u..10u)
+            val tree = ProducerTree.new().withValue(10u)
 
             val (originalValue, shrunkValues) = gen.generateWithShrunkValues(tree)
-            expectThat(originalValue).isEqualTo(10)
-            expectThat(shrunkValues).isEqualTo(listOf(0, 5, 8, 9))
-        }
-
-        @Test
-        fun `-10 shrinks correctly`() {
-            val gen = Gen.int(-10..0)
-            val tree = ProducerTree.new().withValue(-10)
-
-            val (originalValue, shrunkValues) = gen.generateWithShrunkValues(tree)
-            expectThat(originalValue).isEqualTo(-10)
-            expectThat(shrunkValues).isEqualTo(listOf(0, -5, -8, -9))
+            expectThat(originalValue).isEqualTo(10u)
+            expectThat(shrunkValues).isEqualTo(listOf(0u, 5u, 8u, 9u))
         }
 
         @Test
         fun `shrinking zero produces no shrinks`() {
-            val tree = ProducerTree.new().withValue(0)
-            val (originalValue, shrinks) = Gen.int().generateWithShrunkValues(tree)
-            expectThat(originalValue).isEqualTo(0)
+            val tree = ProducerTree.new().withValue(0u)
+            val (originalValue, shrinks) = Gen.uInt().generateWithShrunkValues(tree)
+            expectThat(originalValue).isEqualTo(0u)
             expectThat(shrinks).isEmpty()
         }
 
         @Test
         fun `shrinks for non-zero numbers always include 0`() {
-            val gen = Gen.int()
+            val gen = Gen.uInt(0u..1000u)
 
             Gen.tree().samples().map { gen.generateWithShrunkValues(it) }
-                .filter { (originalValue) -> originalValue != 0 }
+                .filter { (originalValue) -> originalValue != 0u }
                 .take(100)
-                .forEach { (_, shrunkValues) -> expectThat(shrunkValues).isNotEmpty().contains(0) }
+                .forEach { (_, shrunkValues) -> expectThat(shrunkValues).isNotEmpty().contains(0u) }
         }
 
         @Test
         fun `the original generated number is not included in shrinks`() {
-            val gen = Gen.int()
+            val gen = Gen.uInt(0u..100u)
 
             Gen.tree().samples().map { gen.generateWithShrunkValues(it) }
                 .take(100)
@@ -130,23 +117,31 @@ class IntGeneratorTest {
 
         @Test
         fun `when 0 is in range, shrinks are closer to 0 than the original generated number`() {
-            val gen = Gen.int(-50..50)
+            val gen = Gen.uInt(0u..50u)
 
             withCounter {
                 Gen.tree().samples().map { gen.generateWithShrunkValues(it) }
-                    .filter { (originalValue) -> originalValue != 0 }
+                    .filter { (originalValue) -> originalValue != 0u }
                     .take(100)
                     .forEach { (originalValue, shrunkValues) ->
-                        collect("positive", originalValue > 0)
-
                         expectThat(shrunkValues)
                             .isNotEmpty()
                             .doesNotContain(originalValue)
-                            .all {
-                                get { abs(this) }.describedAs("shrunk distance from 0").isLessThan(abs(originalValue))
-                            }
+                            .all { isLessThan(originalValue) }
                     }
             }
         }
+
+        @Test
+        fun `shrinks toward range start when 0 is not in range`() {
+            val gen = Gen.uInt(100u..200u)
+            val tree = ProducerTree.new().withValue(200u)
+
+            val (originalValue, shrunkValues) = gen.generateWithShrunkValues(tree)
+            expectThat(originalValue).isEqualTo(200u)
+            // Should shrink toward 100u (range start)
+            expectThat(shrunkValues).isEqualTo(listOf(100u, 150u, 175u, 188u, 194u, 197u, 199u))
+        }
     }
 }
+
