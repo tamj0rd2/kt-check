@@ -1,13 +1,10 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.producer.ProducerTree
-import com.tamj0rd2.ktcheck.producer.Seed
-
-private data class IntGenerator(
-    private val range: IntRange,
-) : Gen<Int>() {
-    override fun GenContext.generate(): GenResult<Int> {
-        val value = tree.producer.int(range)
+private data class LongGenerator(
+    private val range: LongRange,
+) : Gen<Long>() {
+    override fun GenContext.generate(): GenResult<Long> {
+        val value = tree.producer.long(range)
         return GenResult(
             value = value,
             shrinks = shrink(value, range).map { tree.withValue(it) }
@@ -15,17 +12,17 @@ private data class IntGenerator(
     }
 }
 
-internal fun shrink(value: Int, range: IntRange) = shrink(
+internal fun shrink(value: Long, range: LongRange) = shrink(
     value = value,
     range = range,
     origin = when {
         range.last < 0 -> range.last
         range.first > 0 -> range.first
-        else -> 0
+        else -> 0L
     }
 )
 
-internal fun shrink(value: Int, range: IntRange, origin: Int): Sequence<Int> = sequence {
+internal fun shrink(value: Long, range: LongRange, origin: Long): Sequence<Long> = sequence {
     require(origin in range) { "Origin $origin must be within range $range" }
 
     if (value == origin) return@sequence
@@ -35,10 +32,10 @@ internal fun shrink(value: Int, range: IntRange, origin: Int): Sequence<Int> = s
 
     // Then yield progressively closer values by repeatedly halving the original distance
     val originalDistance = value - origin
-    var divisor = 2
+    var divisor = 2L
     while (true) {
         val shrinkAmount = originalDistance / divisor
-        if (shrinkAmount == 0) break
+        if (shrinkAmount == 0L) break
 
         val candidate = value - shrinkAmount
         if (candidate in range && candidate != origin) {
@@ -48,8 +45,5 @@ internal fun shrink(value: Int, range: IntRange, origin: Int): Sequence<Int> = s
     }
 }
 
-fun Gen.Companion.int(range: IntRange = Int.MIN_VALUE..Int.MAX_VALUE): Gen<Int> = IntGenerator(range)
+fun Gen.Companion.long(range: LongRange = Long.MIN_VALUE..Long.MAX_VALUE): Gen<Long> = LongGenerator(range)
 
-
-// todo: move this to a better location
-internal fun Gen.Companion.tree() = Gen.int().map { ProducerTree.new(Seed(it.toLong())) }
