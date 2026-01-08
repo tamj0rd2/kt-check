@@ -49,7 +49,7 @@ internal fun shrink(value: Int, range: IntRange, origin: Int): Sequence<Int> = s
 }
 
 fun Gen.Companion.int(range: IntRange = Int.MIN_VALUE..Int.MAX_VALUE): Gen<Int> = IntGenerator(range)
-
+fun Gen.Companion.long(range: IntRange = Int.MIN_VALUE..Int.MAX_VALUE): Gen<Long> = IntGenerator(range).map { it.toLong() }
 
 // todo: move this to a better location
 internal fun Gen.Companion.tree() = Gen.int().map { ProducerTree.new(Seed(it.toLong())) }

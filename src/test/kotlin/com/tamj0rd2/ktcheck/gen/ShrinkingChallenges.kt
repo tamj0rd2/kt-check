@@ -9,11 +9,12 @@ import com.tamj0rd2.ktcheck.testing.TestConfig
 import com.tamj0rd2.ktcheck.testing.checkAll
 import com.tamj0rd2.ktcheck.testing.forAll
 import org.junit.jupiter.api.Test
+import strikt.api.expectThat
 import strikt.api.expectThrows
+import strikt.assertions.isLessThan
 
 // based on https://github.com/jlink/shrinking-challenge/tree/main/challenges
 class ShrinkingChallenges {
-
     @Test
     fun lengthList() {
         testShrinking(
