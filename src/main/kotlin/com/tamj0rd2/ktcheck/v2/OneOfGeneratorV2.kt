@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.v2
 
 import com.tamj0rd2.ktcheck.gen.OneOfEmpty
-import com.tamj0rd2.ktcheck.v2.IntGenerator.Companion.int
+import com.tamj0rd2.ktcheck.v2.IntGeneratorV2.Companion.int
 
 
 /**
@@ -16,16 +16,16 @@ import com.tamj0rd2.ktcheck.v2.IntGenerator.Companion.int
  * This design prioritises correctness and debuggability over performance, which is appropriate
  * for a testing library where reliability of shrinking is critical.
  **/
-private class OneOfGenerator<T>(
-    private val gens: List<Gen<T>>,
-) : Gen<T>() {
+private class OneOfGeneratorV2<T>(
+    private val gens: List<GenV2<T>>,
+) : GenV2<T>() {
     init {
         if (gens.isEmpty()) throw OneOfEmpty()
     }
 
-    private val indexGen = Gen.int(0..<gens.size)
+    private val indexGen = GenV2.int(0..<gens.size)
 
-    override fun GenContext.generate(): GenResult<T> {
+    override fun GenContextV2.generate(): GenResultV2<T> {
         val indexResult = indexGen.generate(producer)
 
         // generate this first so that it matches the way V1 OneOfGenerator works. temporary hack.
@@ -44,7 +44,7 @@ private class OneOfGenerator<T>(
         // Index shrinks use cached results to maintain determinism and prevent value explosion
         val indexShrinks = indexResult.shrinks.map { shrunkIndexResult -> allResults[shrunkIndexResult.value] }
 
-        return GenResult(
+        return GenResultV2(
             value = selectedResult.value,
             shrinks = indexShrinks + selectedResult.shrinks,
         )
@@ -52,15 +52,15 @@ private class OneOfGenerator<T>(
 }
 
 /** Shrinks towards the first generator */
-fun <T> Gen.Companion.oneOf(vararg gens: Gen<T>): Gen<T> = oneOf(gens.toList())
+fun <T> GenV2.Companion.oneOf(vararg gens: GenV2<T>): GenV2<T> = oneOf(gens.toList())
 
 /** Shrinks toward the first generator */
-fun <T> Gen.Companion.oneOf(gens: Collection<Gen<T>>): Gen<T> = OneOfGenerator(gens.toList())
+fun <T> GenV2.Companion.oneOf(gens: Collection<GenV2<T>>): GenV2<T> = OneOfGeneratorV2(gens.toList())
 
 /** Shrinks toward the first value. Individual values will not be shrunk. */
 @JvmName("oneOfValues")
-fun <T> Gen.Companion.oneOf(values: Iterable<T>): Gen<T> {
+fun <T> GenV2.Companion.oneOf(values: Iterable<T>): GenV2<T> {
     val options = values.toList()
     if (options.isEmpty()) throw OneOfEmpty()
-    return Gen.int(0..<options.size).map { options[it] }
+    return GenV2.int(0..<options.size).map { options[it] }
 }

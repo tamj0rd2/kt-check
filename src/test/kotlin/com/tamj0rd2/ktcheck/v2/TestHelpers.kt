@@ -1,9 +1,9 @@
 package com.tamj0rd2.ktcheck.v2
 
-internal class StubValueProducer(
+internal class StubValueProducerV2(
     values: List<Any>,
-    private val delegate: ValueProducer? = null,
-) : ValueProducer {
+    private val delegate: ValueProducerV2? = null,
+) : ValueProducerV2 {
 
     private val iterator = values.iterator()
 

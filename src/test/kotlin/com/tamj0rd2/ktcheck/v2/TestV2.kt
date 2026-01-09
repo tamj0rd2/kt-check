@@ -10,19 +10,19 @@ import com.tamj0rd2.ktcheck.testing.TestConfig
 import com.tamj0rd2.ktcheck.testing.TestResult
 
 @Suppress("unused")
-fun <T> forAll(gen: Gen<T>, test: TestByBool<T>) = forAll(TestConfig(), gen, test)
-fun <T> forAll(config: TestConfig, gen: Gen<T>, test: TestByBool<T>) = test(config, gen, test as Test<T>)
+fun <T> forAll(gen: GenV2<T>, test: TestByBool<T>) = forAll(TestConfig(), gen, test)
+fun <T> forAll(config: TestConfig, gen: GenV2<T>, test: TestByBool<T>) = test(config, gen, test as Test<T>)
 
 @Suppress("unused")
-fun <T> checkAll(gen: Gen<T>, test: TestByThrowing<T>) = checkAll(TestConfig(), gen, test)
-fun <T> checkAll(config: TestConfig, gen: Gen<T>, test: TestByThrowing<T>) = test(config, gen, test as Test<T>)
+fun <T> checkAll(gen: GenV2<T>, test: TestByThrowing<T>) = checkAll(TestConfig(), gen, test)
+fun <T> checkAll(config: TestConfig, gen: GenV2<T>, test: TestByThrowing<T>) = test(config, gen, test as Test<T>)
 
 @OptIn(HardcodedTestConfig::class)
-private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
+private fun <T> test(config: TestConfig, gen: GenV2<T>, test: Test<T>) {
     val testResultsGen = gen.map { test.getResultFor(it) }
 
     fun runIteration(iteration: Int) {
-        val producer = RandomValueProducer(config.seed.next(iteration))
+        val producer = RandomValueProducerV2(config.seed.next(iteration))
         val (testResult, shrinks) = testResultsGen.generate(producer)
 
         when (testResult) {
@@ -58,9 +58,9 @@ private fun <T> Test<T>.getResultFor(t: T): TestResult<T> {
     return TestResult.Failure(t, failure)
 }
 
-private tailrec fun <T> Gen<TestResult<T>>.getSmallestCounterExample(
+private tailrec fun <T> GenV2<TestResult<T>>.getSmallestCounterExample(
     testResult: TestResult.Failure<T>,
-    iterator: Iterator<GenResult<TestResult<T>>>,
+    iterator: Iterator<GenResultV2<TestResult<T>>>,
     steps: Int = 0,
 ): Pair<TestResult.Failure<T>, Int> {
     if (!iterator.hasNext()) return testResult to steps

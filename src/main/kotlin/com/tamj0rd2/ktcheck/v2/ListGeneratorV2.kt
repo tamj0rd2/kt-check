@@ -1,20 +1,20 @@
 package com.tamj0rd2.ktcheck.v2
 
-import com.tamj0rd2.ktcheck.v2.IntGenerator.Companion.int
+import com.tamj0rd2.ktcheck.v2.IntGeneratorV2.Companion.int
 
-private class ListGenerator<T>(
-    private val gen: Gen<T>,
+private class ListGeneratorV2<T>(
+    private val gen: GenV2<T>,
     private val sizeRange: IntRange,
-) : Gen<List<T>>() {
-    private val sizeGen = Gen.int(sizeRange)
+) : GenV2<List<T>>() {
+    private val sizeGen = GenV2.int(sizeRange)
 
-    override fun GenContext.generate(): GenResult<List<T>> {
+    override fun GenContextV2.generate(): GenResultV2<List<T>> {
         val sizeResult = sizeGen.generate(producer)
         val size = sizeResult.value
 
         val elementResults = List(size) { gen.generate(producer) }
 
-        return GenResult(
+        return GenResultV2(
             value = elementResults.map { it.value },
             shrinks = generateListShrinks(size, elementResults),
         )
@@ -22,20 +22,20 @@ private class ListGenerator<T>(
 
     private fun generateListShrinks(
         size: Int,
-        elementResults: List<GenResult<T>>,
-    ): Sequence<GenResult<List<T>>> = sequence {
-        IntGenerator.shrink(size, sizeRange).forEach { newSize ->
+        elementResults: List<GenResultV2<T>>,
+    ): Sequence<GenResultV2<List<T>>> = sequence {
+        IntGeneratorV2.shrink(size, sizeRange).forEach { newSize ->
             when {
                 newSize == 0 -> {
                     // Empty list has no further shrinks
-                    yield(GenResult(emptyList(), emptySequence()))
+                    yield(GenResultV2(emptyList(), emptySequence()))
                 }
 
                 newSize < size -> {
                     // Tail removal - recursively shrink the resulting list
                     val tailRemovalElements = elementResults.take(newSize)
                     yield(
-                        GenResult(
+                        GenResultV2(
                             value = tailRemovalElements.map { it.value },
                             shrinks = generateListShrinks(newSize, tailRemovalElements)
                         )
@@ -44,7 +44,7 @@ private class ListGenerator<T>(
                     // Head removal - recursively shrink the resulting list
                     val headRemovalElements = elementResults.takeLast(newSize)
                     yield(
-                        GenResult(
+                        GenResultV2(
                             value = headRemovalElements.map { it.value },
                             shrinks = generateListShrinks(newSize, headRemovalElements)
                         )
@@ -59,7 +59,7 @@ private class ListGenerator<T>(
                     if (i == index) shrunkElementResult else elemResult
                 }
                 yield(
-                    GenResult(
+                    GenResultV2(
                         value = newElementResults.map { it.value },
                         shrinks = generateListShrinks(size, newElementResults)
                     )
@@ -69,7 +69,7 @@ private class ListGenerator<T>(
     }
 }
 
-fun <T> Gen<T>.list(size: IntRange = 0..100): Gen<List<T>> =
-    ListGenerator(this, size)
+fun <T> GenV2<T>.list(size: IntRange = 0..100): GenV2<List<T>> =
+    ListGeneratorV2(this, size)
 
-fun <T> Gen<T>.list(size: Int): Gen<List<T>> = list(size..size)
+fun <T> GenV2<T>.list(size: Int): GenV2<List<T>> = list(size..size)
