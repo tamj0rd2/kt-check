@@ -121,12 +121,13 @@ class DistinctCollectionSizeImpossible internal constructor(targetSize: Int, ach
     )
 
 // todo: at this point, some kind of builder would help with optional parameters
-fun <T> Gen<T>.list(size: IntRange = 0..100): Gen<List<T>> =
-    ListGenerator(sizeRange = size, distinct = false, gen = this)
+fun <T> Gen<T>.list(size: IntRange = 0..100, distinct: Boolean = false): Gen<List<T>> =
+    ListGenerator(sizeRange = size, distinct = distinct, gen = this)
 
-fun <T> Gen<T>.list(size: Int): Gen<List<T>> = list(size..size)
+fun <T> Gen<T>.list(size: Int, distinct: Boolean = false): Gen<List<T>> =
+    list(size..size, distinct)
 
 fun <T> Gen<T>.set(size: IntRange = 0..100): Gen<Set<T>> =
-    ListGenerator(sizeRange = size, distinct = true, gen = this).map { it.toSet() }
+    list(size, distinct = true).map { it.toSet() }
 
 fun <T> Gen<T>.set(size: Int): Gen<Set<T>> = set(size..size)

@@ -1,7 +1,9 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.contract.IGen
+import com.tamj0rd2.ktcheck.gen.DistinctCollectionSizeImpossible
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import strikt.api.expectThat
 import strikt.assertions.all
 import strikt.assertions.contains
@@ -164,5 +166,52 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
             emptyList<Int>(),
             listOf(0),
         )
+    }
+
+    // ========== Distinct List Tests ==========
+
+    @Test
+    fun `generates lists with distinct elements when distinct=true`() {
+        // Test with multiple examples to verify distinctness
+        listOf(
+            listOf(5, 1, 4, 7, 9, 2) to 5,      // 5 distinct elements
+            listOf(3, 10, 20, 30) to 3,          // 3 distinct elements
+            listOf(1, 42) to 1,                  // 1 distinct element
+        ).forEach { (rngValues, expectedSize) ->
+            val gen = intGen(0..100).listGen(size = expectedSize, distinct = true)
+            val (value, _) = gen.generateWithShrunkValuesForListGen(rngValues)
+
+            expectThat(value.size).isEqualTo(expectedSize)
+            expectThat(value.toSet().size).isEqualTo(expectedSize) // Confirms no duplicates
+        }
+    }
+
+    @Test
+    fun `distinct list shrinks maintain distinctness`() {
+        val gen = intGen(0..10).listGen(distinct = true)
+
+        // Test with a few specific examples of different sizes
+        listOf(
+            listOf(1, 4),           // 1-element list
+            listOf(2, 1, 4),        // 2-element list
+            listOf(3, 1, 4, 7),     // 3-element list
+        ).forEach { rngValues ->
+            val (value, shrinks) = gen.generateWithShrunkValuesForListGen(rngValues)
+
+            // Original value should be distinct
+            expectThat(value.toSet().size).isEqualTo(value.size)
+
+            // All shrinks should also be distinct
+            shrinks.forEach { shrunkList ->
+                expectThat(shrunkList.toSet().size).isEqualTo(shrunkList.size)
+            }
+        }
+    }
+
+    @Test
+    fun `throws when unable to generate enough distinct elements`() {
+        val gen = intGen(0..10).listGen(size = 100, distinct = true)
+
+        assertThrows<DistinctCollectionSizeImpossible> { gen.sample() }
     }
 }

@@ -28,16 +28,16 @@ internal abstract class BaseGenV2Test : BaseGeneratorContract {
         return GenV2.constant(value)
     }
 
-    override fun <T> IGen<T>.listGen(): IGen<List<T>> {
-        return (this as GenV2<T>).list()
+    override fun <T> IGen<T>.listGen(distinct: Boolean): IGen<List<T>> {
+        return (this as GenV2<T>).list(distinct = distinct)
     }
 
-    override fun <T> IGen<T>.listGen(size: Int): IGen<List<T>> {
-        return (this as GenV2<T>).list(size)
+    override fun <T> IGen<T>.listGen(size: Int, distinct: Boolean): IGen<List<T>> {
+        return (this as GenV2<T>).list(size, distinct)
     }
 
-    override fun <T> IGen<T>.listGen(sizeRange: IntRange): IGen<List<T>> {
-        return (this as GenV2<T>).list(sizeRange)
+    override fun <T> IGen<T>.listGen(sizeRange: IntRange, distinct: Boolean): IGen<List<T>> {
+        return (this as GenV2<T>).list(sizeRange, distinct)
     }
 
     override fun <T : Any> IGen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> =

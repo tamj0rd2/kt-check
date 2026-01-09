@@ -24,11 +24,11 @@ internal interface BaseGeneratorContract {
 
     fun <T> constantGen(value: T): IGen<T>
 
-    fun <T> IGen<T>.listGen(): IGen<List<T>>
+    fun <T> IGen<T>.listGen(distinct: Boolean = false): IGen<List<T>>
 
-    fun <T> IGen<T>.listGen(size: Int): IGen<List<T>>
+    fun <T> IGen<T>.listGen(size: Int, distinct: Boolean = false): IGen<List<T>>
 
-    fun <T> IGen<T>.listGen(sizeRange: IntRange): IGen<List<T>>
+    fun <T> IGen<T>.listGen(sizeRange: IntRange, distinct: Boolean = false): IGen<List<T>>
 }
 
 /**
