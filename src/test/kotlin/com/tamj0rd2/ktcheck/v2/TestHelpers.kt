@@ -24,12 +24,12 @@ internal class StubValueProducer(
     }
 }
 
-internal fun <T> Gen<T>.generateWithShrunkValues(seed: Seed) =
-    generateWithShrunkValues(RandomValueProducer(seed))
+internal fun <T> Gen<T>.generateWithShrunkValues(seed: Seed = Seed.random()): Pair<T, List<T>> {
+    val (value, shrinks) = generate(RandomValueProducer(seed))
+    return value to shrinks.map<GenResult<T>, T> { it.value }.toList()
+}
 
-internal fun <T> Gen<T>.generateWithShrunkValues(
-    producer: ValueProducer = RandomValueProducer(Seed.random()),
-): Pair<T, List<T>> {
+internal fun <T> Gen<T>.generateWithShrunkValues(producer: StubValueProducer): Pair<T, List<T>> {
     val (value, shrinks) = generate(producer)
     return value to shrinks.map { it.value }.toList()
 }
