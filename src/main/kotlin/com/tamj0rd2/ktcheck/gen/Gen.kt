@@ -1,8 +1,8 @@
 package com.tamj0rd2.ktcheck.gen
 
+import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.Seed
-import kotlin.random.Random
 
 internal data class GenContext(
     val tree: ProducerTree,
@@ -21,7 +21,7 @@ internal enum class GenMode {
  *
  * @param T The type of values produced by this generator.
  */
-sealed class Gen<T> {
+sealed class Gen<T> : IGen<T> {
     internal abstract fun GenContext.generate(): GenResult<T>
 
     internal fun generate(tree: ProducerTree, mode: GenMode): GenResult<T> =
@@ -37,7 +37,7 @@ sealed class Gen<T> {
      * @param fn A function that takes a value of type T and returns a value of type R.
      * @return A new generator that produces values of type R.
      */
-    fun <R> map(fn: (T) -> R): Gen<R> = CombinatorGenerator {
+    override fun <R> map(fn: (T) -> R): Gen<R> = CombinatorGenerator {
         val (value, shrinks) = generate(tree, mode)
         GenResult(fn(value), shrinks)
     }
@@ -85,27 +85,12 @@ sealed class Gen<T> {
             )
         }
 
-    companion object {
-        /**
-         * Produces an infinite sequence of samples from the generator using the provided seed.
-         *
-         * @param random The random instance used to create seeds for sampling. Defaults to [Random.Default].
-         * @return A sequence of sampled values of type T.
-         */
-        fun <T> Gen<T>.samples(seed: Long = Random.nextLong()) =
-            generateSequence(Seed(seed)) { it.next(0) }.map { sample(it.value) }
+    override fun sample(seed: Long): T = generate(
+        tree = ProducerTree.new(Seed(seed)),
+        mode = GenMode.Initial
+    ).value
 
-        /**
-         * Samples a value from the generator using the provided seed.
-         *
-         * @param seed The seed to use for sampling.
-         * @return A sampled value of type T.
-         */
-        fun <T> Gen<T>.sample(seed: Long = Random.nextLong()): T = generate(
-            tree = ProducerTree.new(Seed(seed)),
-            mode = GenMode.Initial
-        ).value
-    }
+    companion object
 }
 
 /**

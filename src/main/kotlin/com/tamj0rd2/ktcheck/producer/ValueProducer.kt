@@ -22,6 +22,8 @@ internal sealed interface ValueProducer {
 internal value class RandomValueProducer(val seed: Seed) : ValueProducer {
     private val random get() = Random(seed.value)
 
+    override fun toString(): String = seed.toString()
+
     override fun int(range: IntRange): Int = random.nextInt(range)
 
     override fun long(range: LongRange): Long = random.nextLong(range)
@@ -90,6 +92,8 @@ internal value class PredeterminedValue(val value: Any) : ValueProducer {
             else -> throw IllegalArgumentException("Unsupported predetermined value type: ${value::class.simpleName}")
         }
     }
+
+    override fun toString(): String = "(${value::class.simpleName}) $value"
 
     override fun int(range: IntRange): Int {
         val int = value as Int

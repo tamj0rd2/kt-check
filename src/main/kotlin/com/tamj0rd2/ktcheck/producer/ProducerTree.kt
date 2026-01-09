@@ -17,6 +17,9 @@ internal data class ProducerTree private constructor(
         )
     }
 
+    internal fun traverseRight(steps: Int): ProducerTree =
+        if (steps <= 0) this else right.traverseRight(steps - 1)
+
     internal fun withValue(value: Any) = copy(producer = PredeterminedValue(value))
     internal fun withLeft(left: ProducerTree) = copy(lazyLeft = lazyOf(left))
     internal fun withRight(right: ProducerTree) = copy(lazyRight = lazyOf(right))
@@ -67,7 +70,7 @@ internal data class ProducerTree private constructor(
             isLast: Boolean?,
             currentDepth: Int,
         ): String {
-            if (currentDepth >= maxDepth) return "${indent}${prefix}...\n"
+            if (currentDepth >= maxDepth) return ""
 
             fun visualiseBranch(lazyTree: Lazy<ProducerTree>, side: String): String? {
                 val newIndent = when (isLast) {

@@ -1,7 +1,5 @@
 package com.tamj0rd2.ktcheck.v2
 
-import com.tamj0rd2.ktcheck.producer.Seed
-
 internal class StubValueProducer(
     values: List<Any>,
     private val delegate: ValueProducer? = null,
@@ -22,14 +20,4 @@ internal class StubValueProducer(
 
         return iterator.next() as Boolean
     }
-}
-
-internal fun <T> Gen<T>.generateWithShrunkValues(seed: Seed = Seed.random()): Pair<T, List<T>> {
-    val (value, shrinks) = generate(RandomValueProducer(seed))
-    return value to shrinks.map<GenResult<T>, T> { it.value }.toList()
-}
-
-internal fun <T> Gen<T>.generateWithShrunkValues(producer: StubValueProducer): Pair<T, List<T>> {
-    val (value, shrinks) = generate(producer)
-    return value to shrinks.map { it.value }.toList()
 }

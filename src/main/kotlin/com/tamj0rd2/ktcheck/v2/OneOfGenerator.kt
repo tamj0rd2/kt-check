@@ -23,25 +23,26 @@ private class OneOfGenerator<T>(
         if (gens.isEmpty()) throw OneOfEmpty()
     }
 
+    private val indexGen = Gen.int(0..<gens.size)
+
     override fun GenContext.generate(): GenResult<T> {
-        // Generate index to select which generator to use
-        val indexGen = Gen.int(0..<gens.size)
         val indexResult = indexGen.generate(producer)
+
+        // generate this first so that it matches the way V1 OneOfGenerator works. temporary hack.
+        val selectedResult = gens[indexResult.value].generate(producer)
 
         // Generate from ALL generators upfront and cache the results
         // This prevents value explosion during shrinking - when we switch generators,
         // we use the cached value that was generated with the original randomness,
         // rather than regenerating with potentially exhausted/different randomness
-        val allResults = gens.map { it.generate(producer) }
-
-        // Select the result for the chosen index
-        val selectedResult = allResults[indexResult.value]
+        val allResults = gens.mapIndexed { index, gen ->
+            if (index == indexResult.value) selectedResult
+            else gen.generate(producer)
+        }
 
         // Build shrinks: first try switching generators (index shrinks), then shrink within generator (value shrinks)
         // Index shrinks use cached results to maintain determinism and prevent value explosion
-        val indexShrinks = indexResult.shrinks.map { shrunkIndexResult ->
-            allResults[shrunkIndexResult.value]
-        }
+        val indexShrinks = indexResult.shrinks.map { shrunkIndexResult -> allResults[shrunkIndexResult.value] }
 
         return GenResult(
             value = selectedResult.value,

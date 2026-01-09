@@ -1,6 +1,5 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.gen.Gen.Companion.sample
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.expectGenerationAndShrinkingToEventuallyComplete
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.producerTree

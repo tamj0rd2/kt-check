@@ -36,9 +36,6 @@ private class ListGenerator<T>(
         )
     }
 
-    private fun ProducerTree.traverseRight(steps: Int): ProducerTree =
-        if (steps == 0) this else right.traverseRight(steps - 1)
-
     /**
      * Generates a list of N elements using a left-right tree traversal pattern, where left is used to generate data,
      * and right is used for continuation.

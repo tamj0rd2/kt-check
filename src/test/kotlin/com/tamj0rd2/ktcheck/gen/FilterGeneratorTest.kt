@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.gen.Gen.Companion.samples
+
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.expectGenerationAndShrinkingToEventuallyComplete
 import com.tamj0rd2.ktcheck.producer.PredeterminedValue
 import com.tamj0rd2.ktcheck.producer.ProducerTree
