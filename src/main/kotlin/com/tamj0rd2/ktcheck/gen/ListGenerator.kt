@@ -3,7 +3,7 @@ package com.tamj0rd2.ktcheck.gen
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
 
-private class ListGenerator<T>(
+internal class ListGenerator<T>(
     private val sizeRange: IntRange,
     private val distinct: Boolean,
     private val gen: Gen<T>,
@@ -121,10 +121,10 @@ class DistinctCollectionSizeImpossible internal constructor(targetSize: Int, ach
     )
 
 // todo: at this point, some kind of builder would help with optional parameters
-fun <T> Gen<T>.list(size: IntRange = 0..100, distinct: Boolean = false): Gen<List<T>> =
-    ListGenerator(sizeRange = size, distinct = distinct, gen = this)
+fun <T> Gen<T>.list(size: IntRange = 0..100): Gen<List<T>> =
+    ListGenerator(sizeRange = size, distinct = false, gen = this)
 
-fun <T> Gen<T>.list(size: Int, distinct: Boolean = false): Gen<List<T>> = list(size..size, distinct)
+fun <T> Gen<T>.list(size: Int): Gen<List<T>> = list(size..size)
 
 fun <T> Gen<T>.set(size: IntRange = 0..100): Gen<Set<T>> =
     ListGenerator(sizeRange = size, distinct = true, gen = this).map { it.toSet() }

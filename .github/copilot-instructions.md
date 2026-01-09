@@ -42,23 +42,59 @@ val gen = Gen.int().map { it * 2 }
 
 ### Command Pattern
 ```bash
-./gradlew :test --tests "<fully.qualified.ClassName.testMethodName>"
+./gradlew :test --tests "<fully.qualified.ClassName.testMethodName>" --console=plain
 ```
+
+**CRITICAL**: Always use `--console=plain` flag when running tests to see full output!
+
+### Viewing Test Output (REQUIRED WORKFLOW)
+
+**ALWAYS use this workflow when running tests:**
+
+1. Delete any existing output file before each test run
+2. Write test output to `output.txt` using `> output.txt 2>&1`
+3. Read the output file to check results
+
+```bash
+# Template for EVERY test run
+rm -f output.txt && ./gradlew :test --tests "<TestClass>" --console=plain > output.txt 2>&1
+
+# Then read the file ONCE to check results
+```
+
+**How to interpret the results:**
+
+- **If the file contains "BUILD SUCCESSFUL"** → All tests passed ✅
+- **If the file contains "FAILED"** → Tests failed ❌ (read the failure details)
+- **No need to grep or search multiple times** - just read the file once
+
+**Important: Avoid Redundant Test Runs**
+
+- **If you've run tests for a whole file**, don't run subsets of tests from that file - you've already run them all
+- **If you've run the entire test suite**, don't run individual test files - you've already run everything
+- **If tests are succeeding (BUILD SUCCESSFUL)**, the code is compiling correctly - no need to check for compilation
+  errors separately
+- **Only run tests once per change** - trust the results and move forward
+
+**Why this is necessary**: Terminal output from Gradle may not be visible in the IDE's tool output. Writing to a file
+ensures you can always access the results.
 
 ### Examples
 ```bash
-# Run all tests
-./gradlew test
+# Run all tests - write output to file
+rm -f output.txt && ./gradlew test --console=plain > output.txt 2>&1
 
-# Specific test class
-./gradlew :test --tests "com.tamj0rd2.ktcheck.gen.SetGeneratorTest"
+# Specific test class - write output to file
+rm -f output.txt && ./gradlew :test --tests "com.tamj0rd2.ktcheck.gen.SetGeneratorTest" --console=plain > output.txt 2>&1
 
-# Specific test method (quote if spaces)
-./gradlew :test --tests "com.tamj0rd2.ktcheck.gen.SetGeneratorTest.shrinks a set of 3 elements"
+# Specific test method (quote if spaces) - write output to file
+rm -f output.txt && ./gradlew :test --tests "com.tamj0rd2.ktcheck.gen.SetGeneratorTest.shrinks a set of 3 elements" --console=plain > output.txt 2>&1
 
-# Pattern matching
-./gradlew :test --tests "*SetGenerator*"
+# Pattern matching - write output to file
+rm -f output.txt && ./gradlew :test --tests "*SetGenerator*" --console=plain > output.txt 2>&1
 ```
+
+After running any test command, **ALWAYS** read `output.txt` to check the results.
 
 ### Critical Testing Notes
 - Test names must be fully qualified: `package.ClassName.methodName`

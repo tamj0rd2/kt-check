@@ -40,6 +40,8 @@ sealed class Gen<T> : IGen<T> {
     companion object
 }
 
+fun <T> Gen.Companion.constant(value: T): Gen<T> = BasicGenerator { GenResult(value, emptySequence()) }
+
 /**
  * The result of generating a value from a generator, including the generated value and its shrinks.
  * Shrinks are represented as a sequence of [ProducerTree]s, allowing for lazy evaluation and efficient traversal.
