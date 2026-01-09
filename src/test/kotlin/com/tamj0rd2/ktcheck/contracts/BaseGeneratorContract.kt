@@ -8,11 +8,11 @@ internal interface BaseGeneratorContract {
 
     fun <T : Any> IGen<T>.generateWithShrunkValues(seed: Seed = Seed.random()): Pair<T, List<T>>
 
-    fun int(range: IntRange): IGen<Int>
+    fun intGen(range: IntRange): IGen<Int>
 
-    fun bool(): IGen<Boolean>
+    fun boolGen(): IGen<Boolean>
 
-    fun <T> oneOf(vararg gens: IGen<T>): IGen<T>
+    fun <T> oneOfGen(vararg gens: IGen<T>): IGen<T>
 
-    fun <T> oneOf(values: Collection<T>): IGen<T>
+    fun <T> oneOfGen(values: Collection<T>): IGen<T>
 }

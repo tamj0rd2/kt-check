@@ -7,19 +7,19 @@ import com.tamj0rd2.ktcheck.v2.BooleanGenerator.Companion.bool
 import com.tamj0rd2.ktcheck.v2.IntGenerator.Companion.int
 
 internal abstract class BaseGenV2Test : BaseGeneratorContract {
-    override fun int(range: IntRange): Gen<Int> {
+    override fun intGen(range: IntRange): Gen<Int> {
         return Gen.int(range)
     }
 
-    override fun bool(): IGen<Boolean> {
+    override fun boolGen(): IGen<Boolean> {
         return Gen.bool()
     }
 
-    override fun <T> oneOf(vararg gens: IGen<T>): IGen<T> {
+    override fun <T> oneOfGen(vararg gens: IGen<T>): IGen<T> {
         return Gen.oneOf(*gens.map { it as Gen<T> }.toTypedArray())
     }
 
-    override fun <T> oneOf(values: Collection<T>): IGen<T> {
+    override fun <T> oneOfGen(values: Collection<T>): IGen<T> {
         return Gen.oneOf(values)
     }
 

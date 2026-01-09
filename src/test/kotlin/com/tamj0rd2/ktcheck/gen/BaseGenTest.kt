@@ -7,19 +7,19 @@ import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.Seed
 
 internal abstract class BaseGenTest : BaseGeneratorContract {
-    override fun int(range: IntRange): Gen<Int> {
+    override fun intGen(range: IntRange): Gen<Int> {
         return Gen.int(range)
     }
 
-    override fun bool(): IGen<Boolean> {
+    override fun boolGen(): IGen<Boolean> {
         return Gen.bool()
     }
 
-    override fun <T> oneOf(vararg gens: IGen<T>): IGen<T> {
+    override fun <T> oneOfGen(vararg gens: IGen<T>): IGen<T> {
         return Gen.oneOf(gens.map { it as Gen<T> })
     }
 
-    override fun <T> oneOf(values: Collection<T>): IGen<T> {
+    override fun <T> oneOfGen(values: Collection<T>): IGen<T> {
         return Gen.oneOf(values)
     }
 

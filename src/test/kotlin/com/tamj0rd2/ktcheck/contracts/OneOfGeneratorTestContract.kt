@@ -14,9 +14,9 @@ internal interface OneOfGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `can choose between generators uniformly`() {
-        val gen = oneOf(
-            bool().map { it as Any },
-            int(Int.MIN_VALUE..Int.MAX_VALUE).map { it as Any },
+        val gen = oneOfGen(
+            boolGen().map { it as Any },
+            intGen(Int.MIN_VALUE..Int.MAX_VALUE).map { it as Any },
         )
 
         withCounter { gen.samples().take(100_000).forEach { collect(it::class.simpleName) } }
@@ -25,9 +25,9 @@ internal interface OneOfGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `shrinking a oneOf generator can shrink between types without failure`() {
-        val multiTypeGen = oneOf(
-            bool().map { it as Any },
-            int(0..4).map { it as Any },
+        val multiTypeGen = oneOfGen(
+            boolGen().map { it as Any },
+            intGen(0..4).map { it as Any },
         )
 
         // chooses an index, then generates a value from each generator
@@ -49,7 +49,7 @@ internal interface OneOfGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `oneOfValues shrinks toward first value in collection`() {
         val values = listOf("banana", "apple", "cherry")
-        val gen = oneOf(values)
+        val gen = oneOfGen(values)
 
         withCounter {
             gen.samples().take(100_000).forEach { collect(it) }
