@@ -40,6 +40,14 @@ internal abstract class BaseGenV2Test : BaseGeneratorContract {
         return (this as GenV2<T>).list(sizeRange, distinct)
     }
 
+    override fun <T> IGen<T>.filterGen(predicate: (T) -> Boolean): IGen<T> {
+        return (this as GenV2<T>).filter(predicate)
+    }
+
+    override fun <T> IGen<T>.filterGen(threshold: Int, predicate: (T) -> Boolean): IGen<T> {
+        return (this as GenV2<T>).filter(threshold, predicate)
+    }
+
     override fun <T : Any> IGen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> =
         (this as GenV2<T>).generateWithShrunkValues(StubValueProducerV2(rngValues))
 

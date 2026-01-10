@@ -29,6 +29,11 @@ internal interface BaseGeneratorContract {
     fun <T> IGen<T>.listGen(size: Int, distinct: Boolean = false): IGen<List<T>>
 
     fun <T> IGen<T>.listGen(sizeRange: IntRange, distinct: Boolean = false): IGen<List<T>>
+
+    // Filter generator factory methods
+    fun <T> IGen<T>.filterGen(predicate: (T) -> Boolean): IGen<T>
+
+    fun <T> IGen<T>.filterGen(threshold: Int, predicate: (T) -> Boolean): IGen<T>
 }
 
 /**

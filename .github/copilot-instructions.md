@@ -66,6 +66,9 @@ rm -f output.txt && ./gradlew :test --tests "<TestClass>" --console=plain > outp
 
 - **If the file contains "BUILD SUCCESSFUL"** → All tests passed ✅
 - **If the file contains "FAILED"** → Tests failed ❌ (read the failure details)
+- **If the file contains "FAILURE: Build failed with an exception."** → Compilation failed ❌ (check for compilation
+  errors in the output)
+- **If none of these phrases are found** → Something is wrong and needs troubleshooting ⚠️
 - **No need to grep or search multiple times** - just read the file once
 
 **Important: Avoid Redundant Test Runs**

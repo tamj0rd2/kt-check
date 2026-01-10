@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.gen
 
 
+import com.tamj0rd2.ktcheck.contracts.FilterGeneratorTestContract
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.expectGenerationAndShrinkingToEventuallyComplete
 import com.tamj0rd2.ktcheck.producer.PredeterminedValue
 import com.tamj0rd2.ktcheck.producer.ProducerTree
@@ -16,38 +17,8 @@ import strikt.assertions.isFalse
 import strikt.assertions.isNotEmpty
 import strikt.assertions.isNotEqualTo
 
-
-class FilterGeneratorTest {
-    @Nested
-    inner class PredicateFiltering {
-        @Test
-        fun `can filter generated values`() {
-            val gen = Gen.int(1..10).filter { it % 2 == 0 }
-
-            gen.samples().take(100).onEach { expectThat(it % 2).isEqualTo(0) }.toList()
-        }
-
-        @Test
-        fun `throws if the filter threshold is exceeded`() {
-            val gen = Gen.int(1..10).filter { it > 10 }
-
-            expectThrows<FilterLimitReached> { gen.samples().first() }
-        }
-
-        @Test
-        fun `doesn't produce shrinks that would fail the predicate, which would otherwise lead to infinite shrinking`() {
-            val gen = Gen.int(1..4).filter { it > 2 }
-            val tree = producerTree { left(4) }
-
-            val (value, shrunkTrees) = gen.generate(tree, GenMode.Initial)
-            expectThat(value).isEqualTo(4)
-            expectThat(shrunkTrees.toList())
-                .describedAs("shrunk trees")
-                .isNotEmpty()
-                .all { leftProducer.isNotEqualTo(PredeterminedValue(1)).isNotEqualTo(PredeterminedValue(2)) }
-            gen.expectGenerationAndShrinkingToEventuallyComplete(shrunkValueRequired = false)
-        }
-    }
+internal class FilterGeneratorTest : BaseGenTest(), FilterGeneratorTestContract {
+    // Predicate filtering tests inherited from FilterGeneratorTestContract
 
     @Nested
     inner class IgnoreExceptions {
