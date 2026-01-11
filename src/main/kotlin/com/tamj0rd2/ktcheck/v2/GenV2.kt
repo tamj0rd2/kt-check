@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.v2
 
-import com.tamj0rd2.ktcheck.contract.GenBuilder
-import com.tamj0rd2.ktcheck.contract.IGen
+import com.tamj0rd2.ktcheck.core.GenBuilder
+import com.tamj0rd2.ktcheck.core.IGen
 import com.tamj0rd2.ktcheck.gen.CombinerContext
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.Seed

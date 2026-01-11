@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.contracts.ListGeneratorTestContract
+import com.tamj0rd2.ktcheck.core.IGen
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
 
 internal class ListGeneratorTest : BaseGenTest(), ListGeneratorTestContract {

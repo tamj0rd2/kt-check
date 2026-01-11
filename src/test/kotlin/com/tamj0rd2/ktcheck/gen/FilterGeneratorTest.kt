@@ -1,8 +1,8 @@
 package com.tamj0rd2.ktcheck.gen
 
 
-import com.tamj0rd2.ktcheck.contract.GenerationException.FilterLimitReached
 import com.tamj0rd2.ktcheck.contracts.FilterGeneratorTestContract
+import com.tamj0rd2.ktcheck.core.GenerationException.FilterLimitReached
 import com.tamj0rd2.ktcheck.gen.Gen.Companion.ignoreExceptions
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.expectGenerationAndShrinkingToEventuallyComplete
 import com.tamj0rd2.ktcheck.producer.PredeterminedValue

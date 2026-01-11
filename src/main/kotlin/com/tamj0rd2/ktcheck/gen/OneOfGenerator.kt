@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.contract.GenerationException.OneOfEmpty
+import com.tamj0rd2.ktcheck.core.GenerationException.OneOfEmpty
 
 /**
  * A generator that chooses between multiple generators using an index. Shrinks towards

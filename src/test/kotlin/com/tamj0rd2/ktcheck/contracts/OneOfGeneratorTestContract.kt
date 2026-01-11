@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.contract.IGen
+import com.tamj0rd2.ktcheck.core.IGen
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat

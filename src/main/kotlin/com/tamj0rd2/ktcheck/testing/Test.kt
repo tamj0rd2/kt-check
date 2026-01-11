@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.testing
 
-import com.tamj0rd2.ktcheck.contract.GenerationException
-import com.tamj0rd2.ktcheck.contract.IGen
+import com.tamj0rd2.ktcheck.core.GenerationException
+import com.tamj0rd2.ktcheck.core.IGen
 import com.tamj0rd2.ktcheck.gen.Gen
 import com.tamj0rd2.ktcheck.gen.GenMode
 import com.tamj0rd2.ktcheck.producer.ProducerTree

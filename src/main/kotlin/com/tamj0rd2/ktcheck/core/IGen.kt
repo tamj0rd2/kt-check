@@ -1,6 +1,6 @@
-package com.tamj0rd2.ktcheck.contract
+package com.tamj0rd2.ktcheck.core
 
-import com.tamj0rd2.ktcheck.contract.GenerationException.OneOfEmpty
+import com.tamj0rd2.ktcheck.core.GenerationException.OneOfEmpty
 import com.tamj0rd2.ktcheck.gen.CombinerContext
 import com.tamj0rd2.ktcheck.gen.plus
 import com.tamj0rd2.ktcheck.producer.Seed

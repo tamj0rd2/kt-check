@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.contract.IGen
+import com.tamj0rd2.ktcheck.core.IGen
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 
 internal class CombinerGenerator<T>(

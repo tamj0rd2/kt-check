@@ -1,8 +1,8 @@
 package com.tamj0rd2.ktcheck.gen
 
 
-import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.contracts.OneOfGeneratorTestContract
+import com.tamj0rd2.ktcheck.core.IGen
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 

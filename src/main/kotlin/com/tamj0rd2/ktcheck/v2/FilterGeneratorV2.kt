@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.v2
 
-import com.tamj0rd2.ktcheck.contract.GenerationException.FilterLimitReached
+import com.tamj0rd2.ktcheck.core.GenerationException.FilterLimitReached
 
 internal class FilterGeneratorV2<T>(
     private val gen: GenV2<T>,

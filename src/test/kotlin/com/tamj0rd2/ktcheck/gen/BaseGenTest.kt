@@ -1,9 +1,9 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.contract.GenBuilder
-import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
+import com.tamj0rd2.ktcheck.core.GenBuilder
+import com.tamj0rd2.ktcheck.core.IGen
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy

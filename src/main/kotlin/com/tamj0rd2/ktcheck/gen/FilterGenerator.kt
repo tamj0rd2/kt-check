@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.contract.GenerationException.FilterLimitReached
+import com.tamj0rd2.ktcheck.core.GenerationException.FilterLimitReached
 import com.tamj0rd2.ktcheck.gen.FilterGenerator.FilterResult.Failed
 import com.tamj0rd2.ktcheck.gen.FilterGenerator.FilterResult.Succeeded
 import com.tamj0rd2.ktcheck.producer.ProducerTree

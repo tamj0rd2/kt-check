@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.contract.GenerationException.DistinctCollectionSizeImpossible
+import com.tamj0rd2.ktcheck.core.GenerationException.DistinctCollectionSizeImpossible
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
 

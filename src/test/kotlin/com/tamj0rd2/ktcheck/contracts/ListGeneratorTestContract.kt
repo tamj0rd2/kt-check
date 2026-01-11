@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.contract.GenerationException.DistinctCollectionSizeImpossible
-import com.tamj0rd2.ktcheck.contract.IGen
+import com.tamj0rd2.ktcheck.core.GenerationException.DistinctCollectionSizeImpossible
+import com.tamj0rd2.ktcheck.core.IGen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import strikt.api.expectThat

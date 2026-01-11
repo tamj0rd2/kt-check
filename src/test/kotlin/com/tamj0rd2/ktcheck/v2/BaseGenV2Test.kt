@@ -1,9 +1,9 @@
 package com.tamj0rd2.ktcheck.v2
 
-import com.tamj0rd2.ktcheck.contract.GenBuilder
-import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
+import com.tamj0rd2.ktcheck.core.GenBuilder
+import com.tamj0rd2.ktcheck.core.IGen
 import com.tamj0rd2.ktcheck.producer.Seed
 
 internal abstract class BaseGenV2Test : BaseGeneratorContract, GenBuilder by GenV2.Companion {
