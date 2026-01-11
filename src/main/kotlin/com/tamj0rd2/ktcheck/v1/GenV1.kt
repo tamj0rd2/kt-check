@@ -24,7 +24,7 @@ internal enum class GenMode {
  *
  * @param T The type of values produced by this generator.
  */
-sealed class GenV1<T> : Gen<T> {
+internal sealed class GenV1<T> : Gen<T> {
     internal abstract fun GenContext.generate(): GenResult<T>
 
     internal fun generate(tree: ProducerTree, mode: GenMode): GenResult<T> =

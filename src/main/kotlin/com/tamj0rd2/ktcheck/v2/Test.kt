@@ -1,6 +1,5 @@
 package com.tamj0rd2.ktcheck.v2
 
-import com.tamj0rd2.ktcheck.GenerationException
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.Test
 import com.tamj0rd2.ktcheck.TestConfig
@@ -53,23 +52,21 @@ private tailrec fun <T> getSmallestCounterExample(
 ): Pair<TestResult.Failure<T>, Int> {
     if (!iterator.hasNext()) return smallestResultSoFar to steps
 
-    val shrunkResult = try {
-        iterator.next()
-    } catch (_: GenerationException) {
-        null
-    }
+    val shrunkResult = iterator.next()
 
-    if (shrunkResult != null && shrunkResult.value is TestResult.Failure) {
-        return getSmallestCounterExample(
-            smallestResultSoFar = shrunkResult.value,
-            iterator = shrunkResult.shrinks.iterator(),
+    return when (shrunkResult.value) {
+        is TestResult.Failure -> {
+            getSmallestCounterExample(
+                smallestResultSoFar = shrunkResult.value,
+                iterator = shrunkResult.shrinks.iterator(),
+                steps = steps + 1
+            )
+        }
+
+        is TestResult.Success<*> -> getSmallestCounterExample(
+            smallestResultSoFar = smallestResultSoFar,
+            iterator = iterator,
             steps = steps + 1
         )
     }
-
-    return getSmallestCounterExample(
-        smallestResultSoFar = smallestResultSoFar,
-        iterator = iterator,
-        steps = steps + 1
-    )
 }

@@ -14,7 +14,7 @@ internal data class GenContextV2(
     val producer: ValueProducerV2,
 )
 
-interface ValueProducerV2 {
+internal interface ValueProducerV2 {
     fun int(range: IntRange): Int
     fun bool(): Boolean
 }
@@ -27,12 +27,7 @@ class RandomValueProducerV2 internal constructor(seed: Seed) : ValueProducerV2 {
     override fun bool(): Boolean = random.nextBoolean()
 }
 
-/**
- * A generator that can produce values of type T.
- *
- * @param T The type of values produced by this generator.
- */
-sealed class GenV2<T> : Gen<T> {
+internal sealed class GenV2<T> : Gen<T> {
     internal abstract fun GenContextV2.generate(): GenResultV2<T>
 
     internal fun generate(producer: ValueProducerV2): GenResultV2<T> = GenContextV2(producer).generate()
