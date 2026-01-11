@@ -1,7 +1,12 @@
-package com.tamj0rd2.ktcheck
+package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.TestTest.SpyTestReporter.Reporting
-import com.tamj0rd2.ktcheck.v1.GenV1
+import com.tamj0rd2.ktcheck.HardcodedTestConfig
+import com.tamj0rd2.ktcheck.PropertyFalsifiedException
+import com.tamj0rd2.ktcheck.TestConfig
+import com.tamj0rd2.ktcheck.TestReporter
+import com.tamj0rd2.ktcheck.checkAll
+import com.tamj0rd2.ktcheck.contracts.TestFrameworkTestContract.SpyTestReporter.Reporting
+import com.tamj0rd2.ktcheck.forAll
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.api.expectThrows
@@ -10,43 +15,54 @@ import strikt.assertions.isA
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
 
-class TestTest {
-    private val spyTestReporter = SpyTestReporter()
-    private val testConfig
-        get() = TestConfig().withReporter(reporter = spyTestReporter)
-
+internal interface TestFrameworkTestContract : BaseGeneratorContract {
     @Test
     fun `forAll reports a success if the property holds true`() {
-        forAll(testConfig, GenV1.constant(true)) { it }
+        val spyTestReporter = SpyTestReporter()
+        val testConfig = TestConfig().withReporter(reporter = spyTestReporter)
+
+        forAll(testConfig, constant(true)) { it }
         expectThat(spyTestReporter.reporting).isA<Reporting.ReportedSuccess>()
     }
 
     @Test
     fun `forAll reports a failure if the property is falsified`() {
-        expectThrows<AssertionError> { forAll(testConfig, GenV1.constant(false)) { it } }
+        val spyTestReporter = SpyTestReporter()
+        val testConfig = TestConfig().withReporter(reporter = spyTestReporter)
+
+        expectThrows<AssertionError> { forAll(testConfig, constant(false)) { it } }
         expectThat(spyTestReporter.reporting).isA<Reporting.ReportedFailure>().get { error }.isA<AssertionError>()
     }
 
     @Test
     fun `forAll doesn't do any reporting if an exception is thrown - the error just bubbles up`() {
+        val spyTestReporter = SpyTestReporter()
+        val testConfig = TestConfig().withReporter(reporter = spyTestReporter)
+
         val theError = AssertionError("uh oh!")
-        expectThrows<AssertionError> { forAll(testConfig, GenV1.constant(theError)) { throw it } }.isEqualTo(theError)
+        expectThrows<AssertionError> { forAll(testConfig, constant(theError)) { throw it } }.isEqualTo(theError)
         expectThat(spyTestReporter.reporting).isA<Reporting.None>()
     }
 
     @Test
     fun `checkAll reports success if the property doesn't throw`() {
-        checkAll(testConfig, GenV1.constant(null)) { }
+        val spyTestReporter = SpyTestReporter()
+        val testConfig = TestConfig().withReporter(reporter = spyTestReporter)
+
+        checkAll(testConfig, constant(null)) { }
         expectThat(spyTestReporter.reporting).isA<Reporting.ReportedSuccess>()
     }
 
     @Test
     fun `checkAll reports a failure if the property threw an assertion error`() {
+        val spyTestReporter = SpyTestReporter()
+        val testConfig = TestConfig().withReporter(reporter = spyTestReporter)
+
         val theError = AssertionError("boom!")
         expectThrows<PropertyFalsifiedException> {
             checkAll(
                 testConfig,
-                GenV1.constant(theError)
+                constant(theError)
             ) { throw it }
         }.cause.isEqualTo(theError)
         expectThat(spyTestReporter.reporting).isA<Reporting.ReportedFailure>().get { error }.isEqualTo(theError)
@@ -54,16 +70,22 @@ class TestTest {
 
     @Test
     fun `checkAll doesn't do any reporting if any other throwable is thrown - it just bubbles up`() {
+        val spyTestReporter = SpyTestReporter()
+        val testConfig = TestConfig().withReporter(reporter = spyTestReporter)
+
         class MyThrowable : Throwable()
+
         val exception = MyThrowable()
-        expectThrows<MyThrowable> { checkAll(testConfig, GenV1.constant(exception)) { throw it } }.isEqualTo(exception)
+        expectThrows<MyThrowable> { checkAll(testConfig, constant(exception)) { throw it } }.isEqualTo(exception)
         expectThat(spyTestReporter.reporting).isA<Reporting.None>()
     }
 
     @Test
-    @OptIn(HardcodedTestConfig::class)
     fun `can hardcode a specific test iteration to run`() {
-        val gen = GenV1.int()
+        val spyTestReporter = SpyTestReporter()
+        val testConfig = TestConfig().withReporter(reporter = spyTestReporter)
+
+        val gen = int()
 
         var iterationCount = 0
         var valueOn5thIteration: Int? = null
@@ -80,6 +102,8 @@ class TestTest {
 
         var replayedIterations = 0
         var valueOnRetry: Int? = null
+
+        @OptIn(HardcodedTestConfig::class)
         val replayConfig = initialConfig.replay(initialConfig.seed.value, 5)
 
         forAll(replayConfig, gen) {
