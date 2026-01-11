@@ -1,24 +1,23 @@
-package com.tamj0rd2.ktcheck.gen
+package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Counter
 import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
+import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.NoOpTestReporter
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.TestByBool
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.checkAll
 import com.tamj0rd2.ktcheck.forAll
-import com.tamj0rd2.ktcheck.v1.GenV1
-import com.tamj0rd2.ktcheck.v1.GenV1.Companion.list
 import org.junit.jupiter.api.Test
 import strikt.api.expectThrows
 
 // based on https://github.com/jlink/shrinking-challenge/tree/main/challenges
-class ShrinkingChallenges {
+internal interface ShrinkingChallengeTestContract : BaseGeneratorContract {
     @Test
     fun lengthList() {
         testShrinking(
-            gen = GenV1.int(0..1000).list(1..100),
+            gen = int(0..1000).list(1..100),
             test = { it.max() < 900 },
             didShrinkCorrectly = { it == listOf(900) },
         )
@@ -27,7 +26,7 @@ class ShrinkingChallenges {
     @Test
     fun nestedLists() {
         testShrinking(
-            gen = GenV1.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list(),
+            gen = int(Int.MIN_VALUE..Int.MAX_VALUE).list().list(),
             test = { listOfLists -> listOfLists.sumOf { it.size } <= 10 },
             // todo: although it works, it'd may be nice if later I can make it normalise the list to a single list.
             didShrinkCorrectly = { listOfLists ->
@@ -39,14 +38,14 @@ class ShrinkingChallenges {
 
     @Test
     fun reverse() = testShrinking(
-        gen = GenV1.int().list(),
+        gen = int().list(),
         test = { it.reversed() == it },
         didShrinkCorrectly = { it in setOf(listOf(0, 1), listOf(0, -1)) },
     )
 
     private fun <T> testShrinking(
         testConfig: TestConfig = TestConfig().withIterations(500),
-        gen: GenV1<T>,
+        gen: Gen<T>,
         test: TestByBool<T>,
         didShrinkCorrectly: (T) -> Boolean,
         minConfidence: Double = 100.0,
@@ -55,7 +54,7 @@ class ShrinkingChallenges {
         val exceptionsWithBadShrinks = mutableListOf<PropertyFalsifiedException>()
 
         val counter = withCounter {
-            checkAll(testConfig, GenV1.long()) { seed ->
+            checkAll(testConfig, long()) { seed ->
                 val exception = expectThrows<PropertyFalsifiedException> {
                     forAll(TestConfig().withSeed(seed).withReporter(NoOpTestReporter), gen, test)
                 }.subject

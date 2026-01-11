@@ -55,7 +55,8 @@ sealed class GenV2<T> : Gen<T> {
         }
 
         override fun long(range: IntRange): GenV2<Long> {
-            TODO("Not yet implemented")
+            // todo: implement this properly, and update to use LongRange.
+            return int(range).map { it.toLong() }
         }
 
         override fun uuid(): GenV2<UUID> {
