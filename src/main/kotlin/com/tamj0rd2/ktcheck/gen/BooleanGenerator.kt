@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.gen
 
-internal class BooleanGenerator : Gen<Boolean>() {
+internal class BooleanGenerator : GenV1<Boolean>() {
     override fun GenContext.generate(): GenResult<Boolean> {
         val value = tree.producer.bool()
         return GenResult(

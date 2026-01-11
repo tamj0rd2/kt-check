@@ -17,8 +17,8 @@ import com.tamj0rd2.ktcheck.core.GenerationException.OneOfEmpty
  * This is the trade-off: safety (no type mismatches) vs optimal shrinking.
  **/
 internal class OneOfGenerator<T>(
-    private val gens: List<Gen<T>>,
-) : Gen<T>() {
+    private val gens: List<GenV1<T>>,
+) : GenV1<T>() {
     init {
         if (gens.isEmpty()) throw OneOfEmpty()
     }

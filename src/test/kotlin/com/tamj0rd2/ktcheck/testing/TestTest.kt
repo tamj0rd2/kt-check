@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.testing
 
-import com.tamj0rd2.ktcheck.gen.Gen
+import com.tamj0rd2.ktcheck.gen.GenV1
 import com.tamj0rd2.ktcheck.testing.TestTest.SpyTestReporter.Reporting
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
@@ -16,26 +16,26 @@ class TestTest {
 
     @Test
     fun `forAll reports a success if the property holds true`() {
-        forAll(testConfig, Gen.constant(true)) { it }
+        forAll(testConfig, GenV1.constant(true)) { it }
         expectThat(spyTestReporter.reporting).isA<Reporting.ReportedSuccess>()
     }
 
     @Test
     fun `forAll reports a failure if the property is falsified`() {
-        expectThrows<AssertionError> { forAll(testConfig, Gen.constant(false)) { it } }
+        expectThrows<AssertionError> { forAll(testConfig, GenV1.constant(false)) { it } }
         expectThat(spyTestReporter.reporting).isA<Reporting.ReportedFailure>().get { error }.isA<AssertionError>()
     }
 
     @Test
     fun `forAll doesn't do any reporting if an exception is thrown - the error just bubbles up`() {
         val theError = AssertionError("uh oh!")
-        expectThrows<AssertionError> { forAll(testConfig, Gen.constant(theError)) { throw it } }.isEqualTo(theError)
+        expectThrows<AssertionError> { forAll(testConfig, GenV1.constant(theError)) { throw it } }.isEqualTo(theError)
         expectThat(spyTestReporter.reporting).isA<Reporting.None>()
     }
 
     @Test
     fun `checkAll reports success if the property doesn't throw`() {
-        checkAll(testConfig, Gen.constant(null)) { }
+        checkAll(testConfig, GenV1.constant(null)) { }
         expectThat(spyTestReporter.reporting).isA<Reporting.ReportedSuccess>()
     }
 
@@ -45,7 +45,7 @@ class TestTest {
         expectThrows<PropertyFalsifiedException> {
             checkAll(
                 testConfig,
-                Gen.constant(theError)
+                GenV1.constant(theError)
             ) { throw it }
         }.cause.isEqualTo(theError)
         expectThat(spyTestReporter.reporting).isA<Reporting.ReportedFailure>().get { error }.isEqualTo(theError)
@@ -55,14 +55,14 @@ class TestTest {
     fun `checkAll doesn't do any reporting if any other throwable is thrown - it just bubbles up`() {
         class MyThrowable : Throwable()
         val exception = MyThrowable()
-        expectThrows<MyThrowable> { checkAll(testConfig, Gen.constant(exception)) { throw it } }.isEqualTo(exception)
+        expectThrows<MyThrowable> { checkAll(testConfig, GenV1.constant(exception)) { throw it } }.isEqualTo(exception)
         expectThat(spyTestReporter.reporting).isA<Reporting.None>()
     }
 
     @Test
     @OptIn(HardcodedTestConfig::class)
     fun `can hardcode a specific test iteration to run`() {
-        val gen = Gen.int()
+        val gen = GenV1.int()
 
         var iterationCount = 0
         var valueOn5thIteration: Int? = null

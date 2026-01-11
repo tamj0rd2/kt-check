@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.gen.Gen.Companion.list
+import com.tamj0rd2.ktcheck.gen.GenV1.Companion.list
 import com.tamj0rd2.ktcheck.stats.Counter
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.testing.NoOpTestReporter
@@ -17,7 +17,7 @@ class ShrinkingChallenges {
     @Test
     fun lengthList() {
         testShrinking(
-            gen = Gen.int(0..1000).list(1..100),
+            gen = GenV1.int(0..1000).list(1..100),
             test = { it.max() < 900 },
             didShrinkCorrectly = { it == listOf(900) },
         )
@@ -26,7 +26,7 @@ class ShrinkingChallenges {
     @Test
     fun nestedLists() {
         testShrinking(
-            gen = Gen.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list(),
+            gen = GenV1.int(Int.MIN_VALUE..Int.MAX_VALUE).list().list(),
             test = { listOfLists -> listOfLists.sumOf { it.size } <= 10 },
             // todo: although it works, it'd may be nice if later I can make it normalise the list to a single list.
             didShrinkCorrectly = { listOfLists ->
@@ -38,14 +38,14 @@ class ShrinkingChallenges {
 
     @Test
     fun reverse() = testShrinking(
-        gen = Gen.int().list(),
+        gen = GenV1.int().list(),
         test = { it.reversed() == it },
         didShrinkCorrectly = { it in setOf(listOf(0, 1), listOf(0, -1)) },
     )
 
     private fun <T> testShrinking(
         testConfig: TestConfig = TestConfig().withIterations(500),
-        gen: Gen<T>,
+        gen: GenV1<T>,
         test: TestByBool<T>,
         didShrinkCorrectly: (T) -> Boolean,
         minConfidence: Double = 100.0,
@@ -54,7 +54,7 @@ class ShrinkingChallenges {
         val exceptionsWithBadShrinks = mutableListOf<PropertyFalsifiedException>()
 
         val counter = withCounter {
-            checkAll(testConfig, Gen.long()) { seed ->
+            checkAll(testConfig, GenV1.long()) { seed ->
                 val exception = expectThrows<PropertyFalsifiedException> {
                     forAll(TestConfig().withSeed(seed).withReporter(NoOpTestReporter), gen, test)
                 }.subject

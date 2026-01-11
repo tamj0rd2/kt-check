@@ -7,8 +7,8 @@ import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
 internal class ListGenerator<T>(
     private val sizeRange: IntRange,
     private val distinct: Boolean,
-    private val gen: Gen<T>,
-) : Gen<List<T>>() {
+    private val gen: GenV1<T>,
+) : GenV1<List<T>>() {
     override fun GenContext.generate(): GenResult<List<T>> {
         val size = tree.left.producer.int(sizeRange)
         val (list, listValueShrinks) = listN(rootTree = tree.right, targetSize = size, mode = mode)

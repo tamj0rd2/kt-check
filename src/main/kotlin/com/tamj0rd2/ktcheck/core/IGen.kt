@@ -2,10 +2,11 @@ package com.tamj0rd2.ktcheck.core
 
 import com.tamj0rd2.ktcheck.core.GenerationException.OneOfEmpty
 import com.tamj0rd2.ktcheck.gen.CombinerContext
-import com.tamj0rd2.ktcheck.gen.plus
+import com.tamj0rd2.ktcheck.gen.GenV1
 import com.tamj0rd2.ktcheck.producer.Seed
 import java.util.*
 import kotlin.random.Random
+import kotlin.reflect.KClass
 
 interface IGen<T> {
     /**
@@ -86,6 +87,8 @@ interface GenBuilder {
 
     fun <T> IGen<T>.filter(threshold: Int, predicate: (T) -> Boolean): IGen<T>
 
+    fun <T> IGen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int = 100): IGen<T>
+
     /**
      * Combines multiple generators into a single generator using a builder-style DSL.
      * Each generator in the block is bound sequentially, and their shrinks are combined.
@@ -109,6 +112,25 @@ interface GenBuilder {
      * However, conditionals that skip non-trailing [CombinerContext.bind] calls will cause invalid shrinks.
      */
     fun <T> combine(block: CombinerContext.() -> T): IGen<T>
+
+    /**
+     * Combines two independent generators into a single generator that produces a tuple of both values.
+     * Shrinking is performed independently on each component.
+     *
+     * Example:
+     * ```
+     * // Gen<Pair<Int, Boolean>>
+     * val gen2 = Gen.int() + Gen.boolean()
+     * // Gen<Triple<Int, Boolean, String>>
+     * val gen3 = Gen.int() + Gen.boolean() + Gen.string()
+     * ```
+     *
+     * To combine more than 2 generators, use [GenV1.Companion.combine] instead.
+     *
+     * For dependent generation (where the second generator depends on the first value),
+     * use [flatMap] or [GenV1.Companion.combine] instead.
+     */
+    infix operator fun <T1, T2> IGen<T1>.plus(nextGen: IGen<T2>): IGen<Pair<T1, T2>>
 }
 
 sealed class GenerationException(message: String, cause: Throwable? = null) : IllegalStateException(message, cause) {

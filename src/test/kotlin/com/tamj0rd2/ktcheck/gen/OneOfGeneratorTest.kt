@@ -26,6 +26,6 @@ internal class OneOfGeneratorTest : BaseGenTest(), OneOfGeneratorTestContract {
                 }
             }
 
-        return (this as Gen<T>).generateWithShrunkValues(tree)
+        return (this as GenV1<T>).generateWithShrunkValues(tree)
     }
 }

@@ -2,7 +2,7 @@ package com.tamj0rd2.ktcheck.gen
 
 internal data class IntGenerator(
     private val range: IntRange,
-) : Gen<Int>() {
+) : GenV1<Int>() {
     override fun GenContext.generate(): GenResult<Int> {
         val value = tree.producer.int(range)
         return GenResult(

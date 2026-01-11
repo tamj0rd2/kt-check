@@ -9,23 +9,23 @@ import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
 import com.tamj0rd2.ktcheck.producer.Seed
 
-internal abstract class BaseGenTest : BaseGeneratorContract, GenBuilder by Gen.Companion {
+internal abstract class BaseGenTest : BaseGeneratorContract, GenBuilder by GenV1.Companion {
     override fun <T : Any> IGen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> {
-        return (this as Gen<T>).generateWithShrunkValues(ProducerTree.new().withValue(rngValues.single()))
+        return (this as GenV1<T>).generateWithShrunkValues(ProducerTree.new().withValue(rngValues.single()))
     }
 
     override fun <T : Any> IGen<T>.generateWithShrunkValues(seed: Seed): Pair<T, List<T>> {
-        return (this as Gen<T>).generateWithShrunkValues(ProducerTree.new(seed))
+        return (this as GenV1<T>).generateWithShrunkValues(ProducerTree.new(seed))
     }
 
     override fun <T : Any> IGen<T>.navigateRecursiveShrinks(
         rngValues: List<Any>,
     ): RecursiveShrinkNavigator<T> {
         val tree = buildListTree(rngValues)
-        return (this as Gen<T>).navigateRecursiveShrinks(tree)
+        return (this as GenV1<T>).navigateRecursiveShrinks(tree)
     }
 
-    private fun <T> Gen<T>.navigateRecursiveShrinks(tree: ProducerTree): RecursiveShrinkNavigator<T> {
+    private fun <T> GenV1<T>.navigateRecursiveShrinks(tree: ProducerTree): RecursiveShrinkNavigator<T> {
         val (value, shrinks) = generate(tree, GenMode.Initial)
         return V1RecursiveShrinkNavigator(this, value, shrinks)
     }
@@ -49,7 +49,7 @@ internal abstract class BaseGenTest : BaseGeneratorContract, GenBuilder by Gen.C
 }
 
 private class V1RecursiveShrinkNavigator<T>(
-    private val gen: Gen<T>,
+    private val gen: GenV1<T>,
     override val value: T,
     private val shrinkTrees: Sequence<ProducerTree>,
 ) : RecursiveShrinkNavigator<T> {

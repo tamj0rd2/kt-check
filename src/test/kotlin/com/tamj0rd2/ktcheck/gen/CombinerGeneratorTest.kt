@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.gen.Gen.Companion.string
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
+import com.tamj0rd2.ktcheck.gen.GenV1.Companion.string
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.producerTree
 import com.tamj0rd2.ktcheck.producer.Seed
 import org.junit.jupiter.api.Test
@@ -23,10 +23,10 @@ class CombinerGeneratorTest {
     fun `generators using the builder shrink correctly`() {
         data class Person(val name: String, val age: Int)
 
-        val gen = Gen.combine {
+        val gen = GenV1.combine {
             Person(
-                name = Gen.char('a'..'d').string(1..5).bind(),
-                age = Gen.int(0..150).bind()
+                name = GenV1.char('a'..'d').string(1..5).bind(),
+                age = GenV1.int(0..150).bind()
             )
         }
 
@@ -64,12 +64,12 @@ class CombinerGeneratorTest {
         // When a conditional affects only the final bind call(s), the combiner works correctly.
         // The unconsumed tree parts are simply ignored.
 
-        val gen = Gen.combine {
-            val includeY = Gen.bool().bind()
-            val x = Gen.int(0..10).bind()
+        val gen = GenV1.combine {
+            val includeY = GenV1.bool().bind()
+            val x = GenV1.int(0..10).bind()
 
             if (includeY) {
-                val y = Gen.int(10..20).bind()
+                val y = GenV1.int(10..20).bind()
                 XY(x, y)
             } else {
                 XY(x, null)
@@ -104,16 +104,16 @@ class CombinerGeneratorTest {
         // When a conditional affects a bind that is NOT the last one, subsequent binds
         // consume the wrong tree positions, leading to incorrect values.
 
-        val gen = Gen.combine {
-            val includeX = Gen.bool().bind()
+        val gen = GenV1.combine {
+            val includeX = GenV1.bool().bind()
 
             if (includeX) {
-                val x = Gen.int(0..10).bind()
-                val y = Gen.int(10..20).bind()
+                val x = GenV1.int(0..10).bind()
+                val y = GenV1.int(10..20).bind()
                 XY(x, y)
             } else {
                 // Problem: y will consume position 2 instead of position 3!
-                val y = Gen.int(10..20).bind()
+                val y = GenV1.int(10..20).bind()
                 XY(null, y)
             }
         }

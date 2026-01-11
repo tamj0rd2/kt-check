@@ -3,7 +3,6 @@ package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.contracts.FilterGeneratorTestContract
 import com.tamj0rd2.ktcheck.core.GenerationException.FilterLimitReached
-import com.tamj0rd2.ktcheck.gen.Gen.Companion.ignoreExceptions
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.expectGenerationAndShrinkingToEventuallyComplete
 import com.tamj0rd2.ktcheck.producer.PredeterminedValue
 import com.tamj0rd2.ktcheck.producer.ProducerTree
@@ -28,7 +27,7 @@ internal class FilterGeneratorTest : BaseGenTest(), FilterGeneratorTestContract 
         fun `can ignore exceptions in generated values`() {
             class TestException : Exception()
 
-            val possiblyThrowingGen = Gen.bool()
+            val possiblyThrowingGen = GenV1.bool()
                 .map { if (it) throw TestException() else false }
                 .ignoreExceptions(TestException::class)
 
@@ -40,14 +39,14 @@ internal class FilterGeneratorTest : BaseGenTest(), FilterGeneratorTestContract 
         fun `doesn't produce shrinks that would cause the exception, which would otherwise lead to infinite shrinking`() {
             class TestException : Exception()
 
-            val possiblyThrowingGen = Gen.int(1..3)
+            val possiblyThrowingGen = GenV1.int(1..3)
                 .map {
                     when (it) {
                         1 -> throw TestException()
                         else -> it
                     }
                 }
-                .ignoreExceptions(TestException::class)
+                .ignoreExceptions(TestException::class) as GenV1<Int>
 
             val tree = producerTree {
                 left(3)
@@ -69,7 +68,7 @@ internal class FilterGeneratorTest : BaseGenTest(), FilterGeneratorTestContract 
         fun `if an ignored exception is thrown more times than the threshold, throws an error`() {
             class IgnoredException : Exception()
 
-            val throwingGen = Gen.bool()
+            val throwingGen = GenV1.bool()
                 .map { throw IgnoredException() }
                 .ignoreExceptions(IgnoredException::class)
 
@@ -81,7 +80,7 @@ internal class FilterGeneratorTest : BaseGenTest(), FilterGeneratorTestContract 
             class IgnoredException : Exception()
             class NotIgnoredException : Exception()
 
-            val throwingGen = Gen.bool()
+            val throwingGen = GenV1.bool()
                 .map { throw NotIgnoredException() }
                 .ignoreExceptions(IgnoredException::class)
 
@@ -93,7 +92,7 @@ internal class FilterGeneratorTest : BaseGenTest(), FilterGeneratorTestContract 
             class IgnoredException1 : Exception()
             class IgnoredException2 : Exception()
 
-            val possiblyThrowingGen = Gen.int(1..3)
+            val possiblyThrowingGen = GenV1.int(1..3)
                 .map {
                     when (it) {
                         1 -> throw IgnoredException1()

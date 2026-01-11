@@ -2,6 +2,7 @@ package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.core.GenBuilder
 import com.tamj0rd2.ktcheck.core.IGen
+import com.tamj0rd2.ktcheck.gen.GenV1.Companion.plus
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.Seed
 import java.util.*
@@ -24,7 +25,7 @@ internal enum class GenMode {
  *
  * @param T The type of values produced by this generator.
  */
-sealed class Gen<T> : IGen<T> {
+sealed class GenV1<T> : IGen<T> {
     internal abstract fun GenContext.generate(): GenResult<T>
 
     internal fun generate(tree: ProducerTree, mode: GenMode): GenResult<T> =
@@ -40,7 +41,7 @@ sealed class Gen<T> : IGen<T> {
      * @param fn A function that takes a value of type T and returns a value of type R.
      * @return A new generator that produces values of type R.
      */
-    override fun <R> map(fn: (T) -> R): Gen<R> = CombinatorGenerator {
+    override fun <R> map(fn: (T) -> R): GenV1<R> = CombinatorGenerator {
         val (value, shrinks) = generate(tree, mode)
         GenResult(fn(value), shrinks)
     }
@@ -57,7 +58,7 @@ sealed class Gen<T> : IGen<T> {
      * @param fn A function that takes a value of type T and returns a generator of type R.
      * @return A new generator that produces values of type R.
      */
-    fun <R> flatMap(fn: (T) -> Gen<R>): Gen<R> = CombinatorGenerator {
+    fun <R> flatMap(fn: (T) -> GenV1<R>): GenV1<R> = CombinatorGenerator {
         val (leftValue, leftShrinks) = generate(tree.left, mode)
         val (rightValue, rightShrinks) = fn(leftValue).generate(tree.right, mode)
         GenResult(
@@ -78,7 +79,7 @@ sealed class Gen<T> : IGen<T> {
      * @param combine A function that takes values from both generators and combines them into a value of type R.
      * @return A new generator that produces values of type R.
      */
-    fun <T2, R> combineWith(nextGen: Gen<T2>, combine: (T, T2) -> R): Gen<R> =
+    fun <T2, R> combineWith(nextGen: GenV1<T2>, combine: (T, T2) -> R): GenV1<R> =
         CombinatorGenerator {
             val (thisValue, thisShrinks) = generate(tree.left, mode)
             val (nextValue, nextShrinks) = nextGen.generate(tree.right, mode)
@@ -93,44 +94,44 @@ sealed class Gen<T> : IGen<T> {
         mode = GenMode.Initial
     ).value
 
-    companion object : GenBuilder {
-        override fun <T> constant(value: T): Gen<T> {
+    internal companion object : GenBuilder {
+        override fun <T> constant(value: T): GenV1<T> {
             return ConstantGenerator(value)
         }
 
-        override fun bool(): Gen<Boolean> {
+        override fun bool(): GenV1<Boolean> {
             return BooleanGenerator()
         }
 
-        override fun int(range: IntRange): Gen<Int> {
+        override fun int(range: IntRange): GenV1<Int> {
             return IntGenerator(range)
         }
 
         // todo: implement this properly
-        override fun long(range: IntRange): Gen<Long> {
+        override fun long(range: IntRange): GenV1<Long> {
             return int(range).map { it.toLong() }
         }
 
-        override fun uuid(): Gen<UUID> {
+        override fun uuid(): GenV1<UUID> {
             return (long() + long()).map { UUID(it.first, it.second) }
         }
 
-        override fun <T> oneOf(gens: Collection<IGen<T>>): Gen<T> {
+        override fun <T> oneOf(gens: Collection<IGen<T>>): GenV1<T> {
             require(gens.isNotEmpty()) { "oneOf requires at least one generator" }
-            val genList = gens.map { it as Gen<T> }
+            val genList = gens.map { it as GenV1<T> }
             return OneOfGenerator(genList)
         }
 
         override fun <T> IGen<T>.list(
             size: IntRange,
             distinct: Boolean,
-        ): Gen<List<T>> = ListGenerator(sizeRange = size, distinct = distinct, gen = this as Gen<T>)
+        ): GenV1<List<T>> = ListGenerator(sizeRange = size, distinct = distinct, gen = this as GenV1<T>)
 
-        override fun IGen<Char>.string(size: IntRange): Gen<String> {
+        override fun IGen<Char>.string(size: IntRange): GenV1<String> {
             return list(size).map { it.joinToString("") }
         }
 
-        override fun IGen<Char>.string(size: Int): Gen<String> {
+        override fun IGen<Char>.string(size: Int): GenV1<String> {
             return string(size..size)
         }
 
@@ -138,9 +139,9 @@ sealed class Gen<T> : IGen<T> {
          * Filters generated values using the given [predicate]. Although this generator supports shrinking, it is very
          * inefficient. Instead of using this generator, consider using generators that do not throw exceptions.
          */
-        override fun <T> IGen<T>.filter(threshold: Int, predicate: (T) -> Boolean): Gen<T> {
+        override fun <T> IGen<T>.filter(threshold: Int, predicate: (T) -> Boolean): GenV1<T> {
             return PredicateFilterGenerator(
-                gen = this as Gen<T>,
+                gen = this as GenV1<T>,
                 threshold = threshold,
                 predicate = predicate
             )
@@ -150,15 +151,22 @@ sealed class Gen<T> : IGen<T> {
          * Ignores exceptions of type [klass] thrown during generation. Although this generator supports shrinking, it is very
          * inefficient. Instead of using this generator, consider using generators that do not throw exceptions.
          */
-        fun <T> IGen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int = 100): Gen<T> =
+        override fun <T> IGen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int): GenV1<T> =
             ExceptionIgnoringGenerator(
-                gen = this as Gen<T>,
+                gen = this as GenV1<T>,
                 threshold = threshold,
                 klass = klass
             )
 
-        override fun <T> combine(block: CombinerContext.() -> T): Gen<T> {
+        override fun <T> combine(block: CombinerContext.() -> T): GenV1<T> {
             return CombinerGenerator(block)
+        }
+
+        override fun <T1, T2> IGen<T1>.plus(nextGen: IGen<T2>): GenV1<Pair<T1, T2>> {
+            // todo: fix all this casting nonsense?
+            val first = this as GenV1<T1>
+            val second = nextGen as GenV1<T2>
+            return first.combineWith(second, ::Pair)
         }
     }
 }
@@ -169,6 +177,6 @@ sealed class Gen<T> : IGen<T> {
  */
 internal data class GenResult<T>(val value: T, val shrinks: Sequence<ProducerTree>)
 
-private class CombinatorGenerator<T>(private val generator: GenContext.() -> GenResult<T>) : Gen<T>() {
+private class CombinatorGenerator<T>(private val generator: GenContext.() -> GenResult<T>) : GenV1<T>() {
     override fun GenContext.generate(): GenResult<T> = generator()
 }

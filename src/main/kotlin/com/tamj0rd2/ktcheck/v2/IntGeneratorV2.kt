@@ -1,6 +1,5 @@
 package com.tamj0rd2.ktcheck.v2
 
-@ConsistentCopyVisibility
 internal data class IntGeneratorV2(
     internal val range: IntRange,
 ) : GenV2<Int>() {

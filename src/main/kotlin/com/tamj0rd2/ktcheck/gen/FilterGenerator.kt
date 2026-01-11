@@ -8,7 +8,7 @@ import kotlin.reflect.KClass
 
 internal sealed class FilterGenerator<T>(
     private val threshold: Int,
-) : Gen<T>() {
+) : GenV1<T>() {
     override fun GenContext.generate(): GenResult<T> {
         var lastFailure: Exception? = null
 
@@ -42,7 +42,7 @@ internal sealed class FilterGenerator<T>(
 }
 
 internal class PredicateFilterGenerator<T>(
-    private val gen: Gen<T>,
+    private val gen: GenV1<T>,
     threshold: Int,
     private val predicate: (T) -> Boolean,
 ) : FilterGenerator<T>(threshold) {
@@ -53,7 +53,7 @@ internal class PredicateFilterGenerator<T>(
 }
 
 internal class ExceptionIgnoringGenerator<T>(
-    private val gen: Gen<T>,
+    private val gen: GenV1<T>,
     threshold: Int,
     private val klass: KClass<out Exception>,
 ) : FilterGenerator<T>(threshold) {

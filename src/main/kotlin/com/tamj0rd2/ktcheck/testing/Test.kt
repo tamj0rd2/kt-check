@@ -2,8 +2,8 @@ package com.tamj0rd2.ktcheck.testing
 
 import com.tamj0rd2.ktcheck.core.GenerationException
 import com.tamj0rd2.ktcheck.core.IGen
-import com.tamj0rd2.ktcheck.gen.Gen
 import com.tamj0rd2.ktcheck.gen.GenMode
+import com.tamj0rd2.ktcheck.gen.GenV1
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 
 @Suppress("unused")
@@ -15,12 +15,12 @@ fun <T> checkAll(gen: IGen<T>, test: TestByThrowing<T>) = checkAll(TestConfig(),
 fun <T> checkAll(config: TestConfig, gen: IGen<T>, test: TestByThrowing<T>) = test(config, gen, test as Test<T>)
 
 private fun <T> test(config: TestConfig, gen: IGen<T>, test: Test<T>) = when (gen) {
-    is Gen<T> -> test(config, gen, test)
+    is GenV1<T> -> test(config, gen, test)
     else -> error("unsupported generator type: ${gen::class.qualifiedName}")
 }
 
 @OptIn(HardcodedTestConfig::class)
-private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
+private fun <T> test(config: TestConfig, gen: GenV1<T>, test: Test<T>) {
     val testResultsGen = gen.map { test.getResultFor(it) }
 
     fun runIteration(iteration: Int) {
@@ -60,7 +60,7 @@ private fun <T> Test<T>.getResultFor(t: T): TestResult<T> {
     return TestResult.Failure(t, failure)
 }
 
-private tailrec fun <T> Gen<TestResult<T>>.getSmallestCounterExample(
+private tailrec fun <T> GenV1<TestResult<T>>.getSmallestCounterExample(
     testResult: TestResult.Failure<T>,
     iterator: Iterator<ProducerTree>,
     steps: Int = 0,
