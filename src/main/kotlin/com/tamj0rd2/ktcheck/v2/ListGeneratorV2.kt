@@ -1,19 +1,15 @@
 package com.tamj0rd2.ktcheck.v2
 
-import com.tamj0rd2.ktcheck.gen.DistinctCollectionSizeImpossible
-import com.tamj0rd2.ktcheck.v2.IntGeneratorV2.Companion.int
+import com.tamj0rd2.ktcheck.contract.GenerationException.DistinctCollectionSizeImpossible
 import com.tamj0rd2.ktcheck.v2.IntGeneratorV2.Companion.shrinkInt
 
-private class ListGeneratorV2<T>(
+internal data class ListGeneratorV2<T>(
     private val gen: GenV2<T>,
     private val sizeRange: IntRange,
     private val distinct: Boolean = false,
 ) : GenV2<List<T>>() {
-    private val sizeGen = GenV2.int(sizeRange)
-
     override fun GenContextV2.generate(): GenResultV2<List<T>> {
-        val sizeResult = sizeGen.generate(producer)
-        val size = sizeResult.value
+        val size = producer.int(sizeRange)
 
         val elementResults = if (distinct) generateDistinctElements(size) else List(size) { gen.generate(producer) }
 
@@ -98,13 +94,3 @@ private class ListGeneratorV2<T>(
         private const val MAX_DISTINCT_ATTEMPTS = 1000
     }
 }
-
-
-fun <T> GenV2<T>.list(size: IntRange = 0..100, distinct: Boolean = false): GenV2<List<T>> =
-    ListGeneratorV2(gen = this, sizeRange = size, distinct = distinct)
-
-fun <T> GenV2<T>.list(size: Int, distinct: Boolean = false): GenV2<List<T>> =
-    list(size..size, distinct)
-
-fun <T> GenV2<T>.set(size: IntRange = 0..100): GenV2<Set<T>> =
-    list(size, distinct = true).map { it.toSet() }

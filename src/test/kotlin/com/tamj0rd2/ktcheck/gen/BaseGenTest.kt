@@ -3,6 +3,8 @@ package com.tamj0rd2.ktcheck.gen
 import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
+import com.tamj0rd2.ktcheck.gen.Gen.Companion.filter
+import com.tamj0rd2.ktcheck.gen.Gen.Companion.list
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
@@ -18,7 +20,7 @@ internal abstract class BaseGenTest : BaseGeneratorContract {
     }
 
     override fun <T> oneOfGen(vararg gens: IGen<T>): IGen<T> {
-        return Gen.oneOf(gens.map { it as Gen<T> })
+        return Gen.oneOf(*gens)
     }
 
     override fun <T> oneOfGen(values: Collection<T>): IGen<T> {

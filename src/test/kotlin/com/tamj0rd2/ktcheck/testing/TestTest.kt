@@ -1,8 +1,6 @@
 package com.tamj0rd2.ktcheck.testing
 
 import com.tamj0rd2.ktcheck.gen.Gen
-import com.tamj0rd2.ktcheck.gen.constant
-import com.tamj0rd2.ktcheck.gen.int
 import com.tamj0rd2.ktcheck.testing.TestTest.SpyTestReporter.Reporting
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat

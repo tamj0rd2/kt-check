@@ -1,8 +1,11 @@
 package com.tamj0rd2.ktcheck.gen
 
+import com.tamj0rd2.ktcheck.contract.GenBuilder
 import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.Seed
+import java.util.*
+import kotlin.reflect.KClass
 
 internal data class GenContext(
     val tree: ProducerTree,
@@ -90,7 +93,75 @@ sealed class Gen<T> : IGen<T> {
         mode = GenMode.Initial
     ).value
 
-    companion object
+    companion object : GenBuilder {
+        override fun <T> constant(value: T): Gen<T> {
+            return ConstantGenerator(value)
+        }
+
+        override fun bool(): Gen<Boolean> {
+            return BooleanGenerator()
+        }
+
+        override fun int(range: IntRange): Gen<Int> {
+            return IntGenerator(range)
+        }
+
+        // todo: implement this properly
+        override fun long(range: IntRange): Gen<Long> {
+            return int(range).map { it.toLong() }
+        }
+
+        override fun uuid(): Gen<UUID> {
+            return (long() + long()).map { UUID(it.first, it.second) }
+        }
+
+        override fun <T> oneOf(gens: Collection<IGen<T>>): Gen<T> {
+            require(gens.isNotEmpty()) { "oneOf requires at least one generator" }
+            val genList = gens.map { it as Gen<T> }
+            return OneOfGenerator(genList)
+        }
+
+        override fun <T> IGen<T>.list(
+            size: IntRange,
+            distinct: Boolean,
+        ): Gen<List<T>> = ListGenerator(sizeRange = size, distinct = distinct, gen = this as Gen<T>)
+
+        override fun IGen<Char>.string(size: IntRange): Gen<String> {
+            return list(size).map { it.joinToString("") }
+        }
+
+        override fun IGen<Char>.string(size: Int): Gen<String> {
+            return string(size..size)
+        }
+
+        /**
+         * Filters generated values using the given [predicate]. Although this generator supports shrinking, it is very
+         * inefficient. Instead of using this generator, consider using generators that do not throw exceptions.
+         */
+        override fun <T> IGen<T>.filter(threshold: Int, predicate: (T) -> Boolean): Gen<T> {
+            return PredicateFilterGenerator(
+                gen = this as Gen<T>,
+                threshold = threshold,
+                predicate = predicate
+            )
+        }
+
+        /**
+         * Ignores exceptions of type [klass] thrown during generation. Although this generator supports shrinking, it is very
+         * inefficient. Instead of using this generator, consider using generators that do not throw exceptions.
+         */
+        override fun <T> IGen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int): Gen<T> {
+            return ExceptionIgnoringGenerator(
+                gen = this as Gen<T>,
+                threshold = threshold,
+                klass = klass
+            )
+        }
+
+        override fun <T> combine(block: CombinerContext.() -> T): Gen<T> {
+            return CombinerGenerator(block)
+        }
+    }
 }
 
 /**
@@ -102,5 +173,3 @@ internal data class GenResult<T>(val value: T, val shrinks: Sequence<ProducerTre
 private class CombinatorGenerator<T>(private val generator: GenContext.() -> GenResult<T>) : Gen<T>() {
     override fun GenContext.generate(): GenResult<T> = generator()
 }
-
-sealed class GenerationException(message: String, cause: Throwable? = null) : IllegalStateException(message, cause)

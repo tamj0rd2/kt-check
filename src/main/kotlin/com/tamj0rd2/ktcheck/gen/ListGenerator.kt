@@ -1,5 +1,6 @@
 package com.tamj0rd2.ktcheck.gen
 
+import com.tamj0rd2.ktcheck.contract.GenerationException.DistinctCollectionSizeImpossible
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
 
@@ -114,20 +115,3 @@ internal class ListGenerator<T>(
         private const val MAX_DISTINCT_ATTEMPTS = 1000
     }
 }
-
-class DistinctCollectionSizeImpossible internal constructor(targetSize: Int, achievedSize: Int, attempts: Int) :
-    GenerationException(
-        "Failed to generate a list of size $targetSize with distinct elements after $attempts attempts. Only achieved size $achievedSize."
-    )
-
-// todo: at this point, some kind of builder would help with optional parameters
-fun <T> Gen<T>.list(size: IntRange = 0..100, distinct: Boolean = false): Gen<List<T>> =
-    ListGenerator(sizeRange = size, distinct = distinct, gen = this)
-
-fun <T> Gen<T>.list(size: Int, distinct: Boolean = false): Gen<List<T>> =
-    list(size..size, distinct)
-
-fun <T> Gen<T>.set(size: IntRange = 0..100): Gen<Set<T>> =
-    list(size, distinct = true).map { it.toSet() }
-
-fun <T> Gen<T>.set(size: Int): Gen<Set<T>> = set(size..size)

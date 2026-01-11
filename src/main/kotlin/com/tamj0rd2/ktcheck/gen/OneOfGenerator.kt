@@ -1,5 +1,7 @@
 package com.tamj0rd2.ktcheck.gen
 
+import com.tamj0rd2.ktcheck.contract.GenerationException.OneOfEmpty
+
 /**
  * A generator that chooses between multiple generators using an index. Shrinks towards
  * earlier specified generators.
@@ -14,7 +16,7 @@ package com.tamj0rd2.ktcheck.gen
  * The new generator starts with a fresh value, not a continuation of shrinks.
  * This is the trade-off: safety (no type mismatches) vs optimal shrinking.
  **/
-private class OneOfGenerator<T>(
+internal class OneOfGenerator<T>(
     private val gens: List<Gen<T>>,
 ) : Gen<T>() {
     init {
@@ -22,7 +24,7 @@ private class OneOfGenerator<T>(
     }
 
     override fun GenContext.generate(): GenResult<T> {
-        val (index, indexShrinks) = Gen.int(0..<gens.size).generate(tree.left, mode)
+        val (index, indexShrinks) = int(0..<gens.size).generate(tree.left, mode)
         val (value, valueShrinks) = gens[index].generate(tree.right, mode)
 
         val shrinks = sequence {
@@ -35,20 +37,3 @@ private class OneOfGenerator<T>(
         return GenResult(value = value, shrinks = shrinks)
     }
 }
-
-/** Shrinks towards the first generator */
-fun <T> Gen.Companion.oneOf(vararg gens: Gen<T>): Gen<T> = oneOf(gens.toList())
-
-/** Shrinks toward the first generator */
-fun <T> Gen.Companion.oneOf(gens: Collection<Gen<T>>): Gen<T> = OneOfGenerator(gens.toList())
-
-/** Shrinks toward the first value. Individual values will not be shrunk. */
-@JvmName("oneOfValues")
-fun <T> Gen.Companion.oneOf(values: Iterable<T>): Gen<T> {
-    val options = values.toList()
-    if (options.isEmpty()) throw OneOfEmpty()
-    return Gen.int(0..<options.size).map { options[it] }
-}
-
-@Suppress("unused")
-class OneOfEmpty internal constructor() : GenerationException("Gen.oneOf() called with no generators")

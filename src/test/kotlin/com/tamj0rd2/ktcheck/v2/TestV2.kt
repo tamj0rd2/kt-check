@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.v2
 
-import com.tamj0rd2.ktcheck.gen.GenerationException
+import com.tamj0rd2.ktcheck.contract.GenerationException
 import com.tamj0rd2.ktcheck.testing.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.testing.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.testing.Test

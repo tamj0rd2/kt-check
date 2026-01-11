@@ -1,14 +1,9 @@
 package com.tamj0rd2.ktcheck.v2
 
 @ConsistentCopyVisibility
-data class IntGeneratorV2 private constructor(
+internal data class IntGeneratorV2(
     internal val range: IntRange,
-    internal val origin: Int,
 ) : GenV2<Int>() {
-    init {
-        require(origin in range) { "Origin $origin must be within range $range" }
-    }
-
     override fun GenContextV2.generate(): GenResultV2<Int> {
         val value = producer.int(range)
         return GenResultV2(
@@ -18,15 +13,12 @@ data class IntGeneratorV2 private constructor(
     }
 
     private fun generateShrinks(value: Int): Sequence<GenResultV2<Int>> = sequence {
-        shrinkInt(value, range, origin).forEach { shrunkValue ->
+        shrinkInt(value, range).forEach { shrunkValue ->
             yield(GenResultV2(shrunkValue, generateShrinks(shrunkValue)))
         }
     }
 
     companion object {
-        fun GenV2.Companion.int(range: IntRange = Int.MIN_VALUE..Int.MAX_VALUE, origin: Int = range.defaultOrigin()) =
-            IntGeneratorV2(range, origin)
-
         private fun IntRange.defaultOrigin() = when {
             last < 0 -> last
             first > 0 -> first

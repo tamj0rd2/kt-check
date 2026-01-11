@@ -1,10 +1,14 @@
 package com.tamj0rd2.ktcheck.v2
 
+import com.tamj0rd2.ktcheck.contract.GenBuilder
 import com.tamj0rd2.ktcheck.contract.IGen
+import com.tamj0rd2.ktcheck.gen.CombinerContext
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.Seed
+import java.util.*
 import kotlin.random.Random
 import kotlin.random.nextInt
+import kotlin.reflect.KClass
 
 internal data class GenContextV2(
     val producer: ValueProducerV2,
@@ -37,10 +41,69 @@ sealed class GenV2<T> : IGen<T> {
 
     override fun sample(seed: Long): T = generate(RandomValueProducerV2(Seed(seed))).value
 
-    companion object
-}
+    companion object : GenBuilder {
+        override fun <T> constant(value: T): GenV2<T> {
+            return BasicGenerator { GenResultV2(value, emptySequence()) }
+        }
 
-fun <T> GenV2.Companion.constant(value: T): GenV2<T> = BasicGenerator { GenResultV2(value, emptySequence()) }
+        override fun bool(): GenV2<Boolean> {
+            return BooleanGeneratorV2
+        }
+
+        override fun int(range: IntRange): GenV2<Int> {
+            return IntGeneratorV2(range)
+        }
+
+        override fun long(range: IntRange): GenV2<Long> {
+            TODO("Not yet implemented")
+        }
+
+        override fun uuid(): GenV2<UUID> {
+            TODO("Not yet implemented")
+        }
+
+        override fun <T> oneOf(gens: Collection<IGen<T>>): GenV2<T> {
+            return OneOfGeneratorV2(gens.toList().map { it as GenV2<T> })
+        }
+
+        override fun <T> IGen<T>.list(
+            size: IntRange,
+            distinct: Boolean,
+        ): GenV2<List<T>> {
+            return ListGeneratorV2(
+                gen = this as GenV2<T>,
+                sizeRange = size,
+                distinct = distinct
+            )
+        }
+
+        override fun IGen<Char>.string(size: IntRange): GenV2<String> {
+            TODO("Not yet implemented")
+        }
+
+        override fun IGen<Char>.string(size: Int): GenV2<String> {
+            TODO("Not yet implemented")
+        }
+
+        override fun <T> IGen<T>.filter(
+            threshold: Int,
+            predicate: (T) -> Boolean,
+        ): GenV2<T> {
+            return FilterGeneratorV2(gen = this as GenV2<T>, threshold = threshold, predicate = predicate)
+        }
+
+        override fun <T> IGen<T>.ignoreExceptions(
+            klass: KClass<out Exception>,
+            threshold: Int,
+        ): GenV2<T> {
+            TODO("Not yet implemented")
+        }
+
+        override fun <T> combine(block: CombinerContext.() -> T): GenV2<T> {
+            TODO("Not yet implemented")
+        }
+    }
+}
 
 /**
  * The result of generating a value from a generator, including the generated value and its shrinks.

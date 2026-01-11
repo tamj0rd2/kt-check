@@ -4,8 +4,8 @@ import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
 import com.tamj0rd2.ktcheck.producer.Seed
-import com.tamj0rd2.ktcheck.v2.BooleanGeneratorV2.Companion.bool
-import com.tamj0rd2.ktcheck.v2.IntGeneratorV2.Companion.int
+import com.tamj0rd2.ktcheck.v2.GenV2.Companion.filter
+import com.tamj0rd2.ktcheck.v2.GenV2.Companion.list
 
 internal abstract class BaseGenV2Test : BaseGeneratorContract {
     override fun intGen(range: IntRange): GenV2<Int> {

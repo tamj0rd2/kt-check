@@ -1,8 +1,8 @@
 package com.tamj0rd2.ktcheck.v2
 
-import com.tamj0rd2.ktcheck.gen.FilterLimitReached
+import com.tamj0rd2.ktcheck.contract.GenerationException.FilterLimitReached
 
-private class FilterGeneratorV2<T>(
+internal class FilterGeneratorV2<T>(
     private val gen: GenV2<T>,
     private val threshold: Int,
     private val predicate: (T) -> Boolean,
@@ -27,10 +27,3 @@ private class FilterGeneratorV2<T>(
         .filter { predicate(it.value) }
         .map { it.copy(shrinks = filterValidShrinks(it.shrinks)) }
 }
-
-fun <T> GenV2<T>.filter(predicate: (T) -> Boolean): GenV2<T> =
-    filter(100, predicate)
-
-fun <T> GenV2<T>.filter(threshold: Int, predicate: (T) -> Boolean): GenV2<T> =
-    FilterGeneratorV2(gen = this, threshold = threshold, predicate = predicate)
-

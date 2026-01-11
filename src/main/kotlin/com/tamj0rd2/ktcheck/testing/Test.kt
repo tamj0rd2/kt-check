@@ -1,17 +1,23 @@
 package com.tamj0rd2.ktcheck.testing
 
+import com.tamj0rd2.ktcheck.contract.GenerationException
+import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.gen.Gen
 import com.tamj0rd2.ktcheck.gen.GenMode
-import com.tamj0rd2.ktcheck.gen.GenerationException
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 
 @Suppress("unused")
-fun <T> forAll(gen: Gen<T>, test: TestByBool<T>) = forAll(TestConfig(), gen, test)
-fun <T> forAll(config: TestConfig, gen: Gen<T>, test: TestByBool<T>) = test(config, gen, test as Test<T>)
+fun <T> forAll(gen: IGen<T>, test: TestByBool<T>) = forAll(TestConfig(), gen, test)
+fun <T> forAll(config: TestConfig, gen: IGen<T>, test: TestByBool<T>) = test(config, gen, test as Test<T>)
 
 @Suppress("unused")
-fun <T> checkAll(gen: Gen<T>, test: TestByThrowing<T>) = checkAll(TestConfig(), gen, test)
-fun <T> checkAll(config: TestConfig, gen: Gen<T>, test: TestByThrowing<T>) = test(config, gen, test as Test<T>)
+fun <T> checkAll(gen: IGen<T>, test: TestByThrowing<T>) = checkAll(TestConfig(), gen, test)
+fun <T> checkAll(config: TestConfig, gen: IGen<T>, test: TestByThrowing<T>) = test(config, gen, test as Test<T>)
+
+private fun <T> test(config: TestConfig, gen: IGen<T>, test: Test<T>) = when (gen) {
+    is Gen<T> -> test(config, gen, test)
+    else -> error("unsupported generator type: ${gen::class.qualifiedName}")
+}
 
 @OptIn(HardcodedTestConfig::class)
 private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) {
