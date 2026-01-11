@@ -18,7 +18,7 @@ data class IntGeneratorV2 private constructor(
     }
 
     private fun generateShrinks(value: Int): Sequence<GenResultV2<Int>> = sequence {
-        shrink(value, range, origin).forEach { shrunkValue ->
+        shrinkInt(value, range, origin).forEach { shrunkValue ->
             yield(GenResultV2(shrunkValue, generateShrinks(shrunkValue)))
         }
     }
@@ -33,7 +33,7 @@ data class IntGeneratorV2 private constructor(
             else -> 0
         }
 
-        fun shrink(value: Int, range: IntRange, origin: Int = range.defaultOrigin()): Sequence<Int> = sequence {
+        fun shrinkInt(value: Int, range: IntRange, origin: Int = range.defaultOrigin()): Sequence<Int> = sequence {
             require(origin in range) { "Origin $origin must be within range $range" }
 
             if (value == origin) return@sequence

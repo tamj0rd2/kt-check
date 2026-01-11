@@ -2,6 +2,7 @@ package com.tamj0rd2.ktcheck.v2
 
 import com.tamj0rd2.ktcheck.gen.DistinctCollectionSizeImpossible
 import com.tamj0rd2.ktcheck.v2.IntGeneratorV2.Companion.int
+import com.tamj0rd2.ktcheck.v2.IntGeneratorV2.Companion.shrinkInt
 
 private class ListGeneratorV2<T>(
     private val gen: GenV2<T>,
@@ -14,18 +15,15 @@ private class ListGeneratorV2<T>(
         val sizeResult = sizeGen.generate(producer)
         val size = sizeResult.value
 
-        // Generate elements with duplicate handling if distinct=true
-        val elementResults = if (distinct) {
-            generateDistinctElements(size)
-        } else {
-            List(size) { gen.generate(producer) }
-        }
+        val elementResults = if (distinct) generateDistinctElements(size) else List(size) { gen.generate(producer) }
 
-        return GenResultV2(
-            value = elementResults.map { it.value },
-            shrinks = generateListShrinks(size, elementResults),
-        )
+        return elementResults.asRecursivelyShrinkingGenResult()
     }
+
+    private fun List<GenResultV2<T>>.asRecursivelyShrinkingGenResult() = GenResultV2(
+        value = map { it.value },
+        shrinks = createSizeShrinks(this) + createElementShrinks(this)
+    )
 
     private fun GenContextV2.generateDistinctElements(size: Int): List<GenResultV2<T>> {
         val elementResults = mutableListOf<GenResultV2<T>>()
@@ -55,75 +53,46 @@ private class ListGeneratorV2<T>(
         return elementResults
     }
 
-    private fun generateListShrinks(
-        size: Int,
-        elementResults: List<GenResultV2<T>>,
-    ): Sequence<GenResultV2<List<T>>> = sequence {
-        IntGeneratorV2.shrink(size, sizeRange).forEach { newSize ->
+    private fun createSizeShrinks(elementResults: List<GenResultV2<T>>): Sequence<GenResultV2<List<T>>> =
+        shrinkInt(elementResults.size, sizeRange).flatMap { newSize ->
             when {
-                newSize == 0 -> {
-                    // Empty list has no further shrinks
-                    yield(GenResultV2(emptyList(), emptySequence()))
-                }
+                newSize == 0 -> sequenceOf(GenResultV2(emptyList(), emptySequence()))
 
-                newSize < size -> {
-                    // Tail removal - recursively shrink the resulting list
-                    val tailRemovalElements = elementResults.take(newSize)
-                    yield(
-                        GenResultV2(
-                            value = tailRemovalElements.map { it.value },
-                            shrinks = generateListShrinks(newSize, tailRemovalElements)
-                        )
-                    )
-
-                    // Head removal - recursively shrink the resulting list
-                    val headRemovalElements = elementResults.takeLast(newSize)
-                    yield(
-                        GenResultV2(
-                            value = headRemovalElements.map { it.value },
-                            shrinks = generateListShrinks(newSize, headRemovalElements)
-                        )
-                    )
-                }
-            }
-        }
-
-        // Element shrinks with duplicate handling
-        elementResults.indices.forEach { index ->
-            elementResults[index].shrinks.forEach { shrunkElementResult ->
-                val newElementResults = elementResults.mapIndexed { i, elemResult ->
-                    if (i == index) shrunkElementResult else elemResult
-                }
-
-                // Handle duplicates if distinct mode
-                if (distinct) {
-                    val newValues = newElementResults.map { it.value }
-                    val hasDuplicates = newValues.size != newValues.toSet().size
-
-                    if (hasDuplicates) {
-                        // Remove duplicates and accept if size still in range
-                        val uniqueResults = newElementResults.distinctBy { it.value }
-                        if (uniqueResults.size in sizeRange) {
-                            yield(
-                                GenResultV2(
-                                    value = uniqueResults.map { it.value },
-                                    shrinks = generateListShrinks(uniqueResults.size, uniqueResults)
-                                )
-                            )
-                        }
-                        return@forEach  // Skip this shrink
+                newSize < elementResults.size -> {
+                    sequence {
+                        yield(elementResults.take(newSize).asRecursivelyShrinkingGenResult())
+                        yield(elementResults.takeLast(newSize).asRecursivelyShrinkingGenResult())
                     }
                 }
 
-                yield(
-                    GenResultV2(
-                        value = newElementResults.map { it.value },
-                        shrinks = generateListShrinks(size, newElementResults)
-                    )
-                )
+                else -> emptySequence()
             }
         }
-    }
+
+    private fun createElementShrinks(elementResults: List<GenResultV2<T>>): Sequence<GenResultV2<List<T>>> =
+        elementResults.indices.asSequence()
+            .flatMap { index ->
+                elementResults[index].shrinks.map { shrunkElementResult ->
+                    elementResults.mapIndexed { i, elemResult ->
+                        if (i == index) shrunkElementResult else elemResult
+                    }
+                }
+            }
+            .flatMap { elementsWithOneShrunk ->
+                if (distinct) {
+                    val uniqueResults = elementsWithOneShrunk.distinctBy { it.value }
+                    val hasDuplicates = uniqueResults.size < elementsWithOneShrunk.size
+
+                    if (hasDuplicates) {
+                        return@flatMap uniqueResults
+                            .takeIf { it.size in sizeRange }
+                            ?.let { sequenceOf(it.asRecursivelyShrinkingGenResult()) }
+                            .orEmpty()
+                    }
+                }
+
+                sequenceOf(elementsWithOneShrunk.asRecursivelyShrinkingGenResult())
+            }
 
     companion object {
         private const val MAX_DISTINCT_ATTEMPTS = 1000

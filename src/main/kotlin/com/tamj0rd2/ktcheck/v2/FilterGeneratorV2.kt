@@ -14,9 +14,7 @@ private class FilterGeneratorV2<T>(
             val result = gen.generate(producer)
 
             if (predicate(result.value)) {
-                // Filter shrinks to only include values that pass predicate
-                val validShrinks = filterValidShrinks(result.shrinks)
-                return result.copy(shrinks = validShrinks)
+                return result.copy(shrinks = filterValidShrinks(result.shrinks))
             }
 
             attempts++
@@ -25,18 +23,9 @@ private class FilterGeneratorV2<T>(
         throw FilterLimitReached(threshold, null)
     }
 
-    private fun filterValidShrinks(
-        shrinks: Sequence<GenResultV2<T>>,
-    ): Sequence<GenResultV2<T>> {
-        return shrinks
-            .filter { shrunkResult -> predicate(shrunkResult.value) }
-            .map { shrunkResult ->
-                // Recursively filter nested shrinks
-                shrunkResult.copy(
-                    shrinks = filterValidShrinks(shrunkResult.shrinks)
-                )
-            }
-    }
+    private fun filterValidShrinks(shrinks: Sequence<GenResultV2<T>>): Sequence<GenResultV2<T>> = shrinks
+        .filter { predicate(it.value) }
+        .map { it.copy(shrinks = filterValidShrinks(it.shrinks)) }
 }
 
 fun <T> GenV2<T>.filter(predicate: (T) -> Boolean): GenV2<T> =
