@@ -8,7 +8,6 @@ import com.tamj0rd2.ktcheck.producer.Seed
 import java.util.*
 import kotlin.random.Random
 import kotlin.random.nextInt
-import kotlin.reflect.KClass
 
 internal data class GenContextV2(
     val producer: ValueProducerV2,
@@ -90,13 +89,6 @@ sealed class GenV2<T> : IGen<T> {
             predicate: (T) -> Boolean,
         ): GenV2<T> {
             return FilterGeneratorV2(gen = this as GenV2<T>, threshold = threshold, predicate = predicate)
-        }
-
-        override fun <T> IGen<T>.ignoreExceptions(
-            klass: KClass<out Exception>,
-            threshold: Int,
-        ): GenV2<T> {
-            TODO("Not yet implemented")
         }
 
         override fun <T> combine(block: CombinerContext.() -> T): GenV2<T> {

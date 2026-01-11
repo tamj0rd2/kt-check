@@ -18,7 +18,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `using the same seed generates the same values`() {
         val seed = 12345L
-        val gen = intGen(-1000..1000)
+        val gen = int(-1000..1000)
         val firstRun = gen.samples(seed).take(100).toList()
         val secondRun = gen.samples(seed).take(100).toList()
         expectThat(secondRun).isEqualTo(firstRun)
@@ -40,7 +40,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
 
         return testCases.map { (desc, range) ->
             DynamicTest.dynamicTest(desc) {
-                intGen(range)
+                int(range)
                     .samples()
                     .take(10000)
                     .forEach { expectThat(it).isIn(range) }
@@ -51,7 +51,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `generates both positive and negative integers over multiple runs`() {
         withCounter {
-            intGen(-100..100).samples().take(10000).forEach { value ->
+            int(-100..100).samples().take(10000).forEach { value ->
                 collect(
                     when {
                         value > 0 -> "positive"
@@ -71,7 +71,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `10 shrinks correctly`() {
-        val gen = intGen(0..10)
+        val gen = int(0..10)
 
         val (originalValue, shrinks) = gen.generateWithShrunkValues(rngValues = listOf(10))
         expectThat(originalValue).isEqualTo(10)
@@ -80,7 +80,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `-10 shrinks correctly`() {
-        val gen = intGen(-10..0)
+        val gen = int(-10..0)
 
         val (originalValue, shrinks) = gen.generateWithShrunkValues(rngValues = listOf(-10))
         expectThat(originalValue).isEqualTo(-10)
@@ -89,7 +89,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `shrinking zero produces no shrinks`() {
-        val gen = intGen(Int.MIN_VALUE..Int.MAX_VALUE)
+        val gen = int(Int.MIN_VALUE..Int.MAX_VALUE)
 
         val (originalValue, shrinks) = gen.generateWithShrunkValues(rngValues = listOf(0))
         expectThat(originalValue).isEqualTo(0)
@@ -98,7 +98,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `shrinks for non-zero numbers always include 0`() {
-        generateSequence { intGen(Int.MIN_VALUE..Int.MAX_VALUE).generateWithShrunkValues() }
+        generateSequence { int(Int.MIN_VALUE..Int.MAX_VALUE).generateWithShrunkValues() }
             .filter { (value) -> value != 0 }
             .take(100)
             .forEach { (value, shrinks) ->
@@ -108,7 +108,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `the generated number is not included in shrinks`() {
-        generateSequence { intGen(Int.MIN_VALUE..Int.MAX_VALUE).generateWithShrunkValues() }
+        generateSequence { int(Int.MIN_VALUE..Int.MAX_VALUE).generateWithShrunkValues() }
             .take(100)
             .forEach { (value, shrinks) ->
                 expectThat(shrinks).doesNotContain(value)
@@ -117,7 +117,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `when 0 is in range, shrinks are closer to 0 than the original generated number`() {
-        generateSequence { intGen(-50..50).generateWithShrunkValues() }
+        generateSequence { int(-50..50).generateWithShrunkValues() }
             .filter { (value) -> value != 0 }
             .take(100)
             .forEach { (value, shrinks) ->

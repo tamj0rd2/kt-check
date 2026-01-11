@@ -18,12 +18,12 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `can generate a long list without stack overflow`() {
-        constantGen(1).listGen(10_000).sample()
+        constant(1).list(10_000).sample()
     }
 
     @Test
     fun `empty list has no shrinks`() {
-        val gen = intGen(0..5).listGen()
+        val gen = int(0..5).list()
         val nav = gen.navigateRecursiveShrinks(listOf(0))  // size = 0
 
         expectThat(nav.value).isEmpty()
@@ -32,7 +32,7 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `single minimal element shrinks recursively`() {
-        val gen = intGen(0..5).listGen()
+        val gen = int(0..5).list()
         val nav = gen.navigateRecursiveShrinks(listOf(1, 0))  // [0]
 
         expectThat(nav.value).isEqualTo(listOf(0))
@@ -48,7 +48,7 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `single non-minimal element shrinks recursively`() {
-        val gen = intGen(0..5).listGen()
+        val gen = int(0..5).list()
         val nav = gen.navigateRecursiveShrinks(listOf(1, 4))  // [4]
 
         expectThat(nav.value).isEqualTo(listOf(4))
@@ -76,7 +76,7 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `two-element list shrinks recursively`() {
-        val gen = intGen(0..5).listGen()
+        val gen = int(0..5).list()
         val nav = gen.navigateRecursiveShrinks(listOf(2, 1, 4))  // [1, 4]
 
         expectThat(nav.value).isEqualTo(listOf(1, 4))
@@ -117,7 +117,7 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `three-level depth test`() {
-        val gen = intGen(0..5).listGen()
+        val gen = int(0..5).list()
         val nav = gen.navigateRecursiveShrinks(listOf(2, 2, 4))  // [2, 4]
 
         expectThat(nav.value).isEqualTo(listOf(2, 4))
@@ -144,7 +144,7 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `when all elements are minimal - only size shrinks recursively`() {
-        val gen = intGen(0..5).listGen()
+        val gen = int(0..5).list()
         val nav = gen.navigateRecursiveShrinks(listOf(3, 0, 0, 0))  // [0, 0, 0]
 
         expectThat(nav.value).isEqualTo(listOf(0, 0, 0))
@@ -178,7 +178,7 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
             listOf(3, 10, 20, 30) to 3,          // 3 distinct elements
             listOf(1, 42) to 1,                  // 1 distinct element
         ).forEach { (rngValues, expectedSize) ->
-            val gen = intGen(0..100).listGen(size = expectedSize, distinct = true)
+            val gen = int(0..100).list(size = expectedSize, distinct = true)
             val (value, _) = gen.generateWithShrunkValuesForListGen(rngValues)
 
             expectThat(value.size).isEqualTo(expectedSize)
@@ -188,7 +188,7 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `distinct list shrinks maintain distinctness`() {
-        val gen = intGen(0..10).listGen(distinct = true)
+        val gen = int(0..10).list(distinct = true)
 
         // Test with a few specific examples of different sizes
         listOf(
@@ -210,7 +210,7 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
 
     @Test
     fun `throws when unable to generate enough distinct elements`() {
-        val gen = intGen(0..10).listGen(size = 100, distinct = true)
+        val gen = int(0..10).list(size = 100, distinct = true)
 
         assertThrows<DistinctCollectionSizeImpossible> { gen.sample() }
     }

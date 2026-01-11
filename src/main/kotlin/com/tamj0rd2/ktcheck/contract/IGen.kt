@@ -6,7 +6,6 @@ import com.tamj0rd2.ktcheck.gen.plus
 import com.tamj0rd2.ktcheck.producer.Seed
 import java.util.*
 import kotlin.random.Random
-import kotlin.reflect.KClass
 
 interface IGen<T> {
     /**
@@ -86,8 +85,6 @@ interface GenBuilder {
     fun <T> IGen<T>.filter(predicate: (T) -> Boolean): IGen<T> = filter(100, predicate)
 
     fun <T> IGen<T>.filter(threshold: Int, predicate: (T) -> Boolean): IGen<T>
-
-    fun <T> IGen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int = 100): IGen<T>
 
     /**
      * Combines multiple generators into a single generator using a builder-style DSL.

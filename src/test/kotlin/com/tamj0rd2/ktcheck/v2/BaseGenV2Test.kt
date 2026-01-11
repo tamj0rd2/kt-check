@@ -1,53 +1,12 @@
 package com.tamj0rd2.ktcheck.v2
 
+import com.tamj0rd2.ktcheck.contract.GenBuilder
 import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
 import com.tamj0rd2.ktcheck.producer.Seed
-import com.tamj0rd2.ktcheck.v2.GenV2.Companion.filter
-import com.tamj0rd2.ktcheck.v2.GenV2.Companion.list
 
-internal abstract class BaseGenV2Test : BaseGeneratorContract {
-    override fun intGen(range: IntRange): GenV2<Int> {
-        return GenV2.int(range)
-    }
-
-    override fun boolGen(): IGen<Boolean> {
-        return GenV2.bool()
-    }
-
-    override fun <T> oneOfGen(vararg gens: IGen<T>): IGen<T> {
-        return GenV2.oneOf(*gens.map { it as GenV2<T> }.toTypedArray())
-    }
-
-    override fun <T> oneOfGen(values: Collection<T>): IGen<T> {
-        return GenV2.oneOf(values)
-    }
-
-    override fun <T> constantGen(value: T): IGen<T> {
-        return GenV2.constant(value)
-    }
-
-    override fun <T> IGen<T>.listGen(distinct: Boolean): IGen<List<T>> {
-        return (this as GenV2<T>).list(distinct = distinct)
-    }
-
-    override fun <T> IGen<T>.listGen(size: Int, distinct: Boolean): IGen<List<T>> {
-        return (this as GenV2<T>).list(size, distinct)
-    }
-
-    override fun <T> IGen<T>.listGen(sizeRange: IntRange, distinct: Boolean): IGen<List<T>> {
-        return (this as GenV2<T>).list(sizeRange, distinct)
-    }
-
-    override fun <T> IGen<T>.filterGen(predicate: (T) -> Boolean): IGen<T> {
-        return (this as GenV2<T>).filter(predicate)
-    }
-
-    override fun <T> IGen<T>.filterGen(threshold: Int, predicate: (T) -> Boolean): IGen<T> {
-        return (this as GenV2<T>).filter(threshold, predicate)
-    }
-
+internal abstract class BaseGenV2Test : BaseGeneratorContract, GenBuilder by GenV2.Companion {
     override fun <T : Any> IGen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> =
         (this as GenV2<T>).generateWithShrunkValues(StubValueProducerV2(rngValues))
 

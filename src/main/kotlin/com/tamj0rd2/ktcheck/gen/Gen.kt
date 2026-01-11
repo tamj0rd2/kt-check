@@ -150,13 +150,12 @@ sealed class Gen<T> : IGen<T> {
          * Ignores exceptions of type [klass] thrown during generation. Although this generator supports shrinking, it is very
          * inefficient. Instead of using this generator, consider using generators that do not throw exceptions.
          */
-        override fun <T> IGen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int): Gen<T> {
-            return ExceptionIgnoringGenerator(
+        fun <T> IGen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int = 100): Gen<T> =
+            ExceptionIgnoringGenerator(
                 gen = this as Gen<T>,
                 threshold = threshold,
                 klass = klass
             )
-        }
 
         override fun <T> combine(block: CombinerContext.() -> T): Gen<T> {
             return CombinerGenerator(block)

@@ -1,9 +1,10 @@
 package com.tamj0rd2.ktcheck.contracts
 
+import com.tamj0rd2.ktcheck.contract.GenBuilder
 import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.producer.Seed
 
-internal interface BaseGeneratorContract {
+internal interface BaseGeneratorContract : GenBuilder {
     fun <T : Any> IGen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>>
 
     fun <T : Any> IGen<T>.generateWithShrunkValues(seed: Seed = Seed.random()): Pair<T, List<T>>
@@ -13,27 +14,6 @@ internal interface BaseGeneratorContract {
      * Implementations provide this based on their architecture (ProducerTree or GenResult).
      */
     fun <T : Any> IGen<T>.navigateRecursiveShrinks(rngValues: List<Any>): RecursiveShrinkNavigator<T>
-
-    fun intGen(range: IntRange): IGen<Int>
-
-    fun boolGen(): IGen<Boolean>
-
-    fun <T> oneOfGen(vararg gens: IGen<T>): IGen<T>
-
-    fun <T> oneOfGen(values: Collection<T>): IGen<T>
-
-    fun <T> constantGen(value: T): IGen<T>
-
-    fun <T> IGen<T>.listGen(distinct: Boolean = false): IGen<List<T>>
-
-    fun <T> IGen<T>.listGen(size: Int, distinct: Boolean = false): IGen<List<T>>
-
-    fun <T> IGen<T>.listGen(sizeRange: IntRange, distinct: Boolean = false): IGen<List<T>>
-
-    // Filter generator factory methods
-    fun <T> IGen<T>.filterGen(predicate: (T) -> Boolean): IGen<T>
-
-    fun <T> IGen<T>.filterGen(threshold: Int, predicate: (T) -> Boolean): IGen<T>
 }
 
 /**

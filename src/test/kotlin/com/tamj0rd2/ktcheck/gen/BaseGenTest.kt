@@ -1,56 +1,15 @@
 package com.tamj0rd2.ktcheck.gen
 
+import com.tamj0rd2.ktcheck.contract.GenBuilder
 import com.tamj0rd2.ktcheck.contract.IGen
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
-import com.tamj0rd2.ktcheck.gen.Gen.Companion.filter
-import com.tamj0rd2.ktcheck.gen.Gen.Companion.list
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
 import com.tamj0rd2.ktcheck.producer.Seed
 
-internal abstract class BaseGenTest : BaseGeneratorContract {
-    override fun intGen(range: IntRange): Gen<Int> {
-        return Gen.int(range)
-    }
-
-    override fun boolGen(): IGen<Boolean> {
-        return Gen.bool()
-    }
-
-    override fun <T> oneOfGen(vararg gens: IGen<T>): IGen<T> {
-        return Gen.oneOf(*gens)
-    }
-
-    override fun <T> oneOfGen(values: Collection<T>): IGen<T> {
-        return Gen.oneOf(values)
-    }
-
-    override fun <T> constantGen(value: T): IGen<T> {
-        return Gen.constant(value)
-    }
-
-    override fun <T> IGen<T>.listGen(distinct: Boolean): IGen<List<T>> {
-        return (this as Gen<T>).list(distinct = distinct)
-    }
-
-    override fun <T> IGen<T>.listGen(size: Int, distinct: Boolean): IGen<List<T>> {
-        return (this as Gen<T>).list(size, distinct)
-    }
-
-    override fun <T> IGen<T>.listGen(sizeRange: IntRange, distinct: Boolean): IGen<List<T>> {
-        return (this as Gen<T>).list(sizeRange, distinct)
-    }
-
-    override fun <T> IGen<T>.filterGen(predicate: (T) -> Boolean): IGen<T> {
-        return (this as Gen<T>).filter(predicate)
-    }
-
-    override fun <T> IGen<T>.filterGen(threshold: Int, predicate: (T) -> Boolean): IGen<T> {
-        return (this as Gen<T>).filter(threshold, predicate)
-    }
-
+internal abstract class BaseGenTest : BaseGeneratorContract, GenBuilder by Gen.Companion {
     override fun <T : Any> IGen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> {
         return (this as Gen<T>).generateWithShrunkValues(ProducerTree.new().withValue(rngValues.single()))
     }

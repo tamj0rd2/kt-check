@@ -14,7 +14,7 @@ internal interface BooleanGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `generates a reasonable distribution of values over multiple runs`() {
         withCounter {
-            boolGen()
+            bool()
                 .samples()
                 .take(100_000)
                 .forEach { collect(it) }
@@ -24,7 +24,7 @@ internal interface BooleanGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `using the same seed generates the same value`() {
         val seed = Seed.random()
-        val values = List(1000) { boolGen().generateWithShrunkValues(seed) }
+        val values = List(1000) { bool().generateWithShrunkValues(seed) }
         val firstValue = values.first()
         expectThat(values.drop(1)).all { isEqualTo(firstValue) }
     }
@@ -32,14 +32,14 @@ internal interface BooleanGeneratorTestContract : BaseGeneratorContract {
     // todo: in the future I want to allow the user to specify the shrink direction
     @Test
     fun `true shrinks to false`() {
-        val (value, shrinks) = boolGen().generateWithShrunkValues(rngValues = listOf(true))
+        val (value, shrinks) = bool().generateWithShrunkValues(rngValues = listOf(true))
         expectThat(value).isTrue()
         expectThat(shrinks).isEqualTo(listOf(false))
     }
 
     @Test
     fun `false does not shrink`() {
-        val (value, shrinks) = boolGen().generateWithShrunkValues(rngValues = listOf(false))
+        val (value, shrinks) = bool().generateWithShrunkValues(rngValues = listOf(false))
         expectThat(value).isFalse()
         expectThat(shrinks).isEmpty()
     }
