@@ -1,7 +1,6 @@
-package com.tamj0rd2.ktcheck.gen
+package com.tamj0rd2.ktcheck.v1
 
 import com.tamj0rd2.ktcheck.Gen
-import com.tamj0rd2.ktcheck.producer.ProducerTree
 
 internal class CombinerGenerator<T>(
     private val block: CombinerContext.() -> T,

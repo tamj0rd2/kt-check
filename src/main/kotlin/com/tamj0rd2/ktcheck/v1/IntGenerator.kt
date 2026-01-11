@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.gen
+package com.tamj0rd2.ktcheck.v1
 
 internal data class IntGenerator(
     private val range: IntRange,

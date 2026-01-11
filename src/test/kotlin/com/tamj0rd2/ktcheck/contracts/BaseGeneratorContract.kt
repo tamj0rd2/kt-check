@@ -1,8 +1,8 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.GenBuilder
 import com.tamj0rd2.ktcheck.Gen
-import com.tamj0rd2.ktcheck.producer.Seed
+import com.tamj0rd2.ktcheck.GenBuilder
+import com.tamj0rd2.ktcheck.Seed
 
 internal interface BaseGeneratorContract : GenBuilder {
     fun <T : Any> Gen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>>

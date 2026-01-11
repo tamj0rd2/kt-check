@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.producer
+package com.tamj0rd2.ktcheck
 
 import kotlin.random.Random
 
@@ -10,7 +10,7 @@ internal value class Seed internal constructor(val value: Long) {
         private const val SPLIT_MIX_64_MULTIPLIER = 6364136223846793005L
 
         internal fun random(): Seed = Seed(Random.nextLong())
-        
+
         internal fun sequence(start: Long = Random.nextLong()) =
             generateSequence(Seed(start)) { it.next(0) }
     }

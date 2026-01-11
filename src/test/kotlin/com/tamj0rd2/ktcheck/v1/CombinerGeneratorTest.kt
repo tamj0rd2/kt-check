@@ -1,9 +1,9 @@
-package com.tamj0rd2.ktcheck.gen
+package com.tamj0rd2.ktcheck.v1
 
-import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
-import com.tamj0rd2.ktcheck.gen.GenV1.Companion.string
-import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.producerTree
-import com.tamj0rd2.ktcheck.producer.Seed
+import com.tamj0rd2.ktcheck.Seed
+import com.tamj0rd2.ktcheck.v1.GenTests.Companion.generateWithShrunkValues
+import com.tamj0rd2.ktcheck.v1.GenV1.Companion.string
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.api.expectThrows

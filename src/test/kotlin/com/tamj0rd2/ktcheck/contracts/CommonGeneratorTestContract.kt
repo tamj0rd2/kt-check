@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.producer.Seed
+import com.tamj0rd2.ktcheck.Seed
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo

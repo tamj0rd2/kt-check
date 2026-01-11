@@ -1,6 +1,6 @@
-package com.tamj0rd2.ktcheck.testing
+package com.tamj0rd2.ktcheck
 
-import com.tamj0rd2.ktcheck.testing.TestConfig.Companion.SYSTEM_PROPERTY_TEST_ITERATIONS
+import com.tamj0rd2.ktcheck.TestConfig.Companion.SYSTEM_PROPERTY_TEST_ITERATIONS
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo
@@ -20,6 +20,8 @@ class TestConfigTest {
 
     @Test
     fun `can overwrite the default iterations via the constructor`() {
-        expectThat(TestConfig().withIterations(iterations = 123)).get { iterations }.isEqualTo(123)
+        expectThat(
+            TestConfig().withIterations(iterations = 123)
+        ).get { iterations }.isEqualTo(123)
     }
 }

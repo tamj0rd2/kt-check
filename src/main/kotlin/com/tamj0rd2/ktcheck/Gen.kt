@@ -1,7 +1,6 @@
 package com.tamj0rd2.ktcheck
 
-import com.tamj0rd2.ktcheck.gen.GenV1
-import com.tamj0rd2.ktcheck.producer.Seed
+import com.tamj0rd2.ktcheck.v1.GenV1
 import kotlin.random.Random
 
 interface Gen<T> {

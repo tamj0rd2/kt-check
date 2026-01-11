@@ -1,14 +1,15 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.gen.GenV1.Companion.list
-import com.tamj0rd2.ktcheck.stats.Counter
-import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
-import com.tamj0rd2.ktcheck.testing.NoOpTestReporter
-import com.tamj0rd2.ktcheck.testing.PropertyFalsifiedException
-import com.tamj0rd2.ktcheck.testing.TestByBool
-import com.tamj0rd2.ktcheck.testing.TestConfig
-import com.tamj0rd2.ktcheck.testing.checkAll
-import com.tamj0rd2.ktcheck.testing.forAll
+import com.tamj0rd2.ktcheck.Counter
+import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
+import com.tamj0rd2.ktcheck.NoOpTestReporter
+import com.tamj0rd2.ktcheck.PropertyFalsifiedException
+import com.tamj0rd2.ktcheck.TestByBool
+import com.tamj0rd2.ktcheck.TestConfig
+import com.tamj0rd2.ktcheck.checkAll
+import com.tamj0rd2.ktcheck.forAll
+import com.tamj0rd2.ktcheck.v1.GenV1
+import com.tamj0rd2.ktcheck.v1.GenV1.Companion.list
 import org.junit.jupiter.api.Test
 import strikt.api.expectThrows
 

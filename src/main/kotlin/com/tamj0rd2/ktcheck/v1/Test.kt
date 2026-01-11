@@ -1,26 +1,12 @@
-package com.tamj0rd2.ktcheck.testing
+package com.tamj0rd2.ktcheck.v1
 
 import com.tamj0rd2.ktcheck.GenerationException
-import com.tamj0rd2.ktcheck.Gen
-import com.tamj0rd2.ktcheck.gen.GenMode
-import com.tamj0rd2.ktcheck.gen.GenV1
-import com.tamj0rd2.ktcheck.producer.ProducerTree
+import com.tamj0rd2.ktcheck.PropertyFalsifiedException
+import com.tamj0rd2.ktcheck.Test
+import com.tamj0rd2.ktcheck.TestConfig
+import com.tamj0rd2.ktcheck.TestResult
 
-@Suppress("unused")
-fun <T> forAll(gen: Gen<T>, test: TestByBool<T>) = forAll(TestConfig(), gen, test)
-fun <T> forAll(config: TestConfig, gen: Gen<T>, test: TestByBool<T>) = test(config, gen, test as Test<T>)
-
-@Suppress("unused")
-fun <T> checkAll(gen: Gen<T>, test: TestByThrowing<T>) = checkAll(TestConfig(), gen, test)
-fun <T> checkAll(config: TestConfig, gen: Gen<T>, test: TestByThrowing<T>) = test(config, gen, test as Test<T>)
-
-private fun <T> test(config: TestConfig, gen: Gen<T>, test: Test<T>) = when (gen) {
-    is GenV1<T> -> test(config, gen, test)
-    else -> error("unsupported generator type: ${gen::class.qualifiedName}")
-}
-
-@OptIn(HardcodedTestConfig::class)
-private fun <T> test(config: TestConfig, gen: GenV1<T>, test: Test<T>) {
+internal fun <T> test(config: TestConfig, gen: GenV1<T>, test: Test<T>) {
     val testResultsGen = gen.map { test.getResultFor(it) }
 
     fun runIteration(iteration: Int) {
@@ -85,16 +71,4 @@ private tailrec fun <T> GenV1<TestResult<T>>.getSmallestCounterExample(
             }
         }
     }
-}
-
-// todo: I wish this all lived inside of TestResult. having an extra things seems... extra
-class PropertyFalsifiedException(
-    val seed: Long,
-    val iteration: Int,
-    val originalResult: TestResult.Failure<*>,
-    val shrunkResult: TestResult.Failure<*>?,
-    val shrinkSteps: Int,
-) : AssertionError("Property falsified") {
-    internal val smallestResult = shrunkResult ?: originalResult
-    override val cause: Throwable = smallestResult.failure
 }

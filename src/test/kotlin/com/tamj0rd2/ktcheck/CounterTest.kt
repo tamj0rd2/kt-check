@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.stats
+package com.tamj0rd2.ktcheck
 
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

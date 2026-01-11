@@ -1,10 +1,9 @@
-package com.tamj0rd2.ktcheck.gen
+package com.tamj0rd2.ktcheck.v1
 
 
-import com.tamj0rd2.ktcheck.contracts.OneOfGeneratorTestContract
 import com.tamj0rd2.ktcheck.Gen
-import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
-import com.tamj0rd2.ktcheck.producer.ProducerTree
+import com.tamj0rd2.ktcheck.contracts.OneOfGeneratorTestContract
+import com.tamj0rd2.ktcheck.v1.GenTests.Companion.generateWithShrunkValues
 
 internal class OneOfGeneratorTest : BaseGenTest(), OneOfGeneratorTestContract {
     override fun <T : Any> Gen<T>.generateWithShrunkValuesForOneOfGens(rngValues: List<Any>): Pair<T, List<T>> {

@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
+import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory

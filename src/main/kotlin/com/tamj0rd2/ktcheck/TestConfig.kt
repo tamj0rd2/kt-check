@@ -1,6 +1,5 @@
-package com.tamj0rd2.ktcheck.testing
+package com.tamj0rd2.ktcheck
 
-import com.tamj0rd2.ktcheck.producer.Seed
 import kotlin.random.Random
 
 sealed class TestResult<T> {

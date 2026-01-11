@@ -1,8 +1,7 @@
-package com.tamj0rd2.ktcheck.gen
+package com.tamj0rd2.ktcheck.v1
 
 import com.tamj0rd2.ktcheck.GenerationException.DistinctCollectionSizeImpossible
-import com.tamj0rd2.ktcheck.producer.ProducerTree
-import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.copy
 
 internal class ListGenerator<T>(
     private val sizeRange: IntRange,

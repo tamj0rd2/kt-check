@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
-import com.tamj0rd2.ktcheck.producer.Seed
+import com.tamj0rd2.ktcheck.Seed
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import strikt.api.expectThat

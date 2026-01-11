@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.testing
+package com.tamj0rd2.ktcheck
 
 import java.io.PrintStream
 

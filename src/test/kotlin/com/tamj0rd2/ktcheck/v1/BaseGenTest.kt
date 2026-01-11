@@ -1,13 +1,12 @@
-package com.tamj0rd2.ktcheck.gen
+package com.tamj0rd2.ktcheck.v1
 
+import com.tamj0rd2.ktcheck.Gen
+import com.tamj0rd2.ktcheck.GenBuilder
+import com.tamj0rd2.ktcheck.Seed
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
-import com.tamj0rd2.ktcheck.GenBuilder
-import com.tamj0rd2.ktcheck.Gen
-import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
-import com.tamj0rd2.ktcheck.producer.ProducerTree
-import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
-import com.tamj0rd2.ktcheck.producer.Seed
+import com.tamj0rd2.ktcheck.v1.GenTests.Companion.generateWithShrunkValues
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.copy
 
 internal abstract class BaseGenTest : BaseGeneratorContract, GenBuilder by GenV1.Companion {
     override fun <T : Any> Gen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> {

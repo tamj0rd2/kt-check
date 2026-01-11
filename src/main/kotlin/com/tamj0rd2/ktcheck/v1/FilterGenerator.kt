@@ -1,9 +1,6 @@
-package com.tamj0rd2.ktcheck.gen
+package com.tamj0rd2.ktcheck.v1
 
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
-import com.tamj0rd2.ktcheck.gen.FilterGenerator.FilterResult.Failed
-import com.tamj0rd2.ktcheck.gen.FilterGenerator.FilterResult.Succeeded
-import com.tamj0rd2.ktcheck.producer.ProducerTree
 import kotlin.reflect.KClass
 
 internal sealed class FilterGenerator<T>(
@@ -15,11 +12,11 @@ internal sealed class FilterGenerator<T>(
         return generateSequence(tree) { it.right }
             .take(threshold)
             .map { getResult(it.left, mode) }
-            .onEach { if (it is Failed) lastFailure = it.failure }
-            .filterIsInstance<Succeeded<T>>()
+            .onEach { if (it is FilterResult.Failed) lastFailure = it.failure }
+            .filterIsInstance<FilterResult.Succeeded<T>>()
             .map { (genResult) ->
                 val validShrinks = genResult.shrinks
-                    .filter { getResult(it, GenMode.Shrinking) is Succeeded }
+                    .filter { getResult(it, GenMode.Shrinking) is FilterResult.Succeeded }
                     .map { tree.withLeft(it) }
 
                 genResult.copy(shrinks = validShrinks)
@@ -48,7 +45,7 @@ internal class PredicateFilterGenerator<T>(
 ) : FilterGenerator<T>(threshold) {
     override fun getResult(tree: ProducerTree, mode: GenMode): FilterResult<T> {
         val result = gen.generate(tree, mode)
-        return if (predicate(result.value)) Succeeded(result) else Failed()
+        return if (predicate(result.value)) FilterResult.Succeeded(result) else FilterResult.Failed()
     }
 }
 
@@ -59,11 +56,11 @@ internal class ExceptionIgnoringGenerator<T>(
 ) : FilterGenerator<T>(threshold) {
     override fun getResult(tree: ProducerTree, mode: GenMode): FilterResult<T> =
         try {
-            Succeeded(gen.generate(tree, mode))
+            FilterResult.Succeeded(gen.generate(tree, mode))
         } catch (e: Exception) {
             when {
                 !klass.isInstance(e) -> throw e
-                else -> Failed(e)
+                else -> FilterResult.Failed(e)
             }
         }
 }

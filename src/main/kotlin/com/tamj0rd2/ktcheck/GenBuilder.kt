@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck
 
-import com.tamj0rd2.ktcheck.gen.CombinerContext
-import java.util.UUID
+import com.tamj0rd2.ktcheck.v1.CombinerContext
+import java.util.*
 import kotlin.reflect.KClass
 
 interface GenBuilder {
@@ -91,10 +91,10 @@ interface GenBuilder {
      * val gen3 = Gen.int() + Gen.boolean() + Gen.string()
      * ```
      *
-     * To combine more than 2 generators, use [com.tamj0rd2.ktcheck.gen.GenV1.Companion.combine] instead.
+     * To combine more than 2 generators, use [com.tamj0rd2.ktcheck.v1.GenV1.Companion.combine] instead.
      *
      * For dependent generation (where the second generator depends on the first value),
-     * use [flatMap] or [com.tamj0rd2.ktcheck.gen.GenV1.Companion.combine] instead.
+     * use [flatMap] or [com.tamj0rd2.ktcheck.v1.GenV1.Companion.combine] instead.
      */
     infix operator fun <T1, T2> Gen<T1>.plus(nextGen: Gen<T2>): Gen<Pair<T1, T2>>
 }

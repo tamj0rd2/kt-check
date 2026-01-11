@@ -2,9 +2,9 @@ package com.tamj0rd2.ktcheck.v2
 
 import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilder
-import com.tamj0rd2.ktcheck.gen.CombinerContext
-import com.tamj0rd2.ktcheck.producer.ProducerTree
-import com.tamj0rd2.ktcheck.producer.Seed
+import com.tamj0rd2.ktcheck.Seed
+import com.tamj0rd2.ktcheck.v1.CombinerContext
+import com.tamj0rd2.ktcheck.v1.ProducerTree
 import java.util.*
 import kotlin.random.Random
 import kotlin.random.nextInt

@@ -1,4 +1,6 @@
-package com.tamj0rd2.ktcheck.producer
+package com.tamj0rd2.ktcheck.v1
+
+import com.tamj0rd2.ktcheck.Seed
 
 @ConsistentCopyVisibility
 internal data class ProducerTree private constructor(

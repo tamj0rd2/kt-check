@@ -1,7 +1,7 @@
-package com.tamj0rd2.ktcheck.testing
+package com.tamj0rd2.ktcheck
 
-import com.tamj0rd2.ktcheck.gen.GenV1
-import com.tamj0rd2.ktcheck.testing.TestTest.SpyTestReporter.Reporting
+import com.tamj0rd2.ktcheck.TestTest.SpyTestReporter.Reporting
+import com.tamj0rd2.ktcheck.v1.GenV1
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.api.expectThrows
@@ -12,7 +12,8 @@ import strikt.assertions.isNotNull
 
 class TestTest {
     private val spyTestReporter = SpyTestReporter()
-    private val testConfig get() = TestConfig().withReporter(reporter = spyTestReporter)
+    private val testConfig
+        get() = TestConfig().withReporter(reporter = spyTestReporter)
 
     @Test
     fun `forAll reports a success if the property holds true`() {
