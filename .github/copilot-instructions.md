@@ -170,3 +170,59 @@ src/main/kotlin/com/tamj0rd2/ktcheck/
 - Re-run → fails at line 15 (expected shrinks)
 - Now ready to implement production code changes
 
+### Plan Execution Rules
+
+**CRITICAL: Code must compile at the start AND end of each step in a plan.**
+
+When executing a plan with multiple steps:
+
+1. **Before starting a step**: Verify the code compiles
+2. **After completing a step**: Verify the code compiles
+3. **If a step would break compilation**: Add stub methods/data structures to maintain compilation
+
+**How to maintain compilation during incremental changes:**
+
+- **Add stub methods**: When adding interface methods, implement them immediately with
+  `throw NotImplementedError("TODO: implement in step X")` or `TODO("Not yet implemented")`
+- **Add stub data structures**: Create empty/minimal classes/interfaces even if they'll be filled in later steps
+- **Add stub imports**: Import types that will be needed, even if not fully implemented yet
+- **Never leave code in a non-compiling state** between steps
+
+**Example - Adding a new interface method:**
+
+```kotlin
+// Step 1: Add to interface
+interface MyContract {
+    fun newMethod(): String  // Added in this step
+}
+
+// Step 1: MUST also add stub implementations to all implementing classes
+class MyImpl : MyContract {
+    override fun newMethod(): String = TODO("Implement in step 3")
+}
+```
+
+**Example - Adding a new dependency:**
+
+```kotlin
+// Step 2: If we reference a new type that doesn't exist yet
+// We MUST create it as a stub in the same step:
+
+// Create the stub interface/class
+internal interface INewType {
+    // Minimal definition, will be filled in step 4
+}
+
+// Then we can reference it
+fun useNewType(param: INewType) {
+    TODO("Implement in step 4")
+}
+```
+
+**Why this matters:**
+
+- Each step should be a working checkpoint
+- Easier to identify which change broke compilation
+- Can verify tests at each step (even if they fail with NotImplementedError)
+- Maintains a working codebase throughout the implementation process
+
