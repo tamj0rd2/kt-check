@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.core.IGen
+import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.stats.Counter.Companion.withCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
@@ -10,7 +10,7 @@ internal interface OneOfGeneratorTestContract : BaseGeneratorContract {
 
     // todo: if there was an IOneOfGen interface, this could be an extension on that instead. I know that different
     //  generators consume rng values differently.
-    fun <T : Any> IGen<T>.generateWithShrunkValuesForOneOfGens(rngValues: List<Any>): Pair<T, List<T>>
+    fun <T : Any> Gen<T>.generateWithShrunkValuesForOneOfGens(rngValues: List<Any>): Pair<T, List<T>>
 
     @Test
     fun `can choose between generators uniformly`() {

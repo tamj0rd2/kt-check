@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.core.GenerationException.DistinctCollectionSizeImpossible
-import com.tamj0rd2.ktcheck.core.IGen
+import com.tamj0rd2.ktcheck.GenerationException.DistinctCollectionSizeImpossible
+import com.tamj0rd2.ktcheck.Gen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import strikt.api.expectThat
@@ -14,7 +14,7 @@ import strikt.assertions.isNotNull
 internal interface ListGeneratorTestContract : BaseGeneratorContract {
     // todo: if there was an IListGen interface, this could be an extension on that instead. I know that different
     //  generators consume rng values differently.
-    fun <T : Any> IGen<T>.generateWithShrunkValuesForListGen(rngValues: List<Any>): Pair<T, List<T>>
+    fun <T : Any> Gen<T>.generateWithShrunkValuesForListGen(rngValues: List<Any>): Pair<T, List<T>>
 
     @Test
     fun `can generate a long list without stack overflow`() {

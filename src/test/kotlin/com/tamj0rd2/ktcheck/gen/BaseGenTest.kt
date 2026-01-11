@@ -2,23 +2,23 @@ package com.tamj0rd2.ktcheck.gen
 
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
-import com.tamj0rd2.ktcheck.core.GenBuilder
-import com.tamj0rd2.ktcheck.core.IGen
+import com.tamj0rd2.ktcheck.GenBuilder
+import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.ProducerTreeDsl.Companion.copy
 import com.tamj0rd2.ktcheck.producer.Seed
 
 internal abstract class BaseGenTest : BaseGeneratorContract, GenBuilder by GenV1.Companion {
-    override fun <T : Any> IGen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> {
+    override fun <T : Any> Gen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> {
         return (this as GenV1<T>).generateWithShrunkValues(ProducerTree.new().withValue(rngValues.single()))
     }
 
-    override fun <T : Any> IGen<T>.generateWithShrunkValues(seed: Seed): Pair<T, List<T>> {
+    override fun <T : Any> Gen<T>.generateWithShrunkValues(seed: Seed): Pair<T, List<T>> {
         return (this as GenV1<T>).generateWithShrunkValues(ProducerTree.new(seed))
     }
 
-    override fun <T : Any> IGen<T>.navigateRecursiveShrinks(
+    override fun <T : Any> Gen<T>.navigateRecursiveShrinks(
         rngValues: List<Any>,
     ): RecursiveShrinkNavigator<T> {
         val tree = buildListTree(rngValues)

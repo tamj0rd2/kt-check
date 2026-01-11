@@ -2,18 +2,18 @@ package com.tamj0rd2.ktcheck.v2
 
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
-import com.tamj0rd2.ktcheck.core.GenBuilder
-import com.tamj0rd2.ktcheck.core.IGen
+import com.tamj0rd2.ktcheck.GenBuilder
+import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.producer.Seed
 
 internal abstract class BaseGenV2Test : BaseGeneratorContract, GenBuilder by GenV2.Companion {
-    override fun <T : Any> IGen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> =
+    override fun <T : Any> Gen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> =
         (this as GenV2<T>).generateWithShrunkValues(StubValueProducerV2(rngValues))
 
-    override fun <T : Any> IGen<T>.generateWithShrunkValues(seed: Seed): Pair<T, List<T>> =
+    override fun <T : Any> Gen<T>.generateWithShrunkValues(seed: Seed): Pair<T, List<T>> =
         (this as GenV2<T>).generateWithShrunkValues(RandomValueProducerV2(seed))
 
-    override fun <T : Any> IGen<T>.navigateRecursiveShrinks(
+    override fun <T : Any> Gen<T>.navigateRecursiveShrinks(
         rngValues: List<Any>,
     ): RecursiveShrinkNavigator<T> {
         return (this as GenV2<T>).navigateRecursiveShrinks(StubValueProducerV2(rngValues))

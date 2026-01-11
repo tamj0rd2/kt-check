@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck.gen
 
-import com.tamj0rd2.ktcheck.core.IGen
+import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 
 internal class CombinerGenerator<T>(
@@ -22,7 +22,7 @@ class CombinerContext internal constructor(
 ) {
     internal val shrinksByIndex = mutableListOf<Sequence<ProducerTree>>()
 
-    fun <T> IGen<T>.bind(): T {
+    fun <T> Gen<T>.bind(): T {
         // todo: I hate this casting between different Gen impls stuff
         val (value, shrinks) = (this as GenV1<T>).generate(tree.left, mode)
         tree = tree.right

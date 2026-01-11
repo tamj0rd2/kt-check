@@ -1,19 +1,19 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.core.GenBuilder
-import com.tamj0rd2.ktcheck.core.IGen
+import com.tamj0rd2.ktcheck.GenBuilder
+import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.producer.Seed
 
 internal interface BaseGeneratorContract : GenBuilder {
-    fun <T : Any> IGen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>>
+    fun <T : Any> Gen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>>
 
-    fun <T : Any> IGen<T>.generateWithShrunkValues(seed: Seed = Seed.random()): Pair<T, List<T>>
+    fun <T : Any> Gen<T>.generateWithShrunkValues(seed: Seed = Seed.random()): Pair<T, List<T>>
 
     /**
      * Create a navigator for testing recursive shrinking.
      * Implementations provide this based on their architecture (ProducerTree or GenResult).
      */
-    fun <T : Any> IGen<T>.navigateRecursiveShrinks(rngValues: List<Any>): RecursiveShrinkNavigator<T>
+    fun <T : Any> Gen<T>.navigateRecursiveShrinks(rngValues: List<Any>): RecursiveShrinkNavigator<T>
 }
 
 /**

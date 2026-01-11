@@ -2,12 +2,12 @@ package com.tamj0rd2.ktcheck.gen
 
 
 import com.tamj0rd2.ktcheck.contracts.OneOfGeneratorTestContract
-import com.tamj0rd2.ktcheck.core.IGen
+import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.gen.GenTests.Companion.generateWithShrunkValues
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 
 internal class OneOfGeneratorTest : BaseGenTest(), OneOfGeneratorTestContract {
-    override fun <T : Any> IGen<T>.generateWithShrunkValuesForOneOfGens(rngValues: List<Any>): Pair<T, List<T>> {
+    override fun <T : Any> Gen<T>.generateWithShrunkValuesForOneOfGens(rngValues: List<Any>): Pair<T, List<T>> {
         val tree = ProducerTree.new()
             .run {
                 withLeft(left.withValue(rngValues.first()))

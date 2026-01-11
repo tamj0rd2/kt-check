@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.v2
 
-import com.tamj0rd2.ktcheck.core.GenBuilder
-import com.tamj0rd2.ktcheck.core.IGen
+import com.tamj0rd2.ktcheck.Gen
+import com.tamj0rd2.ktcheck.GenBuilder
 import com.tamj0rd2.ktcheck.gen.CombinerContext
 import com.tamj0rd2.ktcheck.producer.ProducerTree
 import com.tamj0rd2.ktcheck.producer.Seed
@@ -32,7 +32,7 @@ class RandomValueProducerV2 internal constructor(seed: Seed) : ValueProducerV2 {
  *
  * @param T The type of values produced by this generator.
  */
-sealed class GenV2<T> : IGen<T> {
+sealed class GenV2<T> : Gen<T> {
     internal abstract fun GenContextV2.generate(): GenResultV2<T>
 
     internal fun generate(producer: ValueProducerV2): GenResultV2<T> = GenContextV2(producer).generate()
@@ -62,11 +62,11 @@ sealed class GenV2<T> : IGen<T> {
             TODO("Not yet implemented")
         }
 
-        override fun <T> oneOf(gens: Collection<IGen<T>>): GenV2<T> {
+        override fun <T> oneOf(gens: Collection<Gen<T>>): GenV2<T> {
             return OneOfGeneratorV2(gens.toList().map { it as GenV2<T> })
         }
 
-        override fun <T> IGen<T>.list(
+        override fun <T> Gen<T>.list(
             size: IntRange,
             distinct: Boolean,
         ): GenV2<List<T>> {
@@ -77,22 +77,22 @@ sealed class GenV2<T> : IGen<T> {
             )
         }
 
-        override fun IGen<Char>.string(size: IntRange): GenV2<String> {
+        override fun Gen<Char>.string(size: IntRange): GenV2<String> {
             TODO("Not yet implemented")
         }
 
-        override fun IGen<Char>.string(size: Int): GenV2<String> {
+        override fun Gen<Char>.string(size: Int): GenV2<String> {
             TODO("Not yet implemented")
         }
 
-        override fun <T> IGen<T>.filter(
+        override fun <T> Gen<T>.filter(
             threshold: Int,
             predicate: (T) -> Boolean,
         ): GenV2<T> {
             return FilterGeneratorV2(gen = this as GenV2<T>, threshold = threshold, predicate = predicate)
         }
 
-        override fun <T> IGen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int): IGen<T> {
+        override fun <T> Gen<T>.ignoreExceptions(klass: KClass<out Exception>, threshold: Int): Gen<T> {
             TODO("Not yet implemented")
         }
 
@@ -100,7 +100,7 @@ sealed class GenV2<T> : IGen<T> {
             TODO("Not yet implemented")
         }
 
-        override fun <T1, T2> IGen<T1>.plus(nextGen: IGen<T2>): IGen<Pair<T1, T2>> {
+        override fun <T1, T2> Gen<T1>.plus(nextGen: Gen<T2>): Gen<Pair<T1, T2>> {
             TODO("Not yet implemented")
         }
     }
