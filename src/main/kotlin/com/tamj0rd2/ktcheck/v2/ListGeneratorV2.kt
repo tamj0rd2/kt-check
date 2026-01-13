@@ -9,7 +9,7 @@ internal data class ListGeneratorV2<T>(
     private val sizeRange: IntRange,
     private val distinct: Boolean = false,
 ) : GenV2<List<T>>() {
-    override fun GenContextV2.generate(): GenResultV2<List<T>> {
+    override fun generate(tree: ProducerTree): GenResultV2<List<T>> {
         val size = tree.left.producer.int(sizeRange)
 
         val elementResults = if (distinct) {

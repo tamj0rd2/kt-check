@@ -1,9 +1,11 @@
 package com.tamj0rd2.ktcheck.v2
 
+import com.tamj0rd2.ktcheck.v1.ProducerTree
+
 internal data class IntGeneratorV2(
     internal val range: IntRange,
 ) : GenV2<Int>() {
-    override fun GenContextV2.generate(): GenResultV2<Int> {
+    override fun generate(tree: ProducerTree): GenResultV2<Int> {
         val value = tree.producer.int(range)
         return GenResultV2(
             value = value,

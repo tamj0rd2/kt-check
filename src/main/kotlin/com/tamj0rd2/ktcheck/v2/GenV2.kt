@@ -8,17 +8,10 @@ import com.tamj0rd2.ktcheck.v1.ProducerTree
 import java.util.*
 import kotlin.reflect.KClass
 
-// todo: kill this off. just pass the tree, it's the only thing required.
-internal data class GenContextV2(
-    val tree: ProducerTree,
-)
-
 internal sealed class GenV2<T> : Gen<T> {
-    internal abstract fun GenContextV2.generate(): GenResultV2<T>
+    internal abstract fun generate(tree: ProducerTree): GenResultV2<T>
 
-    internal fun generate(producer: ProducerTree): GenResultV2<T> = GenContextV2(producer).generate()
-
-    override fun <R> map(fn: (T) -> R): GenV2<R> = BasicGenerator { generate().map(fn) }
+    override fun <R> map(fn: (T) -> R): GenV2<R> = BasicGenerator { generate(it).map(fn) }
 
     override fun <R> flatMap(fn: (T) -> Gen<R>): GenV2<R> = FlatMappingGeneratorV2(this, fn)
 
@@ -103,7 +96,7 @@ internal data class GenResultV2<T>(val value: T, val shrinks: Sequence<GenResult
 }
 
 private class BasicGenerator<T>(
-    private val generateFn: GenContextV2.() -> GenResultV2<T>,
+    private val generateFn: (ProducerTree) -> GenResultV2<T>,
 ) : GenV2<T>() {
-    override fun GenContextV2.generate(): GenResultV2<T> = generateFn()
+    override fun generate(tree: ProducerTree): GenResultV2<T> = generateFn(tree)
 }

@@ -1,24 +1,25 @@
 package com.tamj0rd2.ktcheck.v2
 
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
+import com.tamj0rd2.ktcheck.v1.ProducerTree
 
 internal class FilterGeneratorV2<T>(
     private val gen: GenV2<T>,
     private val threshold: Int,
     private val predicate: (T) -> Boolean,
 ) : GenV2<T>() {
-    override fun GenContextV2.generate(): GenResultV2<T> {
+    override fun generate(tree: ProducerTree): GenResultV2<T> {
         var attempts = 0
-        var currentTree = tree
+        var tree = tree
 
         while (attempts < threshold) {
-            val result = gen.generate(currentTree.left)
+            val result = gen.generate(tree.left)
 
             if (predicate(result.value)) {
                 return result.copy(shrinks = filterValidShrinks(result.shrinks))
             }
 
-            currentTree = currentTree.right
+            tree = tree.right
             attempts++
         }
 

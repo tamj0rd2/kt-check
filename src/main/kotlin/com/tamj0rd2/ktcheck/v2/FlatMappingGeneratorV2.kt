@@ -7,7 +7,7 @@ internal class FlatMappingGeneratorV2<T, R>(
     val gen: GenV2<T>,
     val fn: (T) -> Gen<R>,
 ) : GenV2<R>() {
-    override fun GenContextV2.generate(): GenResultV2<R> {
+    override fun generate(tree: ProducerTree): GenResultV2<R> {
         val outerResult = gen.generate(tree.left)
         val innerGen = fn(outerResult.value) as GenV2<R>
         val innerResult = innerGen.generate(tree.right)
