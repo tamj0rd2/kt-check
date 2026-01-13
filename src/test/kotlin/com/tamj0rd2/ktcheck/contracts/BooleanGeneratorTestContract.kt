@@ -1,8 +1,8 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
-import com.tamj0rd2.ktcheck.Seed
-import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
+import com.tamj0rd2.ktcheck.core.ProducerTreeDsl.Companion.producerTree
+import com.tamj0rd2.ktcheck.core.Seed
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.assertions.all

@@ -1,6 +1,6 @@
 package com.tamj0rd2.ktcheck
 
-import com.tamj0rd2.ktcheck.Gen.Companion.plus
+import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.v1.GenV1
 import kotlin.random.Random
 
@@ -49,9 +49,10 @@ interface Gen<T> {
      * @return A sequence of sampled values of type T.
      */
     fun samples(seed: Long = Random.nextLong()): Sequence<T> = Seed.sequence(seed).map { sample(it.value) }
-
-    companion object : GenBuilder by GenV1.Companion
 }
+
+@Suppress("unused")
+object Gens : GenBuilder by GenV1.Companion
 
 sealed class GenerationException(message: String, cause: Throwable? = null) : IllegalStateException(message, cause) {
     class OneOfEmpty internal constructor() : GenerationException("Gen.oneOf() called with no generators")

@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck
+package com.tamj0rd2.ktcheck.core
 
 import kotlin.random.Random
 

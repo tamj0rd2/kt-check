@@ -3,8 +3,10 @@ package com.tamj0rd2.ktcheck.v1
 
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
 import com.tamj0rd2.ktcheck.contracts.FilterGeneratorTestContract
+import com.tamj0rd2.ktcheck.core.PredeterminedValue
+import com.tamj0rd2.ktcheck.core.ProducerTree
+import com.tamj0rd2.ktcheck.core.ProducerTreeDsl.Companion.producerTree
 import com.tamj0rd2.ktcheck.v1.GenTests.Companion.expectGenerationAndShrinkingToEventuallyComplete
-import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import strikt.api.Assertion

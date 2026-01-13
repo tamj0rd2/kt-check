@@ -4,7 +4,7 @@ import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilder
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
-import com.tamj0rd2.ktcheck.v1.ProducerTree
+import com.tamj0rd2.ktcheck.core.ProducerTree
 
 internal abstract class BaseGenV2Test : BaseGeneratorContract, GenBuilder by GenV2.Companion {
     override fun <T : Any> Gen<T>.generateWithShrunkValues(tree: ProducerTree): Pair<T, List<T>> {

@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.v2
 
 import com.tamj0rd2.ktcheck.Gen
-import com.tamj0rd2.ktcheck.v1.ProducerTree
+import com.tamj0rd2.ktcheck.core.ProducerTree
 
 internal class FlatMappingGeneratorV2<T, R>(
     val gen: GenV2<T>,

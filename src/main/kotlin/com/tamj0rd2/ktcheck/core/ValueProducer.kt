@@ -1,6 +1,5 @@
-package com.tamj0rd2.ktcheck.v1
+package com.tamj0rd2.ktcheck.core
 
-import com.tamj0rd2.ktcheck.Seed
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.random.nextLong

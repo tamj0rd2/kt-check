@@ -1,9 +1,9 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.GenerationException.DistinctCollectionSizeImpossible
-import com.tamj0rd2.ktcheck.v1.ProducerTree
-import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.copy
-import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
+import com.tamj0rd2.ktcheck.core.ProducerTree
+import com.tamj0rd2.ktcheck.core.ProducerTreeDsl.Companion.copy
+import com.tamj0rd2.ktcheck.core.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import strikt.api.expectThat

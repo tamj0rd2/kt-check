@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.v2
 
 import com.tamj0rd2.ktcheck.GenerationException.DistinctCollectionSizeImpossible
-import com.tamj0rd2.ktcheck.v1.ProducerTree
+import com.tamj0rd2.ktcheck.core.ProducerTree
 import com.tamj0rd2.ktcheck.v2.IntGeneratorV2.Companion.shrinkInt
 
 internal data class ListGeneratorV2<T>(

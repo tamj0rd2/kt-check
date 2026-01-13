@@ -5,6 +5,7 @@ import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.Test
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.TestResult
+import com.tamj0rd2.ktcheck.core.ProducerTree
 
 internal fun <T> test(config: TestConfig, gen: GenV1<T>, test: Test<T>) {
     val testResultsGen = gen.map { test.getResultFor(it) }

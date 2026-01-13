@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.v1
 
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
+import com.tamj0rd2.ktcheck.core.ProducerTree
 import kotlin.reflect.KClass
 
 internal sealed class FilterGenerator<T>(
