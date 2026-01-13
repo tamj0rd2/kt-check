@@ -3,6 +3,7 @@ package com.tamj0rd2.ktcheck.contracts
 import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.Seed
 import com.tamj0rd2.ktcheck.v1.ProducerTree
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.copy
 import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
@@ -34,10 +35,10 @@ internal interface OneOfGeneratorTestContract : BaseGeneratorContract {
 
         val tree = producerTree {
             left(1)
-            right(produces4AndTrue) {
+            right(produces4AndTrue.copy {
                 // fixme: this is only here for v1.
                 right(true)
-            }
+            })
         }
 
         val (originalValue, shrinks) = multiTypeGen.generateWithShrunkValues(tree)
