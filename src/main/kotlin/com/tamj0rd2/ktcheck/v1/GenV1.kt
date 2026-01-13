@@ -35,7 +35,7 @@ internal sealed class GenV1<T> : Gen<T> {
         GenResult(fn(value), shrinks)
     }
 
-    override fun <R> flatMap(fn: (T) -> Gen<R>): Gen<R> = CombinatorGenerator {
+    override fun <R> flatMap(fn: (T) -> Gen<R>): GenV1<R> = CombinatorGenerator {
         val (leftValue, leftShrinks) = generate(tree.left, mode)
         val (rightValue, rightShrinks) = (fn(leftValue) as GenV1<R>).generate(tree.right, mode)
         GenResult(
@@ -44,27 +44,14 @@ internal sealed class GenV1<T> : Gen<T> {
         )
     }
 
-    /**
-     * Combines two independent generators using the provided combining function.
-     *
-     * The shrinks from both generators are combined to provide a comprehensive set of shrinks for the final value.
-     *
-     * Use this when you want to create a new generator that produces values based on two independent generators. i.e
-     * the value from one generator does not influence the value from the other generator.
-     *
-     * @param nextGen The second generator to combine with this generator.
-     * @param combine A function that takes values from both generators and combines them into a value of type R.
-     * @return A new generator that produces values of type R.
-     */
-    fun <T2, R> combineWith(nextGen: GenV1<T2>, combine: (T, T2) -> R): GenV1<R> =
-        CombinatorGenerator {
-            val (thisValue, thisShrinks) = generate(tree.left, mode)
-            val (nextValue, nextShrinks) = nextGen.generate(tree.right, mode)
-            GenResult(
-                value = combine(thisValue, nextValue),
-                shrinks = tree.combineShrinks(thisShrinks, nextShrinks)
-            )
-        }
+    override fun <T2, R> combineWith(nextGen: Gen<T2>, combine: (T, T2) -> R): GenV1<R> = CombinatorGenerator {
+        val (thisValue, thisShrinks) = generate(tree.left, mode)
+        val (nextValue, nextShrinks) = (nextGen as GenV1<T2>).generate(tree.right, mode)
+        GenResult(
+            value = combine(thisValue, nextValue),
+            shrinks = tree.combineShrinks(thisShrinks, nextShrinks)
+        )
+    }
 
     override fun sample(seed: Long): T = generate(
         tree = ProducerTree.new(Seed(seed)),

@@ -1,7 +1,6 @@
 package com.tamj0rd2.ktcheck
 
 import com.tamj0rd2.ktcheck.core.Seed
-import com.tamj0rd2.ktcheck.v1.GenV1
 import kotlin.random.Random
 
 /**
@@ -35,6 +34,20 @@ interface Gen<T> {
     fun <R> flatMap(fn: (T) -> Gen<R>): Gen<R>
 
     /**
+     * Combines two independent generators using the provided combining function.
+     *
+     * The shrinks from both generators are combined to provide a comprehensive set of shrinks for the final value.
+     *
+     * Use this when you want to create a new generator that produces values based on two independent generators. i.e
+     * the value from one generator does not influence the value from the other generator.
+     *
+     * @param nextGen The second generator to combine with this generator.
+     * @param combine A function that takes values from both generators and combines them into a value of type R.
+     * @return A new generator that produces values of type R.
+     */
+    fun <T2, R> combineWith(nextGen: Gen<T2>, combine: (T, T2) -> R): Gen<R>
+
+    /**
      * Samples a value from the generator using the provided seed.
      *
      * @param seed The seed to use for sampling.
@@ -50,9 +63,6 @@ interface Gen<T> {
      */
     fun samples(seed: Long = Random.nextLong()): Sequence<T> = Seed.sequence(seed).map { sample(it.value) }
 }
-
-@Suppress("unused")
-object Gens : GenBuilder by GenV1.Companion
 
 sealed class GenerationException(message: String, cause: Throwable? = null) : IllegalStateException(message, cause) {
     class OneOfEmpty internal constructor() : GenerationException("Gen.oneOf() called with no generators")

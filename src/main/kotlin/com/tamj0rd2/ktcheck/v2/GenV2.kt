@@ -15,6 +15,9 @@ internal sealed class GenV2<T> : Gen<T> {
 
     override fun <R> flatMap(fn: (T) -> Gen<R>): GenV2<R> = FlatMappingGeneratorV2(this, fn)
 
+    override fun <T2, R> combineWith(nextGen: Gen<T2>, combine: (T, T2) -> R): GenV2<R> =
+        CombineWithGeneratorV2(this, nextGen as GenV2<T2>, combine)
+
     override fun sample(seed: Long): T = generate(ProducerTree.new(Seed(seed))).value
 
     internal companion object : GenBuilder {
