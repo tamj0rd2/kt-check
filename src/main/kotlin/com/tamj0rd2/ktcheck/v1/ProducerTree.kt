@@ -135,6 +135,11 @@ internal class ProducerTreeDsl(private var subject: ProducerTree) {
         subject = subject.withRight(newRightTree)
     }
 
+    fun right(value: ProducerTree, block: ProducerTreeDsl.() -> Unit) {
+        right(value)
+        right(block)
+    }
+
     fun right(value: Any, block: ProducerTreeDsl.() -> Unit) {
         right(value)
         right(block)
@@ -143,6 +148,9 @@ internal class ProducerTreeDsl(private var subject: ProducerTree) {
     companion object {
         fun producerTree(seed: Seed = Seed.random(), block: ProducerTreeDsl.() -> Unit): ProducerTree =
             ProducerTree.new(seed).copy(block)
+
+        fun producerTree(value: Any): ProducerTree =
+            ProducerTree.new().withValue(value)
 
         fun ProducerTree.copy(block: ProducerTreeDsl.() -> Unit): ProducerTree =
             ProducerTreeDsl(this).apply(block).subject

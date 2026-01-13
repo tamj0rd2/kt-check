@@ -4,13 +4,13 @@ import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.Test
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.TestResult
+import com.tamj0rd2.ktcheck.v1.ProducerTree
 
 internal fun <T> test(config: TestConfig, gen: GenV2<T>, test: Test<T>) {
     val testResultsGen = gen.map { test.getResultFor(it) }
 
     fun runIteration(iteration: Int) {
-        val producer = RandomValueProducerV2(config.seed.next(iteration))
-        val (testResult, shrinks) = testResultsGen.generate(producer)
+        val (testResult, shrinks) = testResultsGen.generate(ProducerTree.new(config.seed.next(iteration)))
 
         when (testResult) {
             is TestResult.Success -> return

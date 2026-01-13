@@ -4,7 +4,7 @@ internal data class IntGeneratorV2(
     internal val range: IntRange,
 ) : GenV2<Int>() {
     override fun GenContextV2.generate(): GenResultV2<Int> {
-        val value = producer.int(range)
+        val value = tree.producer.int(range)
         return GenResultV2(
             value = value,
             shrinks = generateShrinks(value),

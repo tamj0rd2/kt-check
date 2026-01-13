@@ -2,60 +2,19 @@ package com.tamj0rd2.ktcheck.v1
 
 import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilder
-import com.tamj0rd2.ktcheck.Seed
 import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
-import com.tamj0rd2.ktcheck.v1.GenTests.Companion.generateWithShrunkValues
-import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.copy
-import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 
 internal abstract class BaseGenTest : BaseGeneratorContract, GenBuilder by GenV1.Companion {
-    override fun <T : Any> Gen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> {
-        val tree = when (rngValues.size) {
-            1 -> ProducerTree.new().withValue(rngValues.single())
-            2 -> producerTree {
-                left(rngValues[0])
-                right(rngValues[1])
-            }
-
-            else -> error("Use a more specific method for producing a tree")
-        }
-
-        return (this as GenV1<T>).generateWithShrunkValues(tree)
+    override fun <T : Any> Gen<T>.generateWithShrunkValues(tree: ProducerTree): Pair<T, List<T>> {
+        val (value, shrinks) = (this as GenV1<T>).generate(tree, GenMode.Initial)
+        return value to shrinks.map { generate(it, GenMode.Shrinking).value }.toList()
     }
 
-    override fun <T : Any> Gen<T>.generateWithShrunkValues(seed: Seed): Pair<T, List<T>> {
-        return (this as GenV1<T>).generateWithShrunkValues(ProducerTree.new(seed))
-    }
-
-    override fun <T : Any> Gen<T>.navigateRecursiveShrinks(
-        rngValues: List<Any>,
-    ): RecursiveShrinkNavigator<T> {
-        val tree = buildListTree(rngValues)
-        return (this as GenV1<T>).navigateRecursiveShrinks(tree)
-    }
-
-    private fun <T> GenV1<T>.navigateRecursiveShrinks(tree: ProducerTree): RecursiveShrinkNavigator<T> {
-        val (value, shrinks) = generate(tree, GenMode.Initial)
+    override fun <T : Any> Gen<T>.navigateRecursiveShrinks(tree: ProducerTree): RecursiveShrinkNavigator<T> {
+        val (value, shrinks) = (this as GenV1<T>).generate(tree, GenMode.Initial)
         return V1RecursiveShrinkNavigator(this, value, shrinks)
     }
-
-    protected fun buildListTree(rngValues: List<Any>): ProducerTree = ProducerTree.new()
-        .run {
-            withLeft(left.withValue(rngValues.first()))
-        }
-        .run {
-            val root = this
-            val remainingValues = rngValues.drop(1)
-            if (remainingValues.isEmpty()) return@run root
-
-            val lastAffectedNode = root.traverseRight(rngValues.size - 1)
-            remainingValues.foldRightIndexed(lastAffectedNode) { index, value, acc ->
-                val updatedNode = acc.copy { left(value) }
-                val updatedParentNode = root.traverseRight(index).withRight(updatedNode)
-                updatedParentNode
-            }
-        }
 }
 
 private class V1RecursiveShrinkNavigator<T>(

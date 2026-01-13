@@ -1,17 +1,14 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
-import com.tamj0rd2.ktcheck.Gen
+import com.tamj0rd2.ktcheck.Seed
+import com.tamj0rd2.ktcheck.v1.ProducerTree
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo
 
 internal interface OneOfGeneratorTestContract : BaseGeneratorContract {
-
-    // todo: if there was an IOneOfGen interface, this could be an extension on that instead. I know that different
-    //  generators consume rng values differently.
-    fun <T : Any> Gen<T>.generateWithShrunkValuesForOneOfGens(rngValues: List<Any>): Pair<T, List<T>>
-
     @Test
     fun `can choose between generators uniformly`() {
         val gen = oneOf(
@@ -28,9 +25,22 @@ internal interface OneOfGeneratorTestContract : BaseGeneratorContract {
             bool().map { it as Any },
             int(0..4).map { it as Any })
 
-        // chooses an index, then generates a value from each generator
-        val (originalValue, shrinks) = multiTypeGen.generateWithShrunkValuesForOneOfGens(rngValues = listOf(1, 4, true))
+        // todo: this is a bit gnarly. find a nicer way to express this.
+        //  It'd probably be much nicer if I just used a StubValueProducer, because then I could express a value
+        //  producer that can generate different values based on the type requested.
+        val produces4AndTrue = Seed.sequence()
+            .map { ProducerTree.new(it) }
+            .first { it.producer.int(0..4) == 4 && it.producer.bool() }
 
+        val tree = producerTree {
+            left(1)
+            right(produces4AndTrue) {
+                // fixme: this is only here for v1.
+                right(true)
+            }
+        }
+
+        val (originalValue, shrinks) = multiTypeGen.generateWithShrunkValues(tree)
         expectThat(originalValue).isEqualTo(4)
         expectThat(shrinks.toList()).isEqualTo(
             listOf(
@@ -53,7 +63,7 @@ internal interface OneOfGeneratorTestContract : BaseGeneratorContract {
             gen.samples().take(100_000).forEach { collect(it) }
         }.checkPercentages(values.associateWith { 32.0 })
 
-        val (value, shrinks) = gen.generateWithShrunkValues(rngValues = listOf(2))
+        val (value, shrinks) = gen.generateWithShrunkValues(producerTree(2))
         expectThat(value).isEqualTo("cherry")
 
         expectThat(shrinks.toList()).isEqualTo(listOf("banana", "apple"))

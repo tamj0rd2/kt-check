@@ -2,6 +2,7 @@ package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.Seed
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.assertions.all
@@ -32,14 +33,14 @@ internal interface BooleanGeneratorTestContract : BaseGeneratorContract {
     // todo: in the future I want to allow the user to specify the shrink direction
     @Test
     fun `true shrinks to false`() {
-        val (value, shrinks) = bool().generateWithShrunkValues(rngValues = listOf(true))
+        val (value, shrinks) = bool().generateWithShrunkValues(producerTree(true))
         expectThat(value).isTrue()
         expectThat(shrinks).isEqualTo(listOf(false))
     }
 
     @Test
     fun `false does not shrink`() {
-        val (value, shrinks) = bool().generateWithShrunkValues(rngValues = listOf(false))
+        val (value, shrinks) = bool().generateWithShrunkValues(producerTree(false))
         expectThat(value).isFalse()
         expectThat(shrinks).isEmpty()
     }

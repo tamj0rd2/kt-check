@@ -9,14 +9,16 @@ internal class FilterGeneratorV2<T>(
 ) : GenV2<T>() {
     override fun GenContextV2.generate(): GenResultV2<T> {
         var attempts = 0
+        var currentTree = tree
 
         while (attempts < threshold) {
-            val result = gen.generate(producer)
+            val result = gen.generate(currentTree.left)
 
             if (predicate(result.value)) {
                 return result.copy(shrinks = filterValidShrinks(result.shrinks))
             }
 
+            currentTree = currentTree.right
             attempts++
         }
 

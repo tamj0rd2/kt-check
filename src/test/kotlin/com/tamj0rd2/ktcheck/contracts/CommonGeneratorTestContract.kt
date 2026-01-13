@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Seed
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 import com.tamj0rd2.ktcheck.v1.shrink
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
@@ -38,7 +39,12 @@ internal interface CommonGeneratorTestContract : BaseGeneratorContract {
         val bigGen = int(10..20)
         val gen = smallGen.flatMap { a -> bigGen.map { b -> a + b } }
 
-        val (value) = gen.generateWithShrunkValues(rngValues = listOf(5, 20))
+        val tree = producerTree {
+            left(5)
+            right(20)
+        }
+
+        val (value) = gen.generateWithShrunkValues(tree)
         expectThat(value).isEqualTo(25)
     }
 
@@ -48,7 +54,12 @@ internal interface CommonGeneratorTestContract : BaseGeneratorContract {
         val biggerGen = int(4..6)
         val gen = smallGen.flatMap { a -> biggerGen.map { b -> a + b } }
 
-        val (value, shrinks) = gen.generateWithShrunkValues(rngValues = listOf(3, 6))
+        val tree = producerTree {
+            left(3)
+            right(6)
+        }
+
+        val (value, shrinks) = gen.generateWithShrunkValues(tree)
         expectThat(value).isEqualTo(9)
 
         val threeShrunk = shrink(3, range = 1..3)

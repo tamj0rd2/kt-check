@@ -5,6 +5,7 @@ import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.contracts.CommonGeneratorTestContract
 import com.tamj0rd2.ktcheck.forAll
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
 import strikt.api.expectThat
@@ -21,7 +22,12 @@ internal class GenTests : BaseGenTest(), CommonGeneratorTestContract {
         val bigGen = GenV1.int(10..20)
         val gen = smallGen.combineWith(bigGen) { a, b -> a + b }
 
-        val (value) = gen.generateWithShrunkValues(rngValues = listOf(5, 20))
+        val tree = producerTree {
+            left(5)
+            right(20)
+        }
+
+        val (value) = gen.generateWithShrunkValues(tree)
         expectThat(value).isEqualTo(25)
     }
 
@@ -31,7 +37,12 @@ internal class GenTests : BaseGenTest(), CommonGeneratorTestContract {
         val bigGen = GenV1.int(4..6)
         val gen = smallGen.combineWith(bigGen) { a, b -> a + b }
 
-        val (value, shrinks) = gen.generateWithShrunkValues(rngValues = listOf(3, 6))
+        val tree = producerTree {
+            left(3)
+            right(6)
+        }
+
+        val (value, shrinks) = gen.generateWithShrunkValues(tree)
         expectThat(value).isEqualTo(9)
 
         val threeShrunk = shrink(3, range = 1..3)

@@ -6,42 +6,23 @@ import com.tamj0rd2.ktcheck.Seed
 import com.tamj0rd2.ktcheck.v1.CombinerContext
 import com.tamj0rd2.ktcheck.v1.ProducerTree
 import java.util.*
-import kotlin.random.Random
-import kotlin.random.nextInt
 import kotlin.reflect.KClass
 
+// todo: kill this off. just pass the tree, it's the only thing required.
 internal data class GenContextV2(
-    val producer: ValueProducerV2,
+    val tree: ProducerTree,
 )
-
-internal interface ValueProducerV2 {
-    fun int(range: IntRange): Int
-    fun bool(): Boolean
-}
-
-class RandomValueProducerV2 internal constructor(seed: Seed) : ValueProducerV2 {
-    private val random: Random = Random(seed.value)
-
-    override fun int(range: IntRange): Int = random.nextInt(range)
-
-    override fun bool(): Boolean = random.nextBoolean()
-}
 
 internal sealed class GenV2<T> : Gen<T> {
     internal abstract fun GenContextV2.generate(): GenResultV2<T>
 
-    internal fun generate(producer: ValueProducerV2): GenResultV2<T> = GenContextV2(producer).generate()
+    internal fun generate(producer: ProducerTree): GenResultV2<T> = GenContextV2(producer).generate()
 
     override fun <R> map(fn: (T) -> R): GenV2<R> = BasicGenerator { generate().map(fn) }
 
-    override fun <R> flatMap(fn: (T) -> Gen<R>): Gen<R> = BasicGenerator {
-        val firstResult = generate()
-        val secondGen = fn(firstResult.value) as GenV2<R>
-        val secondResult = secondGen.generate(producer)
-        secondResult
-    }
+    override fun <R> flatMap(fn: (T) -> Gen<R>): GenV2<R> = FlatMappingGeneratorV2(this, fn)
 
-    override fun sample(seed: Long): T = generate(RandomValueProducerV2(Seed(seed))).value
+    override fun sample(seed: Long): T = generate(ProducerTree.new(Seed(seed))).value
 
     internal companion object : GenBuilder {
         override fun <T> constant(value: T): GenV2<T> {
@@ -66,7 +47,8 @@ internal sealed class GenV2<T> : Gen<T> {
         }
 
         override fun <T> oneOf(gens: Collection<Gen<T>>): GenV2<T> {
-            return OneOfGeneratorV2(gens.toList().map { it as GenV2<T> })
+            val gens = gens.toList()
+            return int(gens.indices).flatMap { gens[it] }
         }
 
         override fun <T> Gen<T>.list(

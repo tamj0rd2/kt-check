@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.v2
 
 import com.tamj0rd2.ktcheck.GenerationException.DistinctCollectionSizeImpossible
+import com.tamj0rd2.ktcheck.v1.ProducerTree
 import com.tamj0rd2.ktcheck.v2.IntGeneratorV2.Companion.shrinkInt
 
 internal data class ListGeneratorV2<T>(
@@ -9,9 +10,13 @@ internal data class ListGeneratorV2<T>(
     private val distinct: Boolean = false,
 ) : GenV2<List<T>>() {
     override fun GenContextV2.generate(): GenResultV2<List<T>> {
-        val size = producer.int(sizeRange)
+        val size = tree.left.producer.int(sizeRange)
 
-        val elementResults = if (distinct) generateDistinctElements(size) else List(size) { gen.generate(producer) }
+        val elementResults = if (distinct) {
+            generateDistinctElements(size, tree.right)
+        } else {
+            generateElements(size, tree.right)
+        }
 
         return elementResults.asRecursivelyShrinkingGenResult()
     }
@@ -21,13 +26,28 @@ internal data class ListGeneratorV2<T>(
         shrinks = createSizeShrinks(this) + createElementShrinks(this)
     )
 
-    private fun GenContextV2.generateDistinctElements(size: Int): List<GenResultV2<T>> {
+    private fun generateElements(size: Int, tree: ProducerTree): List<GenResultV2<T>> {
+        val elementResults = mutableListOf<GenResultV2<T>>()
+        var tree = tree
+
+        repeat(size) {
+            val elemResult = gen.generate(tree.left)
+            tree = tree.right
+            elementResults.add(elemResult)
+        }
+
+        return elementResults
+    }
+
+    private fun generateDistinctElements(size: Int, tree: ProducerTree): List<GenResultV2<T>> {
         val elementResults = mutableListOf<GenResultV2<T>>()
         val seenValues = mutableSetOf<T>()
         var retriesRemaining = MAX_DISTINCT_ATTEMPTS
 
+        var tree = tree
         while (elementResults.size < size) {
-            val elemResult = gen.generate(producer)
+            val elemResult = gen.generate(tree.left)
+            tree = tree.right
 
             // Check for duplicates
             if (elemResult.value in seenValues) {

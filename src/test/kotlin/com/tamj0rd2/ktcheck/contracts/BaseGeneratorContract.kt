@@ -3,21 +3,23 @@ package com.tamj0rd2.ktcheck.contracts
 import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilder
 import com.tamj0rd2.ktcheck.Seed
+import com.tamj0rd2.ktcheck.v1.ProducerTree
 
 internal interface BaseGeneratorContract : GenBuilder {
-    fun <T : Any> Gen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>>
+    fun <T : Any> Gen<T>.generateWithShrunkValues(tree: ProducerTree): Pair<T, List<T>>
 
-    fun <T : Any> Gen<T>.generateWithShrunkValues(seed: Seed = Seed.random()): Pair<T, List<T>>
+    fun <T : Any> Gen<T>.generateWithShrunkValues(seed: Seed = Seed.random()): Pair<T, List<T>> =
+        generateWithShrunkValues(ProducerTree.new(seed))
 
     /**
      * Create a navigator for testing recursive shrinking.
      * Implementations provide this based on their architecture (ProducerTree or GenResult).
      */
-    fun <T : Any> Gen<T>.navigateRecursiveShrinks(rngValues: List<Any>): RecursiveShrinkNavigator<T>
+    fun <T : Any> Gen<T>.navigateRecursiveShrinks(tree: ProducerTree): RecursiveShrinkNavigator<T>
 }
 
 /**
- * Navigator interface for testing recursive shrinking behavior.
+ * Navigator interface for testing recursive shrinking behaviour.
  * Abstracts over different generator architectures (ProducerTree vs GenResult).
  */
 interface RecursiveShrinkNavigator<T> {

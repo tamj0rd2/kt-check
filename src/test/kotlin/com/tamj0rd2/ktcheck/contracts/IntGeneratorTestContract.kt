@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -73,7 +74,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
     fun `10 shrinks correctly`() {
         val gen = int(0..10)
 
-        val (originalValue, shrinks) = gen.generateWithShrunkValues(rngValues = listOf(10))
+        val (originalValue, shrinks) = gen.generateWithShrunkValues(producerTree(10))
         expectThat(originalValue).isEqualTo(10)
         expectThat(shrinks).isEqualTo(listOf(0, 5, 8, 9))
     }
@@ -82,7 +83,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
     fun `-10 shrinks correctly`() {
         val gen = int(-10..0)
 
-        val (originalValue, shrinks) = gen.generateWithShrunkValues(rngValues = listOf(-10))
+        val (originalValue, shrinks) = gen.generateWithShrunkValues(producerTree(-10))
         expectThat(originalValue).isEqualTo(-10)
         expectThat(shrinks).isEqualTo(listOf(0, -5, -8, -9))
     }
@@ -91,7 +92,7 @@ internal interface IntGeneratorTestContract : BaseGeneratorContract {
     fun `shrinking zero produces no shrinks`() {
         val gen = int(Int.MIN_VALUE..Int.MAX_VALUE)
 
-        val (originalValue, shrinks) = gen.generateWithShrunkValues(rngValues = listOf(0))
+        val (originalValue, shrinks) = gen.generateWithShrunkValues(producerTree(0))
         expectThat(originalValue).isEqualTo(0)
         expectThat(shrinks).isEmpty()
     }

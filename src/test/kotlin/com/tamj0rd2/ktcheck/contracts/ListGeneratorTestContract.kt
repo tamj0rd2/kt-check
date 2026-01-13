@@ -1,7 +1,9 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.GenerationException.DistinctCollectionSizeImpossible
-import com.tamj0rd2.ktcheck.Gen
+import com.tamj0rd2.ktcheck.v1.ProducerTree
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.copy
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import strikt.api.expectThat
@@ -12,10 +14,6 @@ import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
 
 internal interface ListGeneratorTestContract : BaseGeneratorContract {
-    // todo: if there was an IListGen interface, this could be an extension on that instead. I know that different
-    //  generators consume rng values differently.
-    fun <T : Any> Gen<T>.generateWithShrunkValuesForListGen(rngValues: List<Any>): Pair<T, List<T>>
-
     @Test
     fun `can generate a long list without stack overflow`() {
         constant(1).list(10_000).sample()
@@ -24,7 +22,10 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `empty list has no shrinks`() {
         val gen = int(0..5).list()
-        val nav = gen.navigateRecursiveShrinks(listOf(0))  // size = 0
+        val tree = producerTree {
+            left(0)
+        }
+        val nav = gen.navigateRecursiveShrinks(tree)
 
         expectThat(nav.value).isEmpty()
         expectThat(nav.getShrinks()).isEmpty()
@@ -33,8 +34,14 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `single minimal element shrinks recursively`() {
         val gen = int(0..5).list()
-        val nav = gen.navigateRecursiveShrinks(listOf(1, 0))  // [0]
+        val tree = producerTree {
+            left(1)
+            right {
+                left(0)
+            }
+        }
 
+        val nav = gen.navigateRecursiveShrinks(tree)
         expectThat(nav.value).isEqualTo(listOf(0))
 
         // Find the empty list shrink
@@ -49,8 +56,14 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `single non-minimal element shrinks recursively`() {
         val gen = int(0..5).list()
-        val nav = gen.navigateRecursiveShrinks(listOf(1, 4))  // [4]
+        val tree = producerTree {
+            left(1)
+            right {
+                left(4)
+            }
+        }
 
+        val nav = gen.navigateRecursiveShrinks(tree)
         expectThat(nav.value).isEqualTo(listOf(4))
 
         // Find the [0] shrink (element shrink)
@@ -77,8 +90,17 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `two-element list shrinks recursively`() {
         val gen = int(0..5).list()
-        val nav = gen.navigateRecursiveShrinks(listOf(2, 1, 4))  // [1, 4]
+        val tree = producerTree {
+            left(2)
+            right {
+                left(1)
+                right {
+                    left(4)
+                }
+            }
+        }
 
+        val nav = gen.navigateRecursiveShrinks(tree)
         expectThat(nav.value).isEqualTo(listOf(1, 4))
 
         // Check that [1] (tail removal) has recursive shrinks
@@ -118,8 +140,16 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `three-level depth test`() {
         val gen = int(0..5).list()
-        val nav = gen.navigateRecursiveShrinks(listOf(2, 2, 4))  // [2, 4]
-
+        val tree = producerTree {
+            left(2)
+            right {
+                left(2)
+                right {
+                    left(4)
+                }
+            }
+        }
+        val nav = gen.navigateRecursiveShrinks(tree)
         expectThat(nav.value).isEqualTo(listOf(2, 4))
 
         // Level 1: Find [2]
@@ -145,8 +175,20 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
     @Test
     fun `when all elements are minimal - only size shrinks recursively`() {
         val gen = int(0..5).list()
-        val nav = gen.navigateRecursiveShrinks(listOf(3, 0, 0, 0))  // [0, 0, 0]
+        val tree = producerTree {
+            left(3)
+            right {
+                left(0)
+                right {
+                    left(0)
+                    right {
+                        left(0)
+                    }
+                }
+            }
+        }
 
+        val nav = gen.navigateRecursiveShrinks(tree)
         expectThat(nav.value).isEqualTo(listOf(0, 0, 0))
 
         val level1Shrinks = nav.getShrinks(limit = 10)
@@ -179,7 +221,7 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
             listOf(1, 42) to 1,                  // 1 distinct element
         ).forEach { (rngValues, expectedSize) ->
             val gen = int(0..100).list(size = expectedSize, distinct = true)
-            val (value, _) = gen.generateWithShrunkValuesForListGen(rngValues)
+            val (value, _) = gen.generateWithShrunkValues(buildListTree(rngValues))
 
             expectThat(value.size).isEqualTo(expectedSize)
             expectThat(value.toSet().size).isEqualTo(expectedSize) // Confirms no duplicates
@@ -196,7 +238,7 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
             listOf(2, 1, 4),        // 2-element list
             listOf(3, 1, 4, 7),     // 3-element list
         ).forEach { rngValues ->
-            val (value, shrinks) = gen.generateWithShrunkValuesForListGen(rngValues)
+            val (value, shrinks) = gen.generateWithShrunkValues(buildListTree(rngValues))
 
             // Original value should be distinct
             expectThat(value.toSet().size).isEqualTo(value.size)
@@ -214,4 +256,21 @@ internal interface ListGeneratorTestContract : BaseGeneratorContract {
 
         assertThrows<DistinctCollectionSizeImpossible> { gen.sample() }
     }
+
+    private fun buildListTree(rngValues: List<Any>): ProducerTree = ProducerTree.new()
+        .run {
+            withLeft(left.withValue(rngValues.first()))
+        }
+        .run {
+            val root = this
+            val remainingValues = rngValues.drop(1)
+            if (remainingValues.isEmpty()) return@run root
+
+            val lastAffectedNode = root.traverseRight(rngValues.size - 1)
+            remainingValues.foldRightIndexed(lastAffectedNode) { index, value, acc ->
+                val updatedNode = acc.copy { left(value) }
+                val updatedParentNode = root.traverseRight(index).withRight(updatedNode)
+                updatedParentNode
+            }
+        }
 }

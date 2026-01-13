@@ -1,30 +1,6 @@
 package com.tamj0rd2.ktcheck.v1
 
 
-import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.contracts.OneOfGeneratorTestContract
-import com.tamj0rd2.ktcheck.v1.GenTests.Companion.generateWithShrunkValues
 
-internal class OneOfGeneratorTest : BaseGenTest(), OneOfGeneratorTestContract {
-    override fun <T : Any> Gen<T>.generateWithShrunkValuesForOneOfGens(rngValues: List<Any>): Pair<T, List<T>> {
-        val tree = ProducerTree.new()
-            .run {
-                withLeft(left.withValue(rngValues.first()))
-            }
-            .run {
-                // note: trees are difficult to manipulate.
-                val root = this
-                val remainingValues = rngValues.drop(1)
-                if (remainingValues.isEmpty()) return@run root
-
-                val lastAffectedNode = traverseRight(rngValues.size - 1)
-                remainingValues.foldRightIndexed(lastAffectedNode) { index, value, acc ->
-                    val updatedNode = acc.withValue(value)
-                    val updatedParentNode = root.traverseRight(index).withRight(updatedNode)
-                    updatedParentNode
-                }
-            }
-
-        return (this as GenV1<T>).generateWithShrunkValues(tree)
-    }
-}
+internal class OneOfGeneratorTest : BaseGenTest(), OneOfGeneratorTestContract
