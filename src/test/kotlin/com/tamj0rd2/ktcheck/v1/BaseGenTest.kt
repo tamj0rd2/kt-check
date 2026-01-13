@@ -7,10 +7,21 @@ import com.tamj0rd2.ktcheck.contracts.BaseGeneratorContract
 import com.tamj0rd2.ktcheck.contracts.RecursiveShrinkNavigator
 import com.tamj0rd2.ktcheck.v1.GenTests.Companion.generateWithShrunkValues
 import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.copy
+import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 
 internal abstract class BaseGenTest : BaseGeneratorContract, GenBuilder by GenV1.Companion {
     override fun <T : Any> Gen<T>.generateWithShrunkValues(rngValues: List<Any>): Pair<T, List<T>> {
-        return (this as GenV1<T>).generateWithShrunkValues(ProducerTree.new().withValue(rngValues.single()))
+        val tree = when (rngValues.size) {
+            1 -> ProducerTree.new().withValue(rngValues.single())
+            2 -> producerTree {
+                left(rngValues[0])
+                right(rngValues[1])
+            }
+
+            else -> error("Use a more specific method for producing a tree")
+        }
+
+        return (this as GenV1<T>).generateWithShrunkValues(tree)
     }
 
     override fun <T : Any> Gen<T>.generateWithShrunkValues(seed: Seed): Pair<T, List<T>> {

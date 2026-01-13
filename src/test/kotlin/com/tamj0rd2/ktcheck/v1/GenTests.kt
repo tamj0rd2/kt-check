@@ -5,7 +5,6 @@ import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.contracts.CommonGeneratorTestContract
 import com.tamj0rd2.ktcheck.forAll
-import com.tamj0rd2.ktcheck.v1.ProducerTreeDsl.Companion.producerTree
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
 import strikt.api.expectThat
@@ -17,53 +16,12 @@ import java.time.Duration
 
 internal class GenTests : BaseGenTest(), CommonGeneratorTestContract {
     @Test
-    fun `flatMap generates the second value based on the first`() {
-        val smallGen = GenV1.int(0..5)
-        val bigGen = GenV1.int(10..20)
-        val gen = smallGen.flatMap { a -> bigGen.map { b -> a + b } }
-
-        val tree = producerTree {
-            left(5)
-            right(20)
-        }
-
-        val value = gen.generate(tree, GenMode.Initial).value
-        expectThat(value).isEqualTo(25)
-    }
-
-    @Test
-    fun `flatMap combines shrinks from both generators`() {
-        val smallGen = GenV1.int(1..3)
-        val biggerGen = GenV1.int(4..6)
-        val gen = smallGen.flatMap { a -> biggerGen.map { b -> a + b } }
-
-        val tree = producerTree {
-            left(3)
-            right(6)
-        }
-
-        val (value, shrinks) = gen.generateWithShrunkValues(tree)
-        expectThat(value).isEqualTo(9)
-
-        val threeShrunk = shrink(3, range = 1..3)
-        val sixShrunk = shrink(6, range = 4..6)
-
-        expectThat(shrinks).contains(threeShrunk.map { it + 6 }.toList())
-        expectThat(shrinks).contains(sixShrunk.map { it + 3 }.toList())
-    }
-
-    @Test
     fun `combineWith merges two independent generators`() {
         val smallGen = GenV1.int(0..5)
         val bigGen = GenV1.int(10..20)
         val gen = smallGen.combineWith(bigGen) { a, b -> a + b }
 
-        val tree = producerTree {
-            left(5)
-            right(20)
-        }
-
-        val value = gen.generate(tree, GenMode.Initial).value
+        val (value) = gen.generateWithShrunkValues(rngValues = listOf(5, 20))
         expectThat(value).isEqualTo(25)
     }
 
@@ -73,12 +31,7 @@ internal class GenTests : BaseGenTest(), CommonGeneratorTestContract {
         val bigGen = GenV1.int(4..6)
         val gen = smallGen.combineWith(bigGen) { a, b -> a + b }
 
-        val tree = producerTree {
-            left(3)
-            right(6)
-        }
-
-        val (value, shrinks) = gen.generateWithShrunkValues(tree)
+        val (value, shrinks) = gen.generateWithShrunkValues(rngValues = listOf(3, 6))
         expectThat(value).isEqualTo(9)
 
         val threeShrunk = shrink(3, range = 1..3)

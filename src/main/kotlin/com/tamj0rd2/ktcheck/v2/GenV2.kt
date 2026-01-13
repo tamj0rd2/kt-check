@@ -34,6 +34,13 @@ internal sealed class GenV2<T> : Gen<T> {
 
     override fun <R> map(fn: (T) -> R): GenV2<R> = BasicGenerator { generate().map(fn) }
 
+    override fun <R> flatMap(fn: (T) -> Gen<R>): Gen<R> = BasicGenerator {
+        val firstResult = generate()
+        val secondGen = fn(firstResult.value) as GenV2<R>
+        val secondResult = secondGen.generate(producer)
+        secondResult
+    }
+
     override fun sample(seed: Long): T = generate(RandomValueProducerV2(Seed(seed))).value
 
     internal companion object : GenBuilder {
