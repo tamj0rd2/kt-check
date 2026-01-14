@@ -28,7 +28,17 @@ internal data class ProducerTree private constructor(
     internal fun combineShrinks(
         leftShrinks: Sequence<ProducerTree>,
         rightShrinks: Sequence<ProducerTree>,
-    ): Sequence<ProducerTree> = leftShrinks.map { withLeft(it) } + rightShrinks.map { withRight(it) }
+    ): Sequence<ProducerTree> {
+        // Shrink left only
+        val leftOnly = leftShrinks.map { withLeft(it) }
+        // Shrink right only
+        val rightOnly = rightShrinks.map { withRight(it) }
+        // Shrink both simultaneously (cartesian product)
+        val both = leftShrinks.flatMap { left ->
+            rightShrinks.map { right -> withLeft(left).withRight(right) }
+        }
+        return leftOnly + rightOnly + both
+    }
 
 
     /**

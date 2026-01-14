@@ -11,14 +11,41 @@ internal class CombineWithGeneratorV2<T1, T2, R>(
         val leftResult = leftGen.generate(tree.left)
         val rightResult = rightGen.generate(tree.right)
 
-        // todo: interleaving could produce better shrink results.
-        val leftBasedShrinks = createLeftShrinks(leftResult, rightResult.value)
-        val rightBasedShrinks = createRightShrinks(leftResult.value, rightResult)
-
         return GenResultV2(
             value = combine(leftResult.value, rightResult.value),
-            shrinks = leftBasedShrinks + rightBasedShrinks
+            shrinks = createShrinks(leftResult, rightResult)
         )
+    }
+
+    private fun createShrinks(
+        leftResult: GenResultV2<T1>,
+        rightResult: GenResultV2<T2>,
+        depth: Int = 0,
+    ): Sequence<GenResultV2<R>> {
+        // Shrink left, recursively shrink right for each left shrink
+        val leftShrinks = leftResult.shrinks.flatMap { leftShrink ->
+            sequenceOf(
+                GenResultV2(
+                    value = combine(leftShrink.value, rightResult.value),
+                    shrinks = createShrinks(leftShrink, rightResult, depth + 1)
+                )
+            ) + rightResult.shrinks.map { rightShrink ->
+                GenResultV2(
+                    value = combine(leftShrink.value, rightShrink.value),
+                    shrinks = createShrinks(leftShrink, rightShrink, depth + 1)
+                )
+            }
+        }
+
+        // Shrink right with original left
+        val rightShrinks = rightResult.shrinks.map { rightShrink ->
+            GenResultV2(
+                value = combine(leftResult.value, rightShrink.value),
+                shrinks = createShrinks(leftResult, rightShrink, depth + 1)
+            )
+        }
+
+        return leftShrinks + rightShrinks
     }
 
     private fun createLeftShrinks(

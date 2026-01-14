@@ -26,6 +26,9 @@ interface RecursiveShrinkNavigator<T> {
     /** The generated value */
     val value: T
 
+    operator fun component1(): T = value
+    operator fun component2(): List<T> = getShrinks().map { it.value }
+
     /** Get shrinks as a list (materializes up to the limit) */
     fun getShrinks(limit: Int = 10): List<RecursiveShrinkNavigator<T>>
 

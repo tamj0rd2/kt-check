@@ -88,20 +88,17 @@ internal interface CommonGeneratorTestContract : BaseGeneratorContract {
     fun `combineWith combines shrinks from both generators`() {
         val smallGen = int(1..3)
         val bigGen = int(4..6)
-        val gen = smallGen.combineWith(bigGen) { a, b -> a + b }
+        val gen = smallGen.combineWith(bigGen, ::Pair)
 
         val tree = producerTree {
             left(3)
             right(6)
         }
 
-        val (value, shrinks) = gen.generateWithShrunkValues(tree)
-        expectThat(value).isEqualTo(9)
-
-        val threeShrunk = shrink(3, range = 1..3)
-        val sixShrunk = shrink(6, range = 4..6)
-
-        expectThat(shrinks).contains(threeShrunk.map { it + 6 }.toList())
-        expectThat(shrinks).contains(sixShrunk.map { it + 3 }.toList())
+        val (value, shrinks) = gen.navigateRecursiveShrinks(tree)
+        expectThat(value).isEqualTo(3 to 6)
+        expectThat(shrinks).contains(shrink(3, range = 1..3).map { it to 6 }.toList())
+        expectThat(shrinks).contains(shrink(6, range = 4..6).map { 3 to it }.toList())
+        expectThat(shrinks).contains(1 to 4) // both shrunk
     }
 }
