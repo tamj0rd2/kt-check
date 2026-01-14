@@ -1,10 +1,10 @@
 package com.tamj0rd2.ktcheck.v2
 
+import com.tamj0rd2.ktcheck.CombinerContext
 import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilder
 import com.tamj0rd2.ktcheck.core.ProducerTree
 import com.tamj0rd2.ktcheck.core.Seed
-import com.tamj0rd2.ktcheck.v1.CombinerContext
 import java.util.*
 import kotlin.reflect.KClass
 

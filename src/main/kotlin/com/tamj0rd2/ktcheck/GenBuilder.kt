@@ -1,6 +1,5 @@
 package com.tamj0rd2.ktcheck
 
-import com.tamj0rd2.ktcheck.v1.CombinerContext
 import java.util.*
 import kotlin.reflect.KClass
 
