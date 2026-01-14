@@ -58,14 +58,6 @@ internal sealed class GenV2<T> : Gen<T> {
             )
         }
 
-        override fun Gen<Char>.string(size: IntRange): GenV2<String> {
-            TODO("Not yet implemented")
-        }
-
-        override fun Gen<Char>.string(size: Int): GenV2<String> {
-            TODO("Not yet implemented")
-        }
-
         override fun <T> Gen<T>.filter(
             threshold: Int,
             predicate: (T) -> Boolean,
@@ -78,11 +70,7 @@ internal sealed class GenV2<T> : Gen<T> {
         }
 
         override fun <T> combine(block: CombinerContext.() -> T): GenV2<T> {
-            TODO("Not yet implemented")
-        }
-
-        override fun <T1, T2> Gen<T1>.plus(nextGen: Gen<T2>): Gen<Pair<T1, T2>> {
-            TODO("Not yet implemented")
+            return CombinerGeneratorV2(block)
         }
     }
 }

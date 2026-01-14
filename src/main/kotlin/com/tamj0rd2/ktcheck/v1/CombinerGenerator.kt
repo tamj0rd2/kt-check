@@ -15,18 +15,18 @@ internal class CombinerGenerator<T>(
             GenResult(value, shrinks)
         }
     }
-}
 
-private class CombinerContextV1(
-    private var tree: ProducerTree,
-    private val mode: GenMode,
-) : CombinerContext {
-    val shrinksByIndex = mutableListOf<Sequence<ProducerTree>>()
+    private class CombinerContextV1(
+        private var tree: ProducerTree,
+        private val mode: GenMode,
+    ) : CombinerContext {
+        val shrinksByIndex = mutableListOf<Sequence<ProducerTree>>()
 
-    override fun <T> Gen<T>.bind(): T {
-        val (value, shrinks) = (this as GenV1<T>).generate(tree.left, mode)
-        tree = tree.right
-        shrinksByIndex.add(shrinks)
-        return value
+        override fun <T> Gen<T>.bind(): T {
+            val (value, shrinks) = (this as GenV1<T>).generate(tree.left, mode)
+            tree = tree.right
+            shrinksByIndex.add(shrinks)
+            return value
+        }
     }
 }

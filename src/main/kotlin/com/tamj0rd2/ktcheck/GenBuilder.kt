@@ -44,9 +44,13 @@ interface GenBuilder {
     fun <T> Gen<T>.set(size: Int): Gen<Set<T>> =
         set(size..size)
 
-    fun Gen<Char>.string(size: IntRange): Gen<String>
+    fun Gen<Char>.string(size: IntRange): Gen<String> {
+        return list(size).map { it.joinToString("") }
+    }
 
-    fun Gen<Char>.string(size: Int): Gen<String>
+    fun Gen<Char>.string(size: Int): Gen<String> {
+        return string(size..size)
+    }
 
     fun <T> Gen<T>.filter(predicate: (T) -> Boolean): Gen<T> = filter(100, predicate)
 
@@ -73,8 +77,7 @@ interface GenBuilder {
      * ```
      *
      * **Warning about conditionals:** The combiner requires that bind functions will be called in the same order each time.
-     * Conditionals that affect whether trailing [CombinerContext.bind] calls are called will shrink correctly.
-     * However, conditionals that skip non-trailing [CombinerContext.bind] calls will cause invalid shrinks.
+     * Using conditionals within the block will likely cause invalid shrinks to be produced.
      */
     fun <T> combine(block: CombinerContext.() -> T): Gen<T>
 
@@ -95,5 +98,5 @@ interface GenBuilder {
      * For dependent generation (where the second generator depends on the first value),
      * use [flatMap] or [com.tamj0rd2.ktcheck.v1.GenV1.Companion.combine] instead.
      */
-    infix operator fun <T1, T2> Gen<T1>.plus(nextGen: Gen<T2>): Gen<Pair<T1, T2>>
+    infix operator fun <T1, T2> Gen<T1>.plus(nextGen: Gen<T2>): Gen<Pair<T1, T2>> = combineWith(nextGen, ::Pair)
 }

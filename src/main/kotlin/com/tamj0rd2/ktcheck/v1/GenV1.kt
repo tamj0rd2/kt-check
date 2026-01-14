@@ -78,7 +78,7 @@ internal sealed class GenV1<T> : Gen<T> {
         }
 
         override fun uuid(): GenV1<UUID> {
-            return (long() + long()).map { UUID(it.first, it.second) }
+            return (long() + long()).map { UUID(it.first, it.second) } as GenV1<UUID>
         }
 
         override fun <T> oneOf(gens: Collection<Gen<T>>): GenV1<T> {
@@ -91,14 +91,6 @@ internal sealed class GenV1<T> : Gen<T> {
             size: IntRange,
             distinct: Boolean,
         ): GenV1<List<T>> = ListGenerator(sizeRange = size, distinct = distinct, gen = this as GenV1<T>)
-
-        override fun Gen<Char>.string(size: IntRange): GenV1<String> {
-            return list(size).map { it.joinToString("") }
-        }
-
-        override fun Gen<Char>.string(size: Int): GenV1<String> {
-            return string(size..size)
-        }
 
         /**
          * Filters generated values using the given [predicate]. Although this generator supports shrinking, it is very
@@ -125,13 +117,6 @@ internal sealed class GenV1<T> : Gen<T> {
 
         override fun <T> combine(block: CombinerContext.() -> T): GenV1<T> {
             return CombinerGenerator(block)
-        }
-
-        override fun <T1, T2> Gen<T1>.plus(nextGen: Gen<T2>): GenV1<Pair<T1, T2>> {
-            // todo: fix all this casting nonsense?
-            val first = this as GenV1<T1>
-            val second = nextGen as GenV1<T2>
-            return first.combineWith(second, ::Pair)
         }
     }
 }
