@@ -12,7 +12,15 @@ A simple property-based testing library for Kotlin inspired by QuickCheck and si
 
 1. **Red - Write a failing test**
     - Start with a test that specifies the desired behavior
-    - Run the test to verify it fails
+   - **STOP and get feedback** - After writing a test, ALWAYS pause and wait for user feedback
+       - Do NOT run the test yet
+       - Do NOT implement the solution yet
+       - Present the test for review
+       - This ensures we agree on what the test does
+       - Provides opportunity to review requirements or design
+       - Allows iteration on the test itself if needed
+       - Only proceed after receiving explicit approval
+   - After approval, run the test to verify it fails
     - **Important**: Ensure the test fails for the *correct reason* (e.g., missing method, wrong behavior, not
       compilation error)
     - If the test fails for the wrong reason, fix the test until it fails correctly
@@ -33,6 +41,16 @@ A simple property-based testing library for Kotlin inspired by QuickCheck and si
 - Always run tests between each step
 - Each commit should represent a complete Red-Green-Refactor cycle
 - If multiple test cases are needed, add them one at a time
+
+#### Testing for Flakiness
+
+When a test appears flaky or you need to verify it passes consistently:
+
+- **Don't run the gradle command multiple times** - this is slow and unreliable
+- **Use `@RepeatedTest(N)` annotation** on the test method (e.g., `@RepeatedTest(100)`)
+- This runs the test N times in a single test execution
+- More efficient and shows clear success/failure counts
+- Example: If testing for race conditions or random generation edge cases
 
 ## Build, Test, and Lint
 
@@ -161,3 +179,36 @@ A simple property-based testing library for Kotlin inspired by QuickCheck and si
 - All generation is deterministic given a seed
 - Use `Seed.random()` for non-deterministic seeds in tests
 - Property test failures include the seed for reproduction
+
+## Common Pitfalls
+
+### Missing Imports
+
+- If you get compilation errors about unresolved references or methods not being applicable, check if you need to add
+  imports
+- Common Kotlin/Strikt imports that are easy to miss:
+    - `strikt.assertions.contains` - for collection contains assertions
+    - `strikt.assertions.containsAll` - for checking multiple elements
+    - `strikt.assertions.containsExactlyInAnyOrder` - for exact collection matching
+- Always check similar test files to see what imports they use
+- Don't assume an error is a wrong API usage - check imports first
+
+### Using Strikt for Collection Assertions
+
+- **Don't use forEach with expectThat inside** - use Strikt's `.all { }` instead
+- Bad: `result.forEach { expectThat(it).isPositive() }`
+- Good: `expectThat(result).all { isPositive() }`
+- For nested collections: `expectThat(result).all { all { isPositive() } }`
+- This provides better error messages and follows Strikt's fluent API pattern
+
+## Code Style
+
+### Comments
+
+- **Only comment code that needs clarification** - do not comment code that is self-explanatory
+- Prefer writing clear, self-documenting code through:
+    - Well-named variables and functions
+    - Simple, focused methods
+    - Extracting complex logic into named functions
+- Comments should explain *why*, not *what* the code does
+- If you find yourself writing a comment to explain what code does, refactor the code to be clearer instead

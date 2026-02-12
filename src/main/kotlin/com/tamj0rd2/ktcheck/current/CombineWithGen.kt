@@ -6,7 +6,11 @@ internal class CombineWithGen<T1, T2, R>(
     private val combine: (T1, T2) -> R,
 ) : GenImpl<R>() {
     override fun generate(tree: RandomTree): GenResultV2<R> {
-        return combine(gen1.generate(tree.left), gen2.generate(tree.right))
+        return combine(
+            tree = tree,
+            left = gen1.generate(tree.left),
+            right = gen2.generate(tree.right)
+        )
     }
 
     override fun edgeCases(): List<GenResultV2<R>> {
@@ -15,29 +19,23 @@ internal class CombineWithGen<T1, T2, R>(
 
         return leftEdgeCases.flatMap { left ->
             rightEdgeCases.map { right ->
-                combine(left, right)
+                combine(edgeCaseTree, left, right)
             }
         }
     }
 
     private fun combine(
-        leftResult: GenResultV2<T1>,
-        rightResult: GenResultV2<T2>,
+        tree: RandomTree,
+        left: GenResultV2<T1>,
+        right: GenResultV2<T2>,
     ): GenResultV2<R> {
-        val (leftValue, leftShrinks) = leftResult
-        val (rightValue, rightShrinks) = rightResult
-
-        val leftBasedShrinks = leftShrinks.map { combine(it, rightResult) }
-        val rightBasedShrinks = rightShrinks.map { combine(leftResult, it) }
-
-        // This helps find counterexamples where both values need to stay coupled
-        val diagonalShrinks = leftShrinks.zip(rightShrinks).map { (leftShrink, rightShrink) ->
-            combine(leftShrink, rightShrink)
-        }
+        val leftBasedShrinks = left.shrinks.map { tree.withLeft(it) }
+        val rightBasedShrinks = right.shrinks.map { tree.withRight(it) }
+        val shrinks = leftBasedShrinks + rightBasedShrinks
 
         return GenResultV2(
-            value = combine(leftValue, rightValue),
-            shrinks = diagonalShrinks + leftBasedShrinks + rightBasedShrinks,
+            value = combine(left.value, right.value),
+            shrinks = shrinks,
         )
     }
 }

@@ -13,26 +13,20 @@ internal class ExceptionIgnoringGen<T>(
 
         return generateSequence(tree) { it.right }
             .take(threshold)
-            .firstNotNullOfOrNull {
-                catchException { gen.generate(it.left) }
-                    .onFailure { ex -> lastFailure = ex }
-                    .getOrNull()
+            .mapIndexedNotNull { index, offsetTree ->
+                val result = catchException { gen.generate(offsetTree.left) }.getOrElse {
+                    lastFailure = it
+                    return@mapIndexedNotNull null
+                }
+
+                GenResultV2(
+                    value = result.value,
+                    shrinks = result.shrinks.map { tree.replaceLeftAtOffset(index, it) },
+                )
             }
-            ?.filterOutThrowingShrinks()
+            .firstOrNull()
             ?: throw GenerationException.FilterLimitReached(threshold, lastFailure)
     }
-
-    private fun GenResultV2<T>.filterOutThrowingShrinks(): GenResultV2<T> =
-        copy(
-            shrinks = sequence {
-                val shrinksIter = shrinks.iterator()
-                while (shrinksIter.hasNext()) {
-                    val shrinkResult = catchException { shrinksIter.next() }.getOrNull()
-                    if (shrinkResult == null) continue
-                    yield(shrinkResult.filterOutThrowingShrinks())
-                }
-            }
-        )
 
     private fun catchException(block: () -> GenResultV2<T>): Result<GenResultV2<T>> {
         return runCatching(block).onFailure { if (!klass.isInstance(it)) throw it }

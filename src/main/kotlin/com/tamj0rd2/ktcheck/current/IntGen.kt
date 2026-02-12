@@ -1,7 +1,6 @@
 package com.tamj0rd2.ktcheck.current
 
-import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker.shrink
-import kotlin.random.nextInt
+import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 
 internal class IntGen(
     private val range: IntRange,
@@ -12,8 +11,8 @@ internal class IntGen(
     }
 
     override fun generate(tree: RandomTree): GenResultV2<Int> {
-        val value = tree.random.nextInt(range)
-        return buildResult(value)
+        val value = tree.data.int(range)
+        return buildResult(value, tree)
     }
 
     override fun edgeCases(): List<GenResultV2<Int>> {
@@ -21,11 +20,15 @@ internal class IntGen(
             .flatMap { listOf(it, it + 1, it - 1) }
             .distinct()
             .filter { it in range }
-            .map { buildResult(it) }
+            .map { buildResult(it, edgeCaseTree) }
     }
 
-    private fun buildResult(value: Int): GenResultV2<Int> = GenResultV2(
+    private fun buildResult(value: Int, tree: RandomTree): GenResultV2<Int> = GenResultV2(
         value = value,
-        shrinks = shrink(value, range, shrinkTarget).map { buildResult(it) }
+        shrinks = IntShrinker.shrink(
+            value = value,
+            range = range,
+            target = shrinkTarget
+        ).map { tree.withData(ValueProvider.Shrunk(it)) },
     )
 }

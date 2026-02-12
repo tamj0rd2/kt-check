@@ -8,6 +8,7 @@ internal data class Tree<V>(
     val left get() = lazyLeft.value
     val right get() = lazyRight.value
 
+    fun withData(data: V): Tree<V> = copy(data = data)
     fun withLeft(left: Tree<V>): Tree<V> = copy(lazyLeft = lazyOf(left))
     fun withRight(right: Tree<V>): Tree<V> = copy(lazyRight = lazyOf(right))
 

@@ -56,22 +56,12 @@ internal sealed class GenImpl<T> : Gen<T> {
 
 internal data class GenResultV2<T>(
     val value: T,
-    val shrinks: Sequence<GenResultV2<T>>,
+    val shrinks: Sequence<RandomTree>,
 ) {
-    fun <R> map(fn: (T) -> R): GenResultV2<R> =
-        GenResultV2(
-            value = fn(value),
-            shrinks = shrinks.map { it.map(fn) }
-        )
-
-    fun filter(predicate: (T) -> Boolean): GenResultV2<T>? {
-        if (!predicate(value)) return null
-
-        return GenResultV2(
-            value = value,
-            shrinks = shrinks.mapNotNull { it.filter(predicate) }
-        )
-    }
+    fun <R> map(fn: (T) -> R): GenResultV2<R> = GenResultV2(
+        value = fn(value),
+        shrinks = shrinks,
+    )
 }
 
 internal object GenV2Builders : GenBuilders {

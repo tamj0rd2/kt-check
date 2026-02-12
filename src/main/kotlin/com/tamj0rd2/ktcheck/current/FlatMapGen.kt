@@ -8,21 +8,10 @@ internal class FlatMapGen<T, R>(
         val (outerValue, outerShrinks) = gen.generate(tree.left)
         val (innerValue, innerShrinks) = fn(outerValue).generate(tree.right)
 
-        return GenResultV2(
-            value = innerValue,
-            shrinks = shrink(tree, outerShrinks) + innerShrinks
-        )
-    }
+        val leftBasedShrinks = outerShrinks.map { tree.withLeft(it) }
+        val rightBasedShrinks = innerShrinks.map { tree.withRight(it) }
+        val shrinks = leftBasedShrinks + rightBasedShrinks
 
-    private fun shrink(
-        tree: RandomTree,
-        outerShrinks: Sequence<GenResultV2<T>>,
-    ): Sequence<GenResultV2<R>> = outerShrinks.map { outer ->
-        val (outerValue, outerShrinks) = outer
-        val (innerValue, innerShrinks) = fn(outerValue).generate(tree.right)
-        GenResultV2(
-            value = innerValue,
-            shrinks = shrink(tree, outerShrinks) + innerShrinks
-        )
+        return GenResultV2(value = innerValue, shrinks = shrinks)
     }
 }

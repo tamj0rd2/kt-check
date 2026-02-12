@@ -24,7 +24,8 @@ internal fun <T> test(config: TestConfig, gen: GenImpl<T>, property: Property<T>
             shrinkingConstraint = config.shrinkingConstraint.apply { onStart() }
         )
 
-        val shrunkResult = property.getSmallestCounterExample(
+        val shrunkResult = gen.getSmallestCounterExample(
+            property = property,
             smallestSoFar = testFailure,
             candidates = input.shrinks.iterator(),
             tracker = shrinkTracker,
@@ -70,23 +71,24 @@ private class ShrinkTracker<T>(
     }
 }
 
-private tailrec fun <T> Property<T>.getSmallestCounterExample(
+private tailrec fun <T> GenImpl<T>.getSmallestCounterExample(
+    property: Property<T>,
     smallestSoFar: Property.Falsification<T>,
-    candidates: Iterator<GenResultV2<T>>,
+    candidates: Iterator<RandomTree>,
     tracker: ShrinkTracker<T>,
 ): Property.Falsification<T> {
     if (!candidates.hasNext() || tracker.shouldStopShrinking()) return smallestSoFar
 
-    val (shrunkInput, newInputShrinks) = candidates.next()
-    val testResult = test(shrunkInput)
+    val (shrunkInput, newInputShrinks) = generate(candidates.next())
+    val testResult = property.test(shrunkInput)
 
     if (!tracker.recordShrinkAttempt(shrunkInput)) {
-        return getSmallestCounterExample(smallestSoFar, candidates, tracker)
+        return getSmallestCounterExample(property, smallestSoFar, candidates, tracker)
     }
 
     return if (testResult is Property.Falsification) {
-        getSmallestCounterExample(testResult, newInputShrinks.iterator(), tracker)
+        getSmallestCounterExample(property, testResult, newInputShrinks.iterator(), tracker)
     } else {
-        getSmallestCounterExample(smallestSoFar, candidates, tracker)
+        getSmallestCounterExample(property, smallestSoFar, candidates, tracker)
     }
 }

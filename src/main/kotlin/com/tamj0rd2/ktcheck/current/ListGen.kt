@@ -9,69 +9,45 @@ internal class ListGen<T>(
     private val sizeGen = IntGen(sizeRange, IntShrinker.defaultShrinkTarget(sizeRange))
 
     override fun edgeCases(): List<GenResultV2<List<T>>> {
-        val cases = mutableListOf<GenResultV2<List<T>>>()
-
-        // todo: I don't like any of this.
-        // Empty list if size range allows
-        if (0 in sizeRange) {
-            cases.add(buildResult(emptySequence(), emptyList()))
-        }
-
-        // Singleton lists with element edge cases
-        if (1 in sizeRange) {
-            gen.edgeCases().forEach { elementEdgeCase ->
-                cases.add(buildResult(emptySequence(), listOf(elementEdgeCase)))
-            }
-        }
-
-        // Duplicate lists with element edge cases
-        if (2 in sizeRange) {
-            gen.edgeCases().forEach { elementEdgeCase ->
-                cases.add(buildResult(emptySequence(), listOf(elementEdgeCase, elementEdgeCase)))
-            }
-        }
-
-        return cases
+        // todo: re-implement this.
+        return emptyList()
     }
 
     override fun generate(tree: RandomTree): GenResultV2<List<T>> {
-        val (size, sizeShrinks) = sizeGen.generate(tree.left)
-        val elementResults = generateListWithResults(tree.right, size)
-        return buildResult(sizeShrinks, elementResults)
-    }
+        val sizeResult = sizeGen.generate(tree.left)
+        val elements = generateElements(tree.right, sizeResult.value)
 
-    private fun buildResult(
-        sizeShrinks: Sequence<GenResultV2<Int>>,
-        elementResults: List<GenResultV2<T>>,
-    ): GenResultV2<List<T>> = GenResultV2(
-        value = elementResults.map { it.value },
-        shrinks = sequence {
-            sizeShrinks.forEach { sizeResult ->
-                val (shrunkSize, sizeShrinks) = sizeResult
-                when (shrunkSize) {
-                    0 -> yield(buildResult(emptySequence(), emptyList()))
-                    else -> {
-                        yield(buildResult(sizeShrinks, elementResults.take(shrunkSize)))
-                        yield(buildResult(sizeShrinks, elementResults.takeLast(shrunkSize)))
-                    }
-                }
-            }
+        // Note: We re-generate sizeTree here to know how many elements to skip for "take last N".
+        // Future: Could simplify to "take first N" + "drop first 1" to avoid re-generation.
+        val sizeBasedShrinks = sizeResult.shrinks.flatMap { sizeTree ->
+            val shrunkSize = sizeGen.generate(sizeTree).value
+            val elementsToSkip = sizeResult.value - shrunkSize
 
-            elementResults.forEachIndexed { index, elementResult ->
-                elementResult.shrinks.forEach { shrunkElementResult ->
-                    val updatedElementResults = elementResults.mapIndexed { i, result ->
-                        if (i == index) shrunkElementResult else result
-                    }
-                    yield(buildResult(sizeShrinks, updatedElementResults))
+            sequence {
+                yield(tree.withLeft(sizeTree))
+
+                if (elementsToSkip > 0) {
+                    yield(tree.withLeft(sizeTree).withRight(tree.right.skipRight(elementsToSkip)))
                 }
             }
         }
-    )
 
-    private fun generateListWithResults(
-        tree: RandomTree,
-        size: Int,
-    ): List<GenResultV2<T>> {
+        val elementBasedShrinks = elements.asSequence().flatMapIndexed { index, element ->
+            element.shrinks.map { elementTree ->
+                tree.withRight(tree.right.replaceLeftAtOffset(index, elementTree))
+            }
+        }
+
+        return GenResultV2(
+            value = elements.map { it.value },
+            shrinks = sizeBasedShrinks + elementBasedShrinks,
+        )
+    }
+
+    private fun RandomTree.skipRight(n: Int): RandomTree =
+        (0 until n).fold(this) { tree, _ -> tree.right }
+
+    private fun generateElements(tree: RandomTree, size: Int): List<GenResultV2<T>> {
         val results = mutableListOf<GenResultV2<T>>()
         var currentTree = tree
 

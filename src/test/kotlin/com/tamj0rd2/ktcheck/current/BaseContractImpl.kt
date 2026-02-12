@@ -15,16 +15,10 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
         return GenResults(result.value, collectShrinksRecursively(result.shrinks))
     }
 
-    private fun <T> Gen<T>.collectShrinksRecursively(shrinks: Sequence<GenResultV2<T>>): Sequence<GenResults<T>> =
+    private fun <T> Gen<T>.collectShrinksRecursively(shrinks: Sequence<RandomTree>): Sequence<GenResults<T>> =
         sequence {
             for (shrink in shrinks) {
-                yield(
-                    GenResults(
-                        value = shrink.value,
-                        shrinks = collectShrinksRecursively(shrink.shrinks)
-                    )
-                )
+                yield(generate(shrink))
             }
         }
-
 }

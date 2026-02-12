@@ -17,44 +17,25 @@ internal class DistinctListGen<T>(
             maxSize = sizeResult.value,
         )
 
-        val actualSize = elementResults.size
+        // Size-based shrinking: Only "take first N" is supported.
+        // "Take last N" doesn't work because tree positions don't map to list indices
+        // when duplicates are filtered. Skipping tree positions gives different values
+        // than taking the last N elements.
+        val sizeBasedShrinks = sizeResult.shrinks.map { sizeTree ->
+            tree.withLeft(sizeTree)
+        }
 
-        val sizeResultToUse = sizeResult.takeIf { it.value == actualSize }
-            ?: sizeGen.generate(tree.left)
-
-        return buildResult(sizeResultToUse.shrinks, elementResults)
-    }
-
-    private fun buildResult(
-        sizeShrinks: Sequence<GenResultV2<Int>>,
-        elementResults: List<GenResultV2<T>>,
-    ): GenResultV2<List<T>> = GenResultV2(
-        value = elementResults.map { it.value },
-        shrinks = sequence {
-            sizeShrinks.forEach { sizeResult ->
-                val (shrunkSize, sizeShrinks) = sizeResult
-                when (shrunkSize) {
-                    0 -> yield(buildResult(emptySequence(), emptyList()))
-                    else -> {
-                        yield(buildResult(sizeShrinks, elementResults.take(shrunkSize)))
-                        yield(buildResult(sizeShrinks, elementResults.takeLast(shrunkSize)))
-                    }
-                }
-            }
-
-            elementResults.forEachIndexed { index, elementResult ->
-                elementResult.shrinks.forEach { shrunkElementResult ->
-                    val updatedElementResults = elementResults
-                        .mapIndexed { i, result -> if (i == index) shrunkElementResult else result }
-                        .distinctBy { it.value }
-
-                    if (updatedElementResults.size in sizeRange) {
-                        yield(buildResult(sizeShrinks, updatedElementResults))
-                    }
-                }
+        val elementBasedShrinks = elementResults.asSequence().flatMapIndexed { index, element ->
+            element.shrinks.map { elementTree ->
+                tree.withRight(tree.right.replaceLeftAtOffset(index, elementTree))
             }
         }
-    )
+
+        return GenResultV2(
+            value = elementResults.map { it.value },
+            shrinks = sizeBasedShrinks + elementBasedShrinks,
+        )
+    }
 
     private fun generateListWithResults(
         tree: RandomTree,
@@ -64,13 +45,10 @@ internal class DistinctListGen<T>(
         val results = mutableListOf<GenResultV2<T>>()
         val seenValues = mutableSetOf<T>()
         var failureCount = 0
-
-        val trees = generateSequence(tree) { it.right }
-            .takeWhile { failureCount < MAX_FAILURES }
-            .iterator()
+        val trees = generateSequence(tree) { it.right }.iterator()
 
         while (results.size < maxSize) {
-            if (!trees.hasNext()) {
+            if (failureCount >= MAX_FAILURES) {
                 if (results.size >= minSize) break
 
                 throw DistinctCollectionSizeImpossible(
