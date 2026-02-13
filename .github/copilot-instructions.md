@@ -212,3 +212,10 @@ When a test appears flaky or you need to verify it passes consistently:
     - Extracting complex logic into named functions
 - Comments should explain *why*, not *what* the code does
 - If you find yourself writing a comment to explain what code does, refactor the code to be clearer instead
+
+### Temporary Files
+
+- **Always use the project's `.tmp/` folder for temporary files** - never use `/tmp` or other system temp directories
+- The `.tmp/` folder is in the project root and is gitignored
+- Example: Create test data files at `.tmp/test-data.json` instead of `/tmp/test-data.json`
+- This keeps temporary files local to the project and makes cleanup easier

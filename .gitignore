@@ -6,3 +6,5 @@ build
 .idea
 .kotlin
 /output.txt
+
+.tmp
