@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.current
 
 import com.tamj0rd2.ktcheck.GenerationException.DistinctCollectionSizeImpossible
+import com.tamj0rd2.ktcheck.core.Tree
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 
 internal class DistinctListGen<T>(
@@ -17,35 +18,34 @@ internal class DistinctListGen<T>(
             maxSize = sizeResult.value,
         )
 
-        // Size-based shrinking: Only "take first N" is supported.
-        // "Take last N" doesn't work because tree positions don't map to list indices
-        // when duplicates are filtered. Skipping tree positions gives different values
-        // than taking the last N elements.
-        val sizeBasedShrinks = sizeResult.shrinks.map { sizeTree ->
-            tree.withLeft(sizeTree)
-        }
+        val generatedList = elementResults.map { it.result.value }
 
-        val elementBasedShrinks = elementResults.asSequence().flatMapIndexed { index, element ->
-            element.shrinks.map { elementTree ->
-                tree.withRight(tree.right.replaceLeftAtOffset(index, elementTree))
-            }
-        }
+        val sizeBasedShrinks = sizeResult.shrinks.map { sizeTree -> tree.withLeft(sizeTree) }
+        val elementBasedShrinks = createElementBasedShrinks(elementResults, generatedList, tree)
 
         return GenResultV2(
-            value = elementResults.map { it.value },
+            value = generatedList,
             shrinks = sizeBasedShrinks + elementBasedShrinks,
         )
     }
+
+    private data class ElementResult<T>(
+        val listIndex: Int,
+        val treeOffset: Int,
+        val elementTree: RandomTree,
+        val result: GenResultV2<T>,
+    )
 
     private fun generateListWithResults(
         tree: RandomTree,
         minSize: Int,
         maxSize: Int,
-    ): List<GenResultV2<T>> {
-        val results = mutableListOf<GenResultV2<T>>()
+    ): List<ElementResult<T>> {
+        val results = mutableListOf<ElementResult<T>>()
         val seenValues = mutableSetOf<T>()
         var failureCount = 0
-        val trees = generateSequence(tree) { it.right }.iterator()
+        var treeOffset = 0
+        var tree = tree
 
         while (results.size < maxSize) {
             if (failureCount >= MAX_FAILURES) {
@@ -58,17 +58,73 @@ internal class DistinctListGen<T>(
                 )
             }
 
-            val result = gen.generate(trees.next().left)
+            val elementTree = tree.left
+            val result = gen.generate(elementTree)
 
             if (seenValues.add(result.value)) {
-                results.add(result)
+                results.add(
+                    ElementResult(
+                        listIndex = results.size,
+                        treeOffset = treeOffset,
+                        elementTree = elementTree,
+                        result = result,
+                    )
+                )
                 failureCount = 0
             } else {
                 failureCount += 1
             }
+
+            tree = tree.right
+            treeOffset += 1
         }
 
         return results
+    }
+
+    private fun createElementBasedShrinks(
+        elementResults: List<ElementResult<T>>,
+        list: List<T>,
+        tree: RandomTree,
+    ): Sequence<Tree<ValueProvider>> = elementResults.asSequence().flatMap { elementResult ->
+        val otherElements = list.filterIndexed { i, _ -> i != elementResult.listIndex }
+
+        elementResult.result.shrinks
+            .filter { gen.generate(it).value !in otherElements }
+            .map { shrunkElementTree ->
+                val newElementTrees = elementResults.map { er ->
+                    if (er.listIndex == elementResult.listIndex) shrunkElementTree else er.elementTree
+                }
+
+                buildTreeForElements(tree, newElementTrees)
+            }
+    }
+
+    /**
+     * Builds a tree that will generate elements from the provided list of element trees.
+     *
+     * Creates a sequential tree structure where tree.right.right.right...left[i] produces
+     * elementTrees[i], ensuring shrunk lists regenerate with stable element positions.
+     *
+     * Explicitly positioning each element tree prevents the distinctness check from accidentally accepting different
+     * elements during regeneration. This is why [RandomTree.replaceLeftAtOffset] is not sufficient.
+     */
+    private fun buildTreeForElements(
+        originalTree: RandomTree,
+        elementTrees: List<RandomTree>,
+    ): RandomTree {
+        fun buildRightTree(index: Int): RandomTree {
+            val beyondOriginalTreeStructure = index >= elementTrees.size
+            if (beyondOriginalTreeStructure) return originalTree.right
+
+            return Tree(
+                data = originalTree.right.data,
+                lazyLeft = lazy { elementTrees[index] },
+                lazyRight = lazy { buildRightTree(index + 1) }
+            )
+        }
+
+        return originalTree.withRight(buildRightTree(0))
     }
 
     companion object {

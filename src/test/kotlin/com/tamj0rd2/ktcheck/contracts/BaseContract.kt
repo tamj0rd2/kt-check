@@ -81,4 +81,5 @@ fun <T> Gen<T>.expectGenerationAndShrinkingToEventuallyComplete(shrunkValueRequi
     }
 }
 
+internal val <T> Assertion.Builder<GenResults<T>>.value get() = get { value }
 internal val <T> Assertion.Builder<GenResults<T>>.shrunkValues get() = get { shrunkValues }.describedAs { "shrunk values: ($this)" }

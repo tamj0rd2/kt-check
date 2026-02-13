@@ -4,7 +4,6 @@ import com.tamj0rd2.ktcheck.GenerationException.DistinctCollectionSizeImpossible
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.checkAll
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
-import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.assertTimeoutPreemptively
@@ -59,24 +58,31 @@ internal interface DistinctListGeneratorContract : BaseContract {
 
     @Test
     fun `shrinks a list of 2 elements`() {
-        Assumptions.assumeTrue(false, "TODO: will probably be fixed when the other test passes")
-        val gen = int(0..10).list(distinct = true)
+        repeat(100) {
+            val gen = int(0..10).list(size = 0..10, distinct = true)
 
-        val result = gen.generating(listOf(1, 4))
-        expectThat(result.value).isEqualTo(listOf(1, 4))
+            val tree = gen.findTreeProducing { it == listOf(1, 4) }
+            val result = gen.generate(tree)
+            expectThat(result.value).isEqualTo(listOf(1, 4))
 
-        expectThat(result).shrunkValues.isNotEmpty().containsExactlyInAnyOrder(
-            // tries reducing set size (now 0)
-            listOf(),
-            // continues reducing set size (now 1) - only "take first 1"
-            listOf(1),
-            // shrinks values, starting with index 0
-            listOf(0, 4),
-            // continues shrinking values at index 1
-            listOf(1, 0),
-            listOf(1, 2),
-            listOf(1, 3),
-        )
+            try {
+                expectThat(result).shrunkValues.isNotEmpty().containsExactlyInAnyOrder(
+                    // tries reducing set size (now 0)
+                    listOf(),
+                    // continues reducing set size (now 1) - only "take first 1"
+                    listOf(1),
+                    // shrinks values, starting with index 0
+                    listOf(0, 4),
+                    // continues shrinking values at index 1
+                    listOf(1, 0),
+                    listOf(1, 2),
+                    listOf(1, 3),
+                )
+            } catch (e: AssertionError) {
+                println(tree.data)
+                throw e
+            }
+        }
     }
 
     @Test
@@ -96,13 +102,12 @@ internal interface DistinctListGeneratorContract : BaseContract {
 
     @Test
     fun `does not produce any shrinks when the list size is equal to the number of distinct values`() {
-        Assumptions.assumeTrue(false, "ignore this for now.")
-        // note: there are only 3 possible distinct values. So a distinct list of size 3 can only ever be achieved once: (0, 1, 2)
-        val intGen = int(0..2)
+        // note: there are only 3 possible distinct values. So a distinct list of size 3 can only ever be achieved once
+        val intGen = int(1..3)
         val gen = intGen.list(3, distinct = true)
 
         val result = gen.generate(tree())
-        expectThat(result.value).isEqualTo(listOf(1, 2, 3))
+        expectThat(result).value.hasSize(3)
         expectThat(result).shrunkValues.isEmpty()
     }
 
@@ -144,7 +149,6 @@ internal interface DistinctListGeneratorContract : BaseContract {
 
     @Test
     fun `all shrunk lists fall within the specified size bounds`() {
-        Assumptions.assumeTrue(false, "TODO: fix this later")
         repeat(1000) {
             val minSize = 2
             val gen = int(0..10).list(minSize..10, distinct = true)
