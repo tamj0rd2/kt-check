@@ -18,6 +18,7 @@ import strikt.assertions.isEqualTo
 import strikt.assertions.isIn
 import strikt.assertions.isLessThanOrEqualTo
 import strikt.assertions.isNotEmpty
+import strikt.assertions.size
 import java.time.Duration
 
 internal interface DistinctListGeneratorContract : BaseContract {
@@ -137,6 +138,18 @@ internal interface DistinctListGeneratorContract : BaseContract {
 
             val result = gen.generating { it.isNotEmpty() }
             expectThat(result).shrunkValues.all { all { isIn(range) } }
+        }
+    }
+
+    @Test
+    fun `all shrunk lists fall within the specified size bounds`() {
+        repeat(1000) {
+            val minSize = 2
+            val gen = int(0..10).list(minSize..10, distinct = true)
+
+            val result = gen.generate(tree())
+            val originalSize = result.value.size
+            expectThat(result).shrunkValues.all { size.isIn(minSize..originalSize) }
         }
     }
 }
