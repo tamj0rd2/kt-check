@@ -26,6 +26,8 @@ internal interface BaseContract : GenBuilders {
 
     fun <T> Gen<T>.generate(tree: RandomTree = tree()): GenResults<T>
 
+    fun <T> Gen<T>.edgeCases(): List<GenResults<T>>
+
     fun <T> Gen<T>.sequence(): Sequence<GenResults<T>> =
         generateSequence { generate() }
 

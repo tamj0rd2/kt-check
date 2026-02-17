@@ -1,6 +1,5 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.current.GenImpl
 import org.junit.jupiter.api.Test
 import strikt.api.expectDoesNotThrow
 import strikt.api.expectThat
@@ -129,7 +128,7 @@ internal interface CombinatorGeneratorContract : BaseContract {
     fun `combineWith produces edge case permutations from both generators`() {
         val gen1 = int(0..100)
         val gen2 = int(0..100)
-        val combined = gen1.combineWith(gen2, ::Pair) as GenImpl
+        val combined = gen1.combineWith(gen2, ::Pair)
 
         val edgeCases = combined.edgeCases().map { it.value }.toSet()
 

@@ -1,6 +1,5 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.current.GenImpl
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
@@ -123,7 +122,7 @@ internal interface ListGeneratorContract : BaseContract {
     @Test
     fun `edge cases include an empty list when size range allows`() {
         Assumptions.assumeTrue(false, "TODO: fix this later")
-        val gen = int().list(0..10) as GenImpl
+        val gen = int().list(0..10)
 
         val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
 
@@ -133,7 +132,7 @@ internal interface ListGeneratorContract : BaseContract {
     @Test
     fun `edge cases include singleton lists with element edge cases`() {
         Assumptions.assumeTrue(false, "TODO: fix this later")
-        val gen = int(0..100).list(0..10) as GenImpl
+        val gen = int(0..100).list(0..10)
 
         val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
 
@@ -143,7 +142,7 @@ internal interface ListGeneratorContract : BaseContract {
     @Test
     fun `edge cases include duplicate lists with element edge cases`() {
         Assumptions.assumeTrue(false, "TODO: fix this later")
-        val gen = int(0..100).list(0..10) as GenImpl
+        val gen = int(0..100).list(0..10)
 
         val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
 

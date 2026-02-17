@@ -1,7 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
-import com.tamj0rd2.ktcheck.current.GenImpl
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.api.expectThrows
@@ -120,7 +119,7 @@ internal interface FilterGeneratorContract : BaseContract {
 
     @Test
     fun `filter preserves edge cases from underlying generator`() {
-        val gen = int(0..100).filter { it % 2 == 0 } as GenImpl
+        val gen = int(0..100).filter { it % 2 == 0 }
 
         val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
 
