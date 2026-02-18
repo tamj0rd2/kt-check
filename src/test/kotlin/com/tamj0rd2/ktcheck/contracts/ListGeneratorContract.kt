@@ -1,6 +1,9 @@
 package com.tamj0rd2.ktcheck.contracts
 
+import org.junit.jupiter.api.DynamicTest
+import org.junit.jupiter.api.DynamicTest.dynamicTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 import strikt.api.expectThat
 import strikt.assertions.all
 import strikt.assertions.any
@@ -118,171 +121,67 @@ internal interface ListGeneratorContract : BaseContract {
         }
     }
 
-    @Test
-    fun `edge cases include an empty list when size range allows`() {
-        val gen = int().list(0..10)
+    @TestFactory
+    fun `edge case generation`(): List<DynamicTest> {
+        data class TestCase(
+            val sizeRange: IntRange,
+            val expectedInclusions: Set<List<Int>>,
+            val expectedExclusions: Set<List<Int>>,
+        ) {
+            val description = "for a list with sizeRange $sizeRange"
+        }
 
-        val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
-
-        expectThat(edgeCaseValues).contains(listOf(emptyList()))
-    }
-
-    @Test
-    fun `edge cases include singleton lists with element edge cases`() {
-        val gen = int(0..100).list(0..10)
-
-        val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
-
-        expectThat(edgeCaseValues).contains(listOf(listOf(0), listOf(100)))
-    }
-
-    @Test
-    fun `edge cases include duplicate lists with element edge cases`() {
-        val gen = int(0..100).list(0..10)
-
-        val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
-
-        expectThat(edgeCaseValues).contains(listOf(listOf(0, 0), listOf(100, 100)))
-    }
-
-    @Test
-    fun `edge cases for list(0 to 10) includes empty, singleton, and duplicate at size 2`() {
-        val gen = int(0..100).list(0..10)
-
-        val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
-
-        expectThat(edgeCaseValues).contains(
-            listOf(
-                emptyList(),
-                listOf(0),
-                listOf(100),
-                listOf(0, 0),
-                listOf(100, 100)
+        val testCases = listOf(
+            TestCase(
+                sizeRange = 0..10,
+                expectedInclusions = setOf(emptyList(), listOf(0), listOf(10), listOf(0, 0), listOf(10, 10)),
+                expectedExclusions = emptySet()
+            ),
+            TestCase(
+                sizeRange = 1..5,
+                expectedInclusions = setOf(listOf(0), listOf(10), listOf(0, 0), listOf(10, 10)),
+                expectedExclusions = setOf(emptyList())
+            ),
+            TestCase(
+                sizeRange = 3..10,
+                expectedInclusions = setOf(listOf(0, 0, 0), listOf(10, 10, 10)),
+                expectedExclusions = setOf(emptyList(), listOf(0), listOf(10), listOf(0, 0), listOf(10, 10))
+            ),
+            TestCase(
+                sizeRange = 5..10,
+                expectedInclusions = setOf(listOf(0, 0, 0, 0, 0), listOf(10, 10, 10, 10, 10)),
+                expectedExclusions = setOf(emptyList(), listOf(0), listOf(10), listOf(0, 0), listOf(10, 10))
+            ),
+            TestCase(
+                sizeRange = 0..0,
+                expectedInclusions = setOf(emptyList()),
+                expectedExclusions = setOf(listOf(0), listOf(10), listOf(0, 0), listOf(10, 10))
+            ),
+            TestCase(
+                sizeRange = 2..2,
+                expectedInclusions = setOf(listOf(0, 0), listOf(10, 10)),
+                expectedExclusions = setOf(emptyList(), listOf(0), listOf(10))
+            ),
+            TestCase(
+                sizeRange = 1..1,
+                expectedInclusions = setOf(listOf(0), listOf(10)),
+                expectedExclusions = setOf(emptyList(), listOf(0, 0), listOf(10, 10))
             )
         )
-    }
 
-    @Test
-    fun `edge cases for list(1 to 5) includes singleton and duplicate but not empty`() {
-        val gen = int(0..100).list(1..5)
+        return testCases.map { tc ->
+            dynamicTest(tc.description) {
+                val gen = int(0..10).list(tc.sizeRange)
+                val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
 
-        val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
+                if (tc.expectedInclusions.isNotEmpty()) {
+                    expectThat(edgeCaseValues).contains(tc.expectedInclusions)
+                }
 
-        expectThat(edgeCaseValues).contains(
-            listOf(
-                listOf(0),
-                listOf(100),
-                listOf(0, 0),
-                listOf(100, 100)
-            )
-        )
-        expectThat(edgeCaseValues).not().contains(listOf(emptyList()))
-    }
-
-    @Test
-    fun `edge cases for list(3 to 10) includes duplicate at size 3 but not empty or singleton`() {
-        val gen = int(0..100).list(3..10)
-
-        val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
-
-        expectThat(edgeCaseValues).contains(
-            listOf(
-                listOf(0, 0, 0),
-                listOf(100, 100, 100)
-            )
-        )
-        expectThat(edgeCaseValues).not().contains(
-            listOf(
-                emptyList(),
-                listOf(0),
-                listOf(100),
-                listOf(0, 0),
-                listOf(100, 100)
-            )
-        )
-    }
-
-    @Test
-    fun `edge cases for list(5 to 10) includes duplicate at size 5 but not empty or singleton`() {
-        val gen = int(0..100).list(5..10)
-
-        val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
-
-        expectThat(edgeCaseValues).contains(
-            listOf(
-                listOf(0, 0, 0, 0, 0),
-                listOf(100, 100, 100, 100, 100)
-            )
-        )
-        expectThat(edgeCaseValues).not().contains(
-            listOf(
-                emptyList(),
-                listOf(0),
-                listOf(100),
-                listOf(0, 0),
-                listOf(100, 100),
-                listOf(0, 0, 0),
-                listOf(100, 100, 100)
-            )
-        )
-    }
-
-    @Test
-    fun `edge cases for list(0 to 0) includes only empty list`() {
-        val gen = int(0..100).list(0..0)
-
-        val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
-
-        expectThat(edgeCaseValues).contains(listOf(emptyList()))
-        expectThat(edgeCaseValues).not().contains(
-            listOf(
-                listOf(0),
-                listOf(100),
-                listOf(0, 0),
-                listOf(100, 100)
-            )
-        )
-    }
-
-    @Test
-    fun `edge cases for list(2 to 2) includes duplicate at size 2 but not empty or singleton`() {
-        val gen = int(0..100).list(2..2)
-
-        val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
-
-        expectThat(edgeCaseValues).contains(
-            listOf(
-                listOf(0, 0),
-                listOf(100, 100)
-            )
-        )
-        expectThat(edgeCaseValues).not().contains(
-            listOf(
-                emptyList(),
-                listOf(0),
-                listOf(100)
-            )
-        )
-    }
-
-    @Test
-    fun `edge cases for list(1 to 1) includes only singleton`() {
-        val gen = int(0..100).list(1..1)
-
-        val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
-
-        expectThat(edgeCaseValues).contains(
-            listOf(
-                listOf(0),
-                listOf(100)
-            )
-        )
-        expectThat(edgeCaseValues).not().contains(
-            listOf(
-                emptyList(),
-                listOf(0, 0),
-                listOf(100, 100)
-            )
-        )
+                if (tc.expectedExclusions.isNotEmpty()) {
+                    expectThat(edgeCaseValues).not().contains(tc.expectedExclusions)
+                }
+            }
+        }
     }
 }
