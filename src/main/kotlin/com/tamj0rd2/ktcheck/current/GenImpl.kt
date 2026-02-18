@@ -10,47 +10,31 @@ internal sealed class GenImpl<T> : Gen<T> {
 
     open fun edgeCases(): List<GenResultV2<T>> = emptyList()
 
-    override fun sample(seed: Long): T {
-        return generate(randomTree(Seed(seed))).value ?: error("sample(seed) only supported for GenV2")
-    }
+    override fun sample(seed: Long) = generate(randomTree(Seed(seed))).value
 
-    override fun <R> map(fn: (T) -> R): GenImpl<R> {
-        return MapGen(this, fn)
-    }
+    override fun <R> map(fn: (T) -> R) = MapGen(this, fn)
 
-    override fun <R> flatMap(fn: (T) -> Gen<R>): GenImpl<R> {
-        @Suppress("UNCHECKED_CAST")
-        return FlatMapGen(this, fn as (T) -> GenImpl<R>)
-    }
+    @Suppress("UNCHECKED_CAST")
+    override fun <R> flatMap(fn: (T) -> Gen<R>) = FlatMapGen(this, fn as (T) -> GenImpl<R>)
 
     override fun <T2, R> combineWith(
         nextGen: Gen<T2>,
         combine: (T, T2) -> R,
-    ): GenImpl<R> {
-        return CombineWithGen(this, nextGen as GenImpl, combine)
-    }
+    ) = CombineWithGen(this, nextGen as GenImpl, combine)
 
     override fun filter(
         threshold: Int,
         predicate: (T) -> Boolean,
-    ): GenImpl<T> {
-        return PredicateFilterGen(this, threshold, predicate)
-    }
+    ) = PredicateFilterGen(this, threshold, predicate)
 
     override fun ignoreExceptions(
         klass: KClass<out Exception>,
         threshold: Int,
-    ): GenImpl<T> {
-        return ExceptionIgnoringGen(this, threshold, klass)
-    }
+    ) = ExceptionIgnoringGen(this, threshold, klass)
 
-    override fun list(size: IntRange): GenImpl<List<T>> {
-        return ListGen(this, size)
-    }
+    override fun list(size: IntRange) = ListGen(this, size)
 
-    override fun distinctList(size: IntRange): GenImpl<List<T>> {
-        return DistinctListGen(this, size)
-    }
+    override fun distinctList(size: IntRange) = DistinctListGen(this, size)
 }
 
 internal data class GenResultV2<T>(
