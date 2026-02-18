@@ -103,12 +103,24 @@ interface Gen<T> {
      */
     fun ignoreExceptions(klass: KClass<out Exception>, threshold: Int = 100): Gen<T>
 
-    // todo: at this point, some kind of builder could help with optional parameters
-    fun list(size: IntRange = 0..100, distinct: Boolean = false): Gen<List<T>>
+    /**
+     * Generates lists of values from this generator with a size within the specified range.
+     *
+     * Edge cases include empty lists (if 0 in range), singleton lists (if 1 in range), and lists with duplicate
+     * elements. The generator supports shrinking by reducing list size and shrinking individual elements.
+     *
+     * @param size The range of list sizes to generate. Defaults to 0..100.
+     * @return A generator that produces lists of type T.
+     */
+    fun list(size: IntRange = 0..100): Gen<List<T>>
 
-    fun list(size: Int, distinct: Boolean = false): Gen<List<T>> = list(size..size, distinct)
+    fun list(size: Int): Gen<List<T>> = list(size..size)
 
-    fun set(size: IntRange = 0..100): Gen<Set<T>> = list(size = size, distinct = true).map { it.toSet() }
+    fun distinctList(size: IntRange = 0..100): Gen<List<T>>
+
+    fun distinctList(size: Int): Gen<List<T>> = distinctList(size..size)
+
+    fun set(size: IntRange = 0..100): Gen<Set<T>> = distinctList(size = size).map { it.toSet() }
 
     fun set(size: Int): Gen<Set<T>> = set(size..size)
 }

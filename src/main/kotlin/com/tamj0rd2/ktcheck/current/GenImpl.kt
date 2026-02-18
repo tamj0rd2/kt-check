@@ -44,13 +44,12 @@ internal sealed class GenImpl<T> : Gen<T> {
         return ExceptionIgnoringGen(this, threshold, klass)
     }
 
-    override fun list(
-        size: IntRange,
-        distinct: Boolean,
-    ): GenImpl<List<T>> = if (distinct) {
-        DistinctListGen(this, size)
-    } else {
-        ListGen(this, size)
+    override fun list(size: IntRange): GenImpl<List<T>> {
+        return ListGen(this, size)
+    }
+
+    override fun distinctList(size: IntRange): GenImpl<List<T>> {
+        return DistinctListGen(this, size)
     }
 }
 

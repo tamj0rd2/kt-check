@@ -7,5 +7,6 @@ build
 .kotlin
 /output.txt
 
-.tmp
+.tmp/
+tmp/
 /docs/plan

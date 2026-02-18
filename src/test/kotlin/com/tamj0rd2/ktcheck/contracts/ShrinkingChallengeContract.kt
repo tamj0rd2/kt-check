@@ -24,7 +24,6 @@ internal interface ShrinkingChallengeContract : BaseContract {
 
     @Test
     fun deletion() {
-        Assumptions.assumeTrue(false, "TODO: fix this later")
         testShrinking(
             gen = Gens.zip(int().list(), int(0..10)).filter { (list, index) -> index < list.size },
             test = { (list, index) ->
