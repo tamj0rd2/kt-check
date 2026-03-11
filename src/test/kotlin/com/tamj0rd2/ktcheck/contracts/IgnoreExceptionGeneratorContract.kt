@@ -2,7 +2,6 @@ package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
-import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
 import strikt.api.expectThat
@@ -26,9 +25,6 @@ internal interface IgnoreExceptionGeneratorContract : BaseContract {
                 }
             }
             .ignoreExceptions(TestException::class)
-
-    // todo: re-enable and re-implement asap.
-    override val genSupportsEdgeCases: Boolean get() = false
 
     @Test
     fun `can ignore exceptions in generated values and shrinks`() {
@@ -120,11 +116,5 @@ internal interface IgnoreExceptionGeneratorContract : BaseContract {
             val result = possiblyThrowingGen.generate(tree(seed))
             expectThat(result).value.isEqualTo(3)
         }
-    }
-
-    @Test
-    fun `ignoreExceptions propagates edge cases from underlying generator`() {
-        Assumptions.assumeTrue(false)
-        TODO("write this test")
     }
 }

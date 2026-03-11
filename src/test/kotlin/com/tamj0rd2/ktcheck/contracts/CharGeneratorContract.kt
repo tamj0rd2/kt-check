@@ -18,9 +18,6 @@ internal interface CharGeneratorContract : BaseContract {
     // todo: once the default char set exists, remove 'a'..'z' defined here
     override val exampleGen get() = char('a'..'z')
 
-    // todo: re-enable and re-implement asap.
-    override val genSupportsEdgeCases: Boolean get() = false
-
     @TestFactory
     fun `can generate a character from a collection`(): List<DynamicTest> {
         val testCases = mapOf(

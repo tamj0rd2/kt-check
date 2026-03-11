@@ -9,16 +9,12 @@ import org.junit.jupiter.api.Test
 import strikt.api.expectDoesNotThrow
 import strikt.api.expectThat
 import strikt.api.expectThrows
-import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
 import java.io.ByteArrayOutputStream
 
 internal interface TestFrameworkContract : BaseContract {
     override val exampleGen get() = null
-
-    // todo: delete line asap once edge cases are fixed
-    override val genSupportsEdgeCases: Boolean get() = false
 
     @Test
     fun `forAll does not throw if the property holds true`() {
@@ -54,34 +50,6 @@ internal interface TestFrameworkContract : BaseContract {
 
         val throwable = MyThrowable()
         expectThrows<MyThrowable> { checkAll(constant(throwable)) { throw it } }.isEqualTo(throwable)
-    }
-
-    @Test
-    fun `includes edge cases during test iterations`() {
-        // todo: delete line asap once edge cases are fixed
-        runIfGenSupportsEdgeCases()
-        val seenValues = mutableSetOf<Int>()
-
-        forAll(int()) {
-            seenValues.add(it)
-            true
-        }
-
-        val expectedEdges = setOf(0, 1, -1, Int.MIN_VALUE, Int.MIN_VALUE + 1, Int.MAX_VALUE, Int.MAX_VALUE - 1)
-        expectThat(seenValues.take(expectedEdges.size)).containsExactlyInAnyOrder(expectedEdges)
-    }
-
-    @Test
-    fun `can disable edge cases`() {
-        val seenValues = mutableSetOf<Int>()
-
-        forAll(int().withoutDefaultEdgeCases()) {
-            seenValues.add(it)
-            true
-        }
-
-        val expectedEdges = setOf(0, 1, -1, Int.MIN_VALUE, Int.MIN_VALUE + 1, Int.MAX_VALUE, Int.MAX_VALUE - 1)
-        expectThat(seenValues.take(expectedEdges.size)).not().containsExactlyInAnyOrder(expectedEdges)
     }
 
     @Test

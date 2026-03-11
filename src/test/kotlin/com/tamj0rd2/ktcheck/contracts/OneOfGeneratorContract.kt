@@ -9,9 +9,6 @@ import strikt.assertions.isEqualTo
 internal interface OneOfGeneratorContract : BaseContract {
     override val exampleGen get() = oneOf(1..10)
 
-    // todo: re-enable and re-implement asap.
-    override val genSupportsEdgeCases: Boolean get() = false
-
     @Test
     fun `can choose between generators uniformly`() {
         val gen = oneOf(

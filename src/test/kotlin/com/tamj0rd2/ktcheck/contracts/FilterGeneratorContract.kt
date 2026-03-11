@@ -11,9 +11,6 @@ import strikt.assertions.isLessThanOrEqualTo
 internal interface FilterGeneratorContract : BaseContract {
     override val exampleGen get() = int(0..10).filter { it >= 5 }
 
-    // todo: re-enable and re-implement asap.
-    override val genSupportsEdgeCases: Boolean get() = false
-
     @Test
     fun `can filter generated values and their shrinks`() {
         val gen = int(1..10).filter { it % 2 == 0 }
