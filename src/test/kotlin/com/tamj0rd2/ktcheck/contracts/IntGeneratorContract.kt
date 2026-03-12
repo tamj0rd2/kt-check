@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.assertThrows
 import strikt.api.expectThat
+import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
 import strikt.assertions.isIn
-import strikt.assertions.values
 import kotlin.random.Random
 
 internal interface IntGeneratorContract : BaseContract {
@@ -86,65 +86,12 @@ internal interface IntGeneratorContract : BaseContract {
     }
 
     @Test
-    fun `numbers that are edge cases are produced more frequently than other numbers`() {
-        val range = -10..10
-        val edgeCases = setOf(-10, -9, -1, 0, 1, 9, 10)
+    fun `produces common edge cases and their shrinks`() {
+        val edgeCases = int(-10..10).edgeCases()
+        expectThat(edgeCases.map { it.value }).containsExactlyInAnyOrder(listOf(-10, -9, -1, 0, 1, 9, 10))
 
-        repeatTest { seed ->
-            val subsetOfNonEdgeCases = range
-                .toList()
-                .shuffled(Random(seed.value))
-                .minus(edgeCases)
-                .take(edgeCases.size)
-
-            val countsOfEachNumber = int(range)
-                .samples(seed.value)
-                .filter { it in edgeCases || it in subsetOfNonEdgeCases }
-                .take(1_000)
-                .groupingBy { it }
-                .eachCount()
-
-            val edgeCaseCounts = countsOfEachNumber.filterKeys { it in edgeCases }
-
-            expectThat(edgeCaseCounts)
-                .values
-                .get { this.sum() }
-                .describedAs { "sum: $this" }
-                .get { this / countsOfEachNumber.values.sum().toDouble() }
-                .describedAs { "$this of total values produced" }
-                .isIn(0.47..0.61)
-        }
-    }
-
-    @Test
-    fun `disabling edge cases makes the distribution of numbers uniform`() {
-        val range = -10..10
-        val edgeCases = setOf(-10, -9, -1, 0, 1, 9, 10)
-
-        repeatTest { seed ->
-            val subsetOfNonEdgeCases = range
-                .toList()
-                .shuffled(Random(seed.value))
-                .minus(edgeCases)
-                .take(edgeCases.size)
-
-            val countsOfEachNumber = int(range)
-                .withoutDefaultEdgeCases()
-                .samples(seed.value)
-                .filter { it in edgeCases || it in subsetOfNonEdgeCases }
-                .take(1_000)
-                .groupingBy { it }
-                .eachCount()
-
-            val edgeCaseCounts = countsOfEachNumber.filterKeys { it in edgeCases }
-
-            expectThat(edgeCaseCounts)
-                .values
-                .get { this.sum() }
-                .describedAs { "sum: $this" }
-                .get { this / countsOfEachNumber.values.sum().toDouble() }
-                .describedAs { "$this of total values produced" }
-                .isIn(0.43..0.56)
-        }
+        val edgeCaseFor9 = edgeCases.single { it.value == 9 }
+        val expectedShrinks = IntShrinker.shrink(9, 0..10, 0).toList()
+        expectThat(edgeCaseFor9).shrunkValues.isEqualTo(expectedShrinks)
     }
 }

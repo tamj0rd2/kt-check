@@ -79,7 +79,6 @@ internal interface BaseContract : GenBuilders {
 
     fun <T> Gen<T>.generate(tree: Tree<*> = tree()): GenResults<T>
 
-    @Deprecated("killing this off. Use edge case directly in the tests.")
     fun <T> Gen<T>.edgeCases(seed: Seed = Seed.random()): List<GenResults<T>>
 
     fun <T> Gen<T>.sequence(): Sequence<GenResults<T>> =

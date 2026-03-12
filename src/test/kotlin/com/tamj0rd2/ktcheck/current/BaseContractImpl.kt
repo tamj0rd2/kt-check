@@ -21,9 +21,13 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
         return GenResults(result.value, collectShrinksRecursively(result.shrinks))
     }
 
-    @Deprecated("killing this off. Use edge case directly in the tests.")
     override fun <T> IGen<T>.edgeCases(seed: Seed): List<GenResults<T>> =
-        TODO()
+        trees(seed)
+            .map { (it as RandomTree).withEdgeCasesOnly() }
+            .map { generate(it as Tree<*>) }
+            .take(100)
+            .toList()
+            .distinctBy { it.value }
 
     private fun <T> Gen<T>.collectShrinksRecursively(shrinks: Sequence<RandomTree>): Sequence<GenResults<T>> =
         sequence {

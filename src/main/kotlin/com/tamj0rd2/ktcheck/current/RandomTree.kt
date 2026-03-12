@@ -41,6 +41,18 @@ internal data class RandomTree private constructor(
         lazyRight = lazy { right.withoutEdgeCases() }
     )
 
+    fun withEdgeCasesOnly(): RandomTree = RandomTree(
+        data = when (data.mode) {
+            Shrinking,
+            EdgeCase,
+                -> data
+
+            Random -> data.copy(mode = EdgeCase)
+        },
+        lazyLeft = lazy { left.withoutEdgeCases() },
+        lazyRight = lazy { right.withoutEdgeCases() }
+    )
+
     fun withShrunkValue(value: Any): RandomTree =
         copy(
             data = data.copy(
