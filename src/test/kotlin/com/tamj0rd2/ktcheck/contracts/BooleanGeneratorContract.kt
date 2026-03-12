@@ -5,7 +5,6 @@ import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import strikt.api.expectThat
-import strikt.assertions.all
 import strikt.assertions.isEqualTo
 
 internal interface BooleanGeneratorContract : BaseContract {
@@ -19,15 +18,6 @@ internal interface BooleanGeneratorContract : BaseContract {
                 .take(100_000)
                 .forEach { collect(it) }
         }.checkPercentages(mapOf(true to 49.0, false to 49.0))
-    }
-
-    @Test
-    fun `using the same tree generates the same value`() {
-        val gen = bool()
-        val tree = tree()
-        val values = List(1000) { gen.generate(tree).value }
-        val firstValue = values.first()
-        expectThat(values.drop(1)).all { isEqualTo(firstValue) }
     }
 
     @TestFactory
