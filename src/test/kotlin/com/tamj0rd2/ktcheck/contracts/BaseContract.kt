@@ -70,8 +70,8 @@ internal interface BaseContract : GenBuilders {
 
         repeatTest { seed ->
             val gen = getGenIfDefined()
-            val originalResult = gen.edgeCases(tree(seed)).random(Random(seed.value))
-            val regenerated = gen.edgeCases(tree(seed)).random(Random(seed.value))
+            val originalResult = gen.edgeCases(seed).random(Random(seed.value))
+            val regenerated = gen.edgeCases(seed).random(Random(seed.value))
 
             expectThat(regenerated).value.isEqualTo(originalResult.value)
         }
@@ -84,8 +84,8 @@ internal interface BaseContract : GenBuilders {
 
         repeatTest { seed ->
             val gen = getGenIfDefined()
-            val originalResult = gen.edgeCases(tree(seed)).random(Random(seed.value))
-            val regenerated = gen.edgeCases(tree(seed)).random(Random(seed.value))
+            val originalResult = gen.edgeCases(seed).random(Random(seed.value))
+            val regenerated = gen.edgeCases(seed).random(Random(seed.value))
 
             expectThat(regenerated).shrunkValues.containsExactlyInAnyOrder(originalResult.shrunkValues)
             // this is the assertion I actually want, but the output is easier to read when split into 2 assertions.
@@ -106,7 +106,7 @@ internal interface BaseContract : GenBuilders {
 
     fun <T> Gen<T>.generate(tree: Tree<*> = tree()): GenResults<T>
 
-    fun <T> Gen<T>.edgeCases(tree: Tree<*> = tree()): List<GenResults<T>>
+    fun <T> Gen<T>.edgeCases(seed: Seed = Seed.random()): List<GenResults<T>>
 
     fun <T> Gen<T>.sequence(): Sequence<GenResults<T>> =
         generateSequence { generate() }
