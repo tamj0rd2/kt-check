@@ -186,68 +186,38 @@ internal interface DistinctListGeneratorContract : BaseContract {
     fun `edge case generation`(): List<DynamicTest> {
         data class TestCase(
             val sizeRange: IntRange,
-            val shouldHaveEmpty: Boolean,
-            val shouldHaveSingleton: Boolean,
-            val shouldHaveMultipleValues: Boolean,
+            val hasEmpty: Boolean,
+            val hasSingle: Boolean,
+            val hasMulti: Boolean,
         ) {
             val description = "for a list with sizeRange $sizeRange"
         }
 
         val testCases = listOf(
-            TestCase(
-                sizeRange = 0..5,
-                shouldHaveEmpty = true,
-                shouldHaveSingleton = true,
-                shouldHaveMultipleValues = true,
-            ),
-            TestCase(
-                sizeRange = 1..5,
-                shouldHaveEmpty = false,
-                shouldHaveSingleton = true,
-                shouldHaveMultipleValues = true,
-            ),
-            TestCase(
-                sizeRange = 3..5,
-                shouldHaveEmpty = false,
-                shouldHaveSingleton = false,
-                shouldHaveMultipleValues = true,
-            ),
-            TestCase(
-                sizeRange = 0..0,
-                shouldHaveEmpty = true,
-                shouldHaveSingleton = false,
-                shouldHaveMultipleValues = false,
-            ),
-            TestCase(
-                sizeRange = 2..2,
-                shouldHaveEmpty = false,
-                shouldHaveSingleton = false,
-                shouldHaveMultipleValues = true,
-            ),
-            TestCase(
-                sizeRange = 1..1,
-                shouldHaveEmpty = false,
-                shouldHaveSingleton = true,
-                shouldHaveMultipleValues = false,
-            )
+            TestCase(sizeRange = 0..5, hasEmpty = true, hasSingle = true, hasMulti = true),
+            TestCase(sizeRange = 1..5, hasEmpty = false, hasSingle = true, hasMulti = true),
+            TestCase(sizeRange = 3..5, hasEmpty = false, hasSingle = false, hasMulti = true),
+            TestCase(sizeRange = 0..0, hasEmpty = true, hasSingle = false, hasMulti = false),
+            TestCase(sizeRange = 2..2, hasEmpty = false, hasSingle = false, hasMulti = true),
+            TestCase(sizeRange = 1..1, hasEmpty = false, hasSingle = true, hasMulti = false),
         )
 
         return testCases.map { tc ->
             dynamicTest(tc.description) {
                 val gen = int(0..10).list(tc.sizeRange)
-                val edgeCaseValues = gen.edgeCases(Seed.random()).map { it.value }.toList()
+                val edgeCaseValues = Seed.sequence().take(1_000).map { gen.edgeCase(it)!!.value }.toSet()
 
-                when (tc.shouldHaveEmpty) {
+                when (tc.hasEmpty) {
                     true -> expectThat(edgeCaseValues).any { isEmpty() }
                     false -> expectThat(edgeCaseValues).none { isEmpty() }
                 }
 
-                when (tc.shouldHaveSingleton) {
+                when (tc.hasSingle) {
                     true -> expectThat(edgeCaseValues).any { size.isEqualTo(1) }
                     false -> expectThat(edgeCaseValues).none { size.isEqualTo(1) }
                 }
 
-                when (tc.shouldHaveMultipleValues) {
+                when (tc.hasMulti) {
                     true -> expectThat(edgeCaseValues).any { size.isGreaterThan(1) }
                     false -> expectThat(edgeCaseValues).none { size.isGreaterThan(1) }
                 }

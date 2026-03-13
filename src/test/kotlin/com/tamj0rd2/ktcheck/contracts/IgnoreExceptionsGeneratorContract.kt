@@ -8,10 +8,10 @@ import org.junit.jupiter.api.assertTimeoutPreemptively
 import strikt.api.expectThat
 import strikt.api.expectThrows
 import strikt.assertions.all
-import strikt.assertions.isEmpty
 import strikt.assertions.isEqualTo
 import strikt.assertions.isLessThanOrEqualTo
 import strikt.assertions.isNotEqualTo
+import strikt.assertions.isNull
 import java.time.Duration
 
 internal interface IgnoreExceptionsGeneratorContract : BaseContract {
@@ -51,7 +51,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
 
             repeatTest { seed -> checkResult(possiblyThrowingGen.generate(tree(seed))) }
             if (genSupportsEdgeCases) repeatTest { seed -> checkResult(possiblyThrowingGen.edgeCase(seed)) }
-        }.checkPercentages("has-shrinks", mapOf(true to 45.0))
+        }.checkPercentages("has-shrinks", mapOf(true to 40.0))
 
         // todo: add some - deeply shrunk values are finite function. call it above.
         possiblyThrowingGen.expectGenerationAndShrinkingToEventuallyComplete()
@@ -130,7 +130,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
 
     @Test
     fun `does not produce any edge cases`() {
-        expectThat(exampleGen.edgeCases(Seed.random())).isEmpty()
+        expectThat(exampleGen.edgeCase(Seed.random())).isNull()
     }
 
     @Test

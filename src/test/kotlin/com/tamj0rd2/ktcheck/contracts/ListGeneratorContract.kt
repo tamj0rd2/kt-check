@@ -198,7 +198,7 @@ internal interface ListGeneratorContract : BaseContract {
         return testCases.map { tc ->
             dynamicTest(tc.description) {
                 val gen = int(0..10).list(tc.sizeRange)
-                val edgeCaseValues = gen.edgeCases(Seed.random()).map { it.value }.toList()
+                val edgeCaseValues = Seed.sequence().take(1_000).map { gen.edgeCase(it)!!.value }.toSet()
 
                 when (tc.shouldHaveEmpty) {
                     true -> expectThat(edgeCaseValues).any { isEmpty() }

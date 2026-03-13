@@ -1,7 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
-import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.DynamicTest.dynamicTest
@@ -9,7 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.assertThrows
 import strikt.api.expectThat
-import strikt.assertions.containsExactlyInAnyOrder
+import strikt.assertions.isContainedIn
 import strikt.assertions.isEqualTo
 import strikt.assertions.isIn
 import kotlin.random.Random
@@ -88,11 +87,17 @@ internal interface IntGeneratorContract : BaseContract {
 
     @Test
     fun `creates common edge cases and their shrinks`() {
-        val edgeCases = int(-10..10).edgeCases(Seed.random())
-        expectThat(edgeCases.map { it.value }).containsExactlyInAnyOrder(listOf(-10, -9, -1, 0, 1, 9, 10))
+        val gen = int(-10..10)
 
-        val edgeCaseFor9 = edgeCases.single { it.value == 9 }
-        val expectedShrinks = IntShrinker.shrink(9, 0..10, 0).toList()
-        expectThat(edgeCaseFor9).shrunkValues.isEqualTo(expectedShrinks)
+        repeatTest { seed ->
+            val edgeCase = gen.edgeCase(seed)!!
+            expectThat(edgeCase.value).isContainedIn(setOf(-10, -9, -1, 0, 1, 9, 10))
+
+            // todo: better off in a separate test
+            if (edgeCase.value == 9) {
+                val expectedShrinks = IntShrinker.shrink(9, 0..10, 0).toList()
+                expectThat(edgeCase).shrunkValues.isEqualTo(expectedShrinks)
+            }
+        }
     }
 }

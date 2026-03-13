@@ -108,9 +108,6 @@ internal interface BaseContract : GenBuilders {
 
     fun <T> Gen<T>.generate(tree: Tree<*>): GenResults<T>
 
-    fun <T> Gen<T>.edgeCases(seed: Seed): List<GenResults<T>> =
-        Seed.sequence(seed).take(1000).mapNotNull { edgeCase(it) }.toList().distinctBy { it.value }
-
     fun <T> Gen<T>.edgeCase(seed: Seed): GenResults<T>?
 
     /** Retries generations until the exact [value] is produced. */

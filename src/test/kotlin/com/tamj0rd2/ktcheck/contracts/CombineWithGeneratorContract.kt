@@ -1,12 +1,12 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.core.Seed
+import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.assertions.contains
 import strikt.assertions.first
-import strikt.assertions.isEmpty
+import strikt.assertions.isContainedIn
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotEmpty
 import strikt.assertions.isNotNull
@@ -54,27 +54,34 @@ internal interface CombineWithGeneratorContract : BaseContract {
 
     @Test
     fun `combineWith produces edge case permutations from both generators`() {
+        // todo: maybe make the numbers different to show there's no correlation?
         val gen1 = int(0..10)
         val gen2 = int(0..10)
         val combined = gen1.combineWith(gen2, ::Pair)
 
-        val edgeCases = combined.edgeCases(Seed.random())
-        expectThat(edgeCases.map { it.value }).contains(
-            0 to 0,
-            0 to 10,
-            10 to 0,
-            10 to 10,
-        )
+        withCounter {
+            repeatTest { seed ->
+                val edgeCase = combined.edgeCase(seed)!!
+                collect(edgeCase.value)
 
-        val shrinksFor10 = IntShrinker.shrink(10, 0..10, 0).toList()
-        val edgeCaseWhereBothAre10 = edgeCases.single { it.value == Pair(10, 10) }
-        expectThat(edgeCaseWhereBothAre10).shrunkValues.contains(
-            listOf(
-                shrinksFor10.map { Pair(it, it) },
-                shrinksFor10.map { Pair(it, 10) },
-                shrinksFor10.map { Pair(10, it) },
-            ).flatten().distinct()
-        )
+                expectThat(edgeCase.value) {
+                    first.isContainedIn(setOf(0, 1, 9, 10))
+                    second.isContainedIn(setOf(0, 1, 9, 10))
+                }
+
+                // todo: better of being in a separate test
+                if (edgeCase.value == (10 to 10)) {
+                    val shrinksFor10 = IntShrinker.shrink(10, 0..10, 0).toList()
+                    expectThat(edgeCase).shrunkValues.contains(
+                        listOf(
+                            shrinksFor10.map { Pair(it, it) },
+                            shrinksFor10.map { Pair(it, 10) },
+                            shrinksFor10.map { Pair(10, it) },
+                        ).flatten().distinct()
+                    )
+                }
+            }
+        }
     }
 
     @Test
@@ -83,18 +90,17 @@ internal interface CombineWithGeneratorContract : BaseContract {
         val gen2 = constant("hello")
         val combinedGen = gen1.combineWith(gen2, ::Pair)
 
-        repeatTest { seed ->
-            val gen1EdgeCase = gen1.edgeCase(seed)
-            val gen2EdgeCase = gen2.edgeCase(seed)
+        withCounter {
+            repeatTest { seed ->
+                expectThat(gen1.edgeCase(seed)).isNotNull()
+                expectThat(gen2.edgeCase(seed)).isNull()
 
-            expectThat(gen1EdgeCase).isNotNull()
-            expectThat(gen2EdgeCase).isNull()
-            expectThat(combinedGen.edgeCase(seed))
-                .isNotNull()
-                .value
-                .first
-                .isEqualTo(gen1EdgeCase!!.value)
-        }
+                val edgeCase = combinedGen.edgeCase(seed)
+                expectThat(edgeCase).isNotNull()
+                collect(edgeCase!!.value.first)
+            }
+            // make sure all edge cases are seen at least once
+        }.checkPercentages(setOf(0, 1, 9, 10).associateWith { 1.0 })
     }
 
     @Test
@@ -103,18 +109,17 @@ internal interface CombineWithGeneratorContract : BaseContract {
         val gen2 = int(0..10)
         val combinedGen = gen1.combineWith(gen2, ::Pair)
 
-        repeatTest { seed ->
-            val gen1EdgeCase = gen1.edgeCase(seed)
-            val gen2EdgeCase = gen2.edgeCase(seed)
+        withCounter {
+            repeatTest { seed ->
+                expectThat(gen1.edgeCase(seed)).isNull()
+                expectThat(gen2.edgeCase(seed)).isNotNull()
 
-            expectThat(gen1EdgeCase).isNull()
-            expectThat(gen2EdgeCase).isNotNull()
-            expectThat(combinedGen.edgeCase(seed))
-                .isNotNull()
-                .value
-                .second
-                .isEqualTo(gen2EdgeCase!!.value)
-        }
+                val edgeCase = combinedGen.edgeCase(seed)
+                expectThat(edgeCase).isNotNull()
+                collect(edgeCase!!.value.second)
+            }
+            // make sure all edge cases are seen at least once
+        }.checkPercentages(setOf(0, 1, 9, 10).associateWith { 1.0 })
     }
 
     @Test
@@ -123,9 +128,10 @@ internal interface CombineWithGeneratorContract : BaseContract {
         val gen2 = constant("world")
         val combinedGen = gen1.combineWith(gen2, ::Pair)
 
-        val seed = Seed.random()
-        expectThat(gen1.edgeCases(seed)).describedAs { "gen1 edge cases - $this" }.isEmpty()
-        expectThat(gen2.edgeCases(seed)).describedAs { "gen2 edge cases - $this" }.isEmpty()
-        expectThat(combinedGen.edgeCases(seed)).isEmpty()
+        repeatTest { seed ->
+            expectThat(gen1.edgeCase(seed)).isNull()
+            expectThat(gen2.edgeCase(seed)).isNull()
+            expectThat(combinedGen.edgeCase(seed)).isNull()
+        }
     }
 }

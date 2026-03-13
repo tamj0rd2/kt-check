@@ -1,12 +1,12 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.core.Seed
+import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectDoesNotThrow
 import strikt.api.expectThat
 import strikt.assertions.all
 import strikt.assertions.contains
-import strikt.assertions.containsExactlyInAnyOrder
+import strikt.assertions.isContainedIn
 import strikt.assertions.isEqualTo
 import strikt.assertions.isIn
 
@@ -65,44 +65,52 @@ internal interface FlatMapGeneratorContract : BaseContract {
 
     @Test
     fun `edge cases combine the outer generators edge cases with the inner generator's derived edge cases`() {
-        val gen = int(0..5).flatMap { outer -> int(10..15 + outer) }
-        val seed = Seed.random()
-        val edgeCases = gen.edgeCases(seed)
-
-        expectThat(edgeCases.map { it.value }).containsExactlyInAnyOrder(
-            setOf(
-                // inner edge cases, with max increased by 0 due to outer
-                10, 11, 14, 15,
-                // inner edge cases, with max increased by 1 due to outer
-                10, 11, 15, 16,
-                // inner edge cases, with max increased by 4 due to outer
-                10, 11, 18, 19,
-                // inner edge cases, with max increased by 5 due to outer
-                10, 11, 19, 20,
-            )
+        val expectedEdgeCases = setOf(
+            // inner edge cases, with max increased by 0 due to outer
+            10, 11, 14, 15,
+            // inner edge cases, with max increased by 1 due to outer
+            10, 11, 15, 16,
+            // inner edge cases, with max increased by 4 due to outer
+            10, 11, 18, 19,
+            // inner edge cases, with max increased by 5 due to outer
+            10, 11, 19, 20,
         )
 
-        expectThat(edgeCases).all {
-            val originalValue = subject.value
-            // this does allow for shrunk values to include the original value, which can be argued is not a shrink.
-            // explanation is detailed below. It's a known problem that I'm not going to work-around.
-            get { shrunkValues }.all { isIn(10..originalValue) }
-        }
+        withCounter {
+            repeatTest { seed ->
+                val gen = int(0..5).flatMap { outer -> int(10..15 + outer) }
+                val edgeCase = gen.edgeCase(seed)!!
 
-        /**
-         * So here, we're looking at the edge case 18. That edge case is reached by setting left = 4, right = 18.
-         * In the state where the edge case is created, the maximum value of the inner generator is 19.
-         *
-         * When we take that edge case (left = 4, right = 18) and shrink the left side (left = 3, right = 18)
-         * the new maximum of the inner generator is 18.
-         *
-         * When we try to generate a value using that tere, we end up with the value 18. That's
-         * specifically because the predetermined value 18 in the right tree DOES still fall into the new maximum
-         * range of the inner generator (18).
-         *
-         * Note that if left had shrunk such that 18 wasn't in range (i.e left = 0, right = 18, so max = 15),
-         * RandomTree would just generate a new value based on the new constraints.
-         */
-        expectThat(edgeCases.single { it.value == 18 }).shrunkValues.contains(18)
+                collect(edgeCase.value)
+
+                expectThat(edgeCase).and {
+                    value.isContainedIn(expectedEdgeCases)
+
+                    val originalValue = subject.value
+                    // this does allow for shrunk values to include the original value, which can be argued is not a shrink.
+                    // explanation is detailed below. It's a known problem that I'm not going to work-around.
+                    shrunkValues.all { isIn(10..originalValue) }
+                }
+
+                if (edgeCase.value == 18) {
+                    /**
+                     * So here, we're looking at the edge case 18. That edge case is reached by setting left = 4, right = 18.
+                     * In the state where the edge case is created, the maximum value of the inner generator is 19.
+                     *
+                     * When we take that edge case (left = 4, right = 18) and shrink the left side (left = 3, right = 18)
+                     * the new maximum of the inner generator is 18.
+                     *
+                     * When we try to generate a value using that tere, we end up with the value 18. That's
+                     * specifically because the predetermined value 18 in the right tree DOES still fall into the new maximum
+                     * range of the inner generator (18).
+                     *
+                     * Note that if left had shrunk such that 18 wasn't in range (i.e left = 0, right = 18, so max = 15),
+                     * RandomTree would just generate a new value based on the new constraints.
+                     */
+                    expectThat(edgeCase).shrunkValues.contains(18)
+                }
+            }
+            // ensures that each edge case does actually appear
+        }.checkPercentages(expectedEdgeCases.associateWith { 1.0 })
     }
 }
