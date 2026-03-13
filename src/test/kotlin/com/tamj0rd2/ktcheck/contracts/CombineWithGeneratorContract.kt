@@ -1,14 +1,17 @@
 package com.tamj0rd2.ktcheck.contracts
 
+import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.assertions.contains
-import strikt.assertions.containsExactlyInAnyOrder
+import strikt.assertions.first
 import strikt.assertions.isEmpty
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotEmpty
-import strikt.assertions.map
+import strikt.assertions.isNotNull
+import strikt.assertions.isNull
+import strikt.assertions.second
 
 internal interface CombineWithGeneratorContract : BaseContract {
     override val exampleGen get() = int().combineWith(int(), ::Pair)
@@ -55,7 +58,7 @@ internal interface CombineWithGeneratorContract : BaseContract {
         val gen2 = int(0..10)
         val combined = gen1.combineWith(gen2, ::Pair)
 
-        val edgeCases = combined.edgeCases()
+        val edgeCases = combined.edgeCases(Seed.random())
         expectThat(edgeCases.map { it.value }).contains(
             0 to 0,
             0 to 10,
@@ -80,13 +83,18 @@ internal interface CombineWithGeneratorContract : BaseContract {
         val gen2 = constant("hello")
         val combinedGen = gen1.combineWith(gen2, ::Pair)
 
-        expectThat(gen1.edgeCases()).describedAs { "gen1 edge cases - $this" }.isNotEmpty()
-        expectThat(gen2.edgeCases()).describedAs { "gen2 edge cases - $this" }.isEmpty()
-        expectThat(combinedGen.edgeCases())
-            .describedAs { "combined edge cases - $this" }
-            .isNotEmpty()
-            .map { it.value.first }
-            .containsExactlyInAnyOrder(gen1.edgeCases().map { it.value })
+        repeatTest { seed ->
+            val gen1EdgeCase = gen1.edgeCase(seed)
+            val gen2EdgeCase = gen2.edgeCase(seed)
+
+            expectThat(gen1EdgeCase).isNotNull()
+            expectThat(gen2EdgeCase).isNull()
+            expectThat(combinedGen.edgeCase(seed))
+                .isNotNull()
+                .value
+                .first
+                .isEqualTo(gen1EdgeCase!!.value)
+        }
     }
 
     @Test
@@ -95,13 +103,18 @@ internal interface CombineWithGeneratorContract : BaseContract {
         val gen2 = int(0..10)
         val combinedGen = gen1.combineWith(gen2, ::Pair)
 
-        expectThat(gen1.edgeCases()).describedAs { "gen1 edge cases - $this" }.isEmpty()
-        expectThat(gen2.edgeCases()).describedAs { "gen2 edge cases - $this" }.isNotEmpty()
-        expectThat(combinedGen.edgeCases())
-            .describedAs { "combined edge cases - $this" }
-            .isNotEmpty()
-            .map { it.value.second }
-            .containsExactlyInAnyOrder(gen2.edgeCases().map { it.value })
+        repeatTest { seed ->
+            val gen1EdgeCase = gen1.edgeCase(seed)
+            val gen2EdgeCase = gen2.edgeCase(seed)
+
+            expectThat(gen1EdgeCase).isNull()
+            expectThat(gen2EdgeCase).isNotNull()
+            expectThat(combinedGen.edgeCase(seed))
+                .isNotNull()
+                .value
+                .second
+                .isEqualTo(gen2EdgeCase!!.value)
+        }
     }
 
     @Test
@@ -110,8 +123,9 @@ internal interface CombineWithGeneratorContract : BaseContract {
         val gen2 = constant("world")
         val combinedGen = gen1.combineWith(gen2, ::Pair)
 
-        expectThat(gen1.edgeCases()).describedAs { "gen1 edge cases - $this" }.isEmpty()
-        expectThat(gen2.edgeCases()).describedAs { "gen2 edge cases - $this" }.isEmpty()
-        expectThat(combinedGen.edgeCases()).isEmpty()
+        val seed = Seed.random()
+        expectThat(gen1.edgeCases(seed)).describedAs { "gen1 edge cases - $this" }.isEmpty()
+        expectThat(gen2.edgeCases(seed)).describedAs { "gen2 edge cases - $this" }.isEmpty()
+        expectThat(combinedGen.edgeCases(seed)).isEmpty()
     }
 }

@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
+import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.DynamicTest.dynamicTest
@@ -87,7 +88,7 @@ internal interface IntGeneratorContract : BaseContract {
 
     @Test
     fun `creates common edge cases and their shrinks`() {
-        val edgeCases = int(-10..10).edgeCases()
+        val edgeCases = int(-10..10).edgeCases(Seed.random())
         expectThat(edgeCases.map { it.value }).containsExactlyInAnyOrder(listOf(-10, -9, -1, 0, 1, 9, 10))
 
         val edgeCaseFor9 = edgeCases.single { it.value == 9 }

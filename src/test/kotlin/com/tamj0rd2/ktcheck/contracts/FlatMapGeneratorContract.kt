@@ -1,5 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
+import com.tamj0rd2.ktcheck.core.Seed
 import org.junit.jupiter.api.Test
 import strikt.api.expectDoesNotThrow
 import strikt.api.expectThat
@@ -65,7 +66,8 @@ internal interface FlatMapGeneratorContract : BaseContract {
     @Test
     fun `edge cases combine the outer generators edge cases with the inner generator's derived edge cases`() {
         val gen = int(0..5).flatMap { outer -> int(10..15 + outer) }
-        val edgeCases = gen.edgeCases()
+        val seed = Seed.random()
+        val edgeCases = gen.edgeCases(seed)
 
         expectThat(edgeCases.map { it.value }).containsExactlyInAnyOrder(
             setOf(

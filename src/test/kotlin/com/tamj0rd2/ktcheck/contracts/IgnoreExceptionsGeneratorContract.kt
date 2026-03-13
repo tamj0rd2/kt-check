@@ -2,6 +2,7 @@ package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
+import com.tamj0rd2.ktcheck.core.Seed
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
 import strikt.api.expectThat
@@ -78,7 +79,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
             .map { throw NotIgnoredException() }
             .ignoreExceptions(IgnoredException::class)
 
-        expectThrows<NotIgnoredException> { throwingGen.generate() }
+        expectThrows<NotIgnoredException> { throwingGen.generate(tree()) }
     }
 
     @Test
@@ -129,7 +130,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
 
     @Test
     fun `does not produce any edge cases`() {
-        expectThat(exampleGen.edgeCases()).isEmpty()
+        expectThat(exampleGen.edgeCases(Seed.random())).isEmpty()
     }
 
     @Test

@@ -106,15 +106,12 @@ internal interface BaseContract : GenBuilders {
     fun treeWhere(seed: Seed = Seed.random(), predicate: (Tree<*>) -> Boolean): Tree<*> =
         trees(seed).take(1_000_000).first(predicate)
 
-    fun <T> Gen<T>.generate(tree: Tree<*> = tree()): GenResults<T>
+    fun <T> Gen<T>.generate(tree: Tree<*>): GenResults<T>
 
-    fun <T> Gen<T>.edgeCases(seed: Seed = Seed.random()): List<GenResults<T>> =
+    fun <T> Gen<T>.edgeCases(seed: Seed): List<GenResults<T>> =
         Seed.sequence(seed).take(1000).mapNotNull { edgeCase(it) }.toList().distinctBy { it.value }
 
-    fun <T> Gen<T>.edgeCase(seed: Seed = Seed.random()): GenResults<T>?
-
-    fun <T> Gen<T>.sequence(): Sequence<GenResults<T>> =
-        generateSequence { generate() }
+    fun <T> Gen<T>.edgeCase(seed: Seed): GenResults<T>?
 
     /** Retries generations until the exact [value] is produced. */
     fun <T> Gen<T>.generating(value: T): GenResults<T> =

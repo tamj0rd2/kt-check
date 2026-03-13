@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.GenerationException.DistinctCollectionSizeImpossible
+import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker.shrink
 import com.tamj0rd2.ktcheck.full
@@ -234,7 +235,7 @@ internal interface DistinctListGeneratorContract : BaseContract {
         return testCases.map { tc ->
             dynamicTest(tc.description) {
                 val gen = int(0..10).list(tc.sizeRange)
-                val edgeCaseValues = gen.edgeCases().map { it.value }.toList()
+                val edgeCaseValues = gen.edgeCases(Seed.random()).map { it.value }.toList()
 
                 when (tc.shouldHaveEmpty) {
                     true -> expectThat(edgeCaseValues).any { isEmpty() }
