@@ -8,10 +8,10 @@ import dev.forkhandles.result4k.recover
 import dev.forkhandles.result4k.valueOrNull
 
 internal class FilterGen<T>(
-    private val gen: GenImpl<T>,
+    private val gen: Generator<T>,
     private val threshold: Int,
     private val predicate: (T) -> Boolean,
-) : GenImpl<T> {
+) : Generator<T> {
     override fun generate(root: RandomTree): Result4k<GeneratedValue<T>, GenerationException> {
         return root.traversingRight()
             .take(threshold)

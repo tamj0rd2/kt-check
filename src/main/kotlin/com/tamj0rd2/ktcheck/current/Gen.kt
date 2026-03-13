@@ -10,15 +10,15 @@ import com.tamj0rd2.ktcheck.Gen as IGen
 
 // todo: one thing on my mind is that each generator should do a final check to make sure the constraints are upheld
 //  post generation/edge case creation. put that in a contract somewhere.
-internal sealed interface GenImpl<T> {
+internal sealed interface Generator<T> {
     fun generate(root: RandomTree): Result4k<GeneratedValue<T>, GenerationException>
 
     fun edgeCases(root: RandomTree): List<GeneratedValue<T>>
 }
 
 internal data class Gen<T>(
-    private val generator: GenImpl<T>,
-) : IGen<T>, GenImpl<T> by generator {
+    private val generator: Generator<T>,
+) : IGen<T>, Generator<T> by generator {
     override fun sample(seed: Long) = generate(RandomTree.new(Seed(seed))).orThrow().value
 
     override fun withoutDefaultEdgeCases() = Gen(EdgeCasesDisabledGen(this))

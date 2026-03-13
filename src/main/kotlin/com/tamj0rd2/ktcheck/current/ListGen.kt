@@ -6,7 +6,7 @@ import dev.forkhandles.result4k.asSuccess
 import dev.forkhandles.result4k.onFailure
 
 internal class ListGen<T>(
-    elementGen: GenImpl<T>,
+    elementGen: Generator<T>,
     sizeRange: IntRange,
 ) : AbstractListGen<T>(elementGen, sizeRange) {
 

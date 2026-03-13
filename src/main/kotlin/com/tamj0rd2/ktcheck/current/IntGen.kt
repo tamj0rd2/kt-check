@@ -8,7 +8,7 @@ import dev.forkhandles.result4k.asSuccess
 internal class IntGen(
     private val range: IntRange,
     private val shrinkTarget: Int,
-) : GenImpl<Int> {
+) : Generator<Int> {
     init {
         require(shrinkTarget in range) { "Shrink target $shrinkTarget must be within the range $range" }
     }

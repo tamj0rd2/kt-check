@@ -6,9 +6,9 @@ import dev.forkhandles.result4k.asSuccess
 import dev.forkhandles.result4k.onFailure
 
 internal class FlatMapGen<T, R>(
-    private val wrappedGen: GenImpl<T>,
-    private val fn: (T) -> GenImpl<R>,
-) : GenImpl<R> {
+    private val wrappedGen: Generator<T>,
+    private val fn: (T) -> Generator<R>,
+) : Generator<R> {
     override fun generate(root: RandomTree): Result4k<GeneratedValue<R>, GenerationException> {
         val outerResult = wrappedGen.generate(root.left).onFailure { return it }
         val innerResult = fn(outerResult.value).generate(root.right).onFailure { return it }

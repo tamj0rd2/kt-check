@@ -7,10 +7,10 @@ import dev.forkhandles.result4k.onFailure
 import dev.forkhandles.result4k.orThrow
 
 internal class CombineWithGen<T1, T2, R>(
-    private val leftGen: GenImpl<T1>,
-    private val rightGen: GenImpl<T2>,
+    private val leftGen: Generator<T1>,
+    private val rightGen: Generator<T2>,
     private val combine: (T1, T2) -> R,
-) : GenImpl<R> {
+) : Generator<R> {
     override fun generate(root: RandomTree): Result4k<GeneratedValue<R>, GenerationException> {
         val leftResult = leftGen.generate(root.left).onFailure { return it }
         val rightResult = rightGen.generate(root.right).onFailure { return it }
