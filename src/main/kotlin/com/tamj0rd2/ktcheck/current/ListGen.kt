@@ -6,9 +6,9 @@ import dev.forkhandles.result4k.asSuccess
 import dev.forkhandles.result4k.onFailure
 
 internal class ListGen<T>(
+    sizeGen: Generator<Int>,
     elementGen: Generator<T>,
-    sizeRange: IntRange,
-) : AbstractListGen<T>(elementGen, sizeRange) {
+) : AbstractListGen<T>(sizeGen, elementGen) {
 
     override fun generateElements(
         initialTree: RandomTree,

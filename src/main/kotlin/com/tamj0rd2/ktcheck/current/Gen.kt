@@ -43,9 +43,9 @@ internal data class Gen<T>(
         threshold: Int,
     ) = Gen(IgnoreExceptionGen(this, klass, threshold))
 
-    override fun list(size: IntRange) = Gen(ListGen(this, size))
+    override fun list(size: IntRange) = Gen(ListGen(GenV2Builders.int(size), this))
 
-    override fun distinctList(size: IntRange) = Gen(DistinctListGen(this, size))
+    override fun distinctList(size: IntRange) = Gen(DistinctListGen(GenV2Builders.int(size), this))
 }
 
 internal data class GeneratedValue<T>(
