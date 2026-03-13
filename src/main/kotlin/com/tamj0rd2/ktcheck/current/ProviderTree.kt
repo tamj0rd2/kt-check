@@ -67,13 +67,10 @@ private data class RandomValueProvider(private val seed: Seed) : ValueProvider {
     }
 }
 
-@ConsistentCopyVisibility
-private data class PredeterminedValueProvider private constructor(
+private data class PredeterminedValueProvider(
     private val value: Any,
     override val delegate: ValueProvider,
 ) : DecoratedValueProvider {
-    constructor(value: Int, fallback: ValueProvider) : this(value as Any, fallback)
-
     override fun int(range: IntRange): Int =
         when (value) {
             !is Int,
