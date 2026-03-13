@@ -29,8 +29,6 @@ internal data class ProviderTree private constructor(
     fun withLeft(left: ProviderTree): ProviderTree = copy(lazyLeft = lazyOf(left))
     fun withRight(right: ProviderTree): ProviderTree = copy(lazyRight = lazyOf(right))
 
-    fun skipRight(amount: Int) = walkRight(this, amount)
-
     companion object {
         fun new(seed: Seed = Seed.random()): ProviderTree = ProviderTree(
             provider = RandomValueProvider(seed),
@@ -44,11 +42,6 @@ internal data class ProviderTree private constructor(
                 lazyLeft = lazy { terminal },
                 lazyRight = lazy { terminal },
             )
-
-        private tailrec fun walkRight(tree: ProviderTree, amount: Int): ProviderTree = when (amount) {
-            0 -> tree
-            else -> walkRight(tree.right, amount - 1)
-        }
     }
 }
 

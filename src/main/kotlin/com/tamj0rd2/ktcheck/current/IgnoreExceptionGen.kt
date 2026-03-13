@@ -14,7 +14,7 @@ internal class IgnoreExceptionGen<T>(
     override fun generate(root: ProviderTree): Result4k<GeneratedValue<T>, GenerationException> {
         var latestError: Exception? = null
 
-        return generateSequence(root) { it.right }
+        return root.traversingRight()
             .take(threshold)
             .mapNotNull {
                 try {
