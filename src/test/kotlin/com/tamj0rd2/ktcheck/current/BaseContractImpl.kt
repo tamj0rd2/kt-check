@@ -99,9 +99,9 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
         return GenResults(result.value, collectShrinksRecursively(result.shrinks))
     }
 
-    override fun <T> IGen<T>.edgeCases(seed: Seed): List<GenResults<T>> {
-        val result = (this as Gen).edgeCases((tree(seed)))
-        return result.map { GenResults(it.value, collectShrinksRecursively(it.shrinks)) }
+    override fun <T> IGen<T>.edgeCase(seed: Seed): GenResults<T>? {
+        val result = (this as Gen).edgeCases((tree(seed))).randomOrNull(Random(seed.value)) ?: return null
+        return GenResults(result.value, collectShrinksRecursively(result.shrinks))
     }
 
     private fun <T> Gen<T>.collectShrinksRecursively(shrinks: Sequence<ProviderTree>): Sequence<GenResults<T>> =

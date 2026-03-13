@@ -68,14 +68,16 @@ internal interface FlatMapGeneratorContract : BaseContract {
         val edgeCases = gen.edgeCases()
 
         expectThat(edgeCases.map { it.value }).containsExactlyInAnyOrder(
-            // inner edge cases, with max increased by 0 due to outer
-            10, 11, 14, 15,
-            // inner edge cases, with max increased by 1 due to outer
-            10, 11, 15, 16,
-            // inner edge cases, with max increased by 4 due to outer
-            10, 11, 18, 19,
-            // inner edge cases, with max increased by 5 due to outer
-            10, 11, 19, 20,
+            setOf(
+                // inner edge cases, with max increased by 0 due to outer
+                10, 11, 14, 15,
+                // inner edge cases, with max increased by 1 due to outer
+                10, 11, 15, 16,
+                // inner edge cases, with max increased by 4 due to outer
+                10, 11, 18, 19,
+                // inner edge cases, with max increased by 5 due to outer
+                10, 11, 19, 20,
+            )
         )
 
         expectThat(edgeCases).all {

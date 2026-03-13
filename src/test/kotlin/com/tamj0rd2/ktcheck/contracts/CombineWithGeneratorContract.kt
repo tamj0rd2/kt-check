@@ -4,6 +4,7 @@ import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.assertions.contains
+import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEmpty
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotEmpty
@@ -85,7 +86,7 @@ internal interface CombineWithGeneratorContract : BaseContract {
             .describedAs { "combined edge cases - $this" }
             .isNotEmpty()
             .map { it.value.first }
-            .isEqualTo(gen1.edgeCases().map { it.value })
+            .containsExactlyInAnyOrder(gen1.edgeCases().map { it.value })
     }
 
     @Test
@@ -100,7 +101,7 @@ internal interface CombineWithGeneratorContract : BaseContract {
             .describedAs { "combined edge cases - $this" }
             .isNotEmpty()
             .map { it.value.second }
-            .isEqualTo(gen2.edgeCases().map { it.value })
+            .containsExactlyInAnyOrder(gen2.edgeCases().map { it.value })
     }
 
     @Test

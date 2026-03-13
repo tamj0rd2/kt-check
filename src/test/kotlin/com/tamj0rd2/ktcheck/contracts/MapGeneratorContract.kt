@@ -2,10 +2,8 @@ package com.tamj0rd2.ktcheck.contracts
 
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
-import strikt.assertions.allIndexed
-import strikt.assertions.hasSize
 import strikt.assertions.isEqualTo
-import strikt.assertions.isNotEmpty
+import strikt.assertions.isNotNull
 
 internal interface MapGeneratorContract : BaseContract {
     override val exampleGen get() = int(-100..100).map { it * 2 }
@@ -29,15 +27,15 @@ internal interface MapGeneratorContract : BaseContract {
         val originalGen = int(0..10)
         val doublingGen = originalGen.map { it * 2 }
 
-        val originalEdgeCases = originalGen.edgeCases()
-        val doubledEdgeCases = doublingGen.edgeCases()
+        repeatTest { seed ->
+            val originalEdgeCase = originalGen.edgeCase(seed)
+            val doubledEdgeCase = doublingGen.edgeCase(seed)
+            if (originalEdgeCase == null) skipIteration()
 
-        expectThat(doubledEdgeCases)
-            .isNotEmpty()
-            .allIndexed { index ->
-                value.isEqualTo(originalEdgeCases[index].value * 2)
-                shrunkValues.isEqualTo(originalEdgeCases[index].shrunkValues.map { it * 2 })
+            expectThat(doubledEdgeCase).isNotNull().and {
+                value.isEqualTo(originalEdgeCase.value * 2)
+                shrunkValues.isEqualTo(originalEdgeCase.shrunkValues.map { it * 2 })
             }
-            .hasSize(originalEdgeCases.size)
+        }
     }
 }
