@@ -15,7 +15,6 @@ internal class IntGen(
 
     override fun generate(
         root: ProviderTree,
-        mode: GenerationMode,
     ): Result4k<GeneratedValue<Int>, GenerationException> {
         val value = root.provider.int(range)
         return buildResult(root, value).asSuccess()

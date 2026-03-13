@@ -23,7 +23,7 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
     fun `generated values are reproducible via their returned tree`() {
         repeatTest { seed ->
             val gen = getGenIfDefined() as Gen
-            val originalResult = gen.generate(tree(seed), GenerationMode.Random).orThrow()
+            val originalResult = gen.generate(tree(seed)).orThrow()
             val regenerated = gen.generate(originalResult.usedTree as Tree<*>)
 
             expectThat(regenerated).value.isEqualTo(originalResult.value)
@@ -36,7 +36,7 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
 
         repeatTest { seed ->
             val gen = getGenIfDefined() as Gen
-            val originalResult = gen.generate(tree(seed), GenerationMode.Random).orThrow()
+            val originalResult = gen.generate(tree(seed)).orThrow()
             val originalShrunkValues = originalResult.getShrinks(gen)
             if (originalShrunkValues.isEmpty()) skipIteration()
 
@@ -84,7 +84,7 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
     private fun <T> GeneratedValue<T>.getShrinks(
         gen: Gen<T>,
     ): List<T> = shrinks
-        .mapNotNull { gen.generate(it, GenerationMode.Random).valueOrNull()?.value }
+        .mapNotNull { gen.generate(it).valueOrNull()?.value }
         .distinct()
         .toList()
 
@@ -95,7 +95,7 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
 
     @Suppress("UNCHECKED_CAST")
     override fun <T> IGen<T>.generate(tree: Tree<*>): GenResults<T> {
-        val result = (this as Gen).generate(tree as ProviderTree, GenerationMode.Random).orThrow()
+        val result = (this as Gen).generate(tree as ProviderTree).orThrow()
         return GenResults(result.value, collectShrinksRecursively(result.shrinks))
     }
 
@@ -107,7 +107,7 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
     private fun <T> Gen<T>.collectShrinksRecursively(shrinks: Sequence<ProviderTree>): Sequence<GenResults<T>> =
         sequence {
             for (shrink in shrinks) {
-                val result = generate(shrink, GenerationMode.Random).onFailure { continue }
+                val result = generate(shrink).onFailure { continue }
                 yield(GenResults(result.value, collectShrinksRecursively(result.shrinks)))
             }
         }

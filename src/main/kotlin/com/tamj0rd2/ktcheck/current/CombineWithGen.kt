@@ -11,9 +11,9 @@ internal class CombineWithGen<T1, T2, R>(
     private val rightGen: Generator<T2>,
     private val combine: (T1, T2) -> R,
 ) : Generator<R> {
-    override fun generate(root: ProviderTree, mode: GenerationMode): Result4k<GeneratedValue<R>, GenerationException> {
-        val leftResult = leftGen.generate(root.left, mode).onFailure { return it }
-        val rightResult = rightGen.generate(root.right, mode).onFailure { return it }
+    override fun generate(root: ProviderTree): Result4k<GeneratedValue<R>, GenerationException> {
+        val leftResult = leftGen.generate(root.left).onFailure { return it }
+        val rightResult = rightGen.generate(root.right).onFailure { return it }
         return buildResult(root, leftResult, rightResult).asSuccess()
     }
 
@@ -26,9 +26,9 @@ internal class CombineWithGen<T1, T2, R>(
         }
 
         val leftEdgeCasesToUse =
-            leftEdgeCases.ifEmpty { listOf(leftGen.generate(root.left, GenerationMode.Random).orThrow()) }
+            leftEdgeCases.ifEmpty { listOf(leftGen.generate(root.left).orThrow()) }
         val rightEdgeCasesToUse =
-            rightEdgeCases.ifEmpty { listOf(rightGen.generate(root.right, GenerationMode.Random).orThrow()) }
+            rightEdgeCases.ifEmpty { listOf(rightGen.generate(root.right).orThrow()) }
 
         return leftEdgeCasesToUse.flatMap { leftEdgeCase ->
             rightEdgeCasesToUse.map { rightEdgeCase ->

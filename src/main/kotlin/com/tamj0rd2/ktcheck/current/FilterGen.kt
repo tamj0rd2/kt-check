@@ -12,12 +12,12 @@ internal class FilterGen<T>(
     private val threshold: Int,
     private val predicate: (T) -> Boolean,
 ) : Generator<T> {
-    override fun generate(root: ProviderTree, mode: GenerationMode): Result4k<GeneratedValue<T>, GenerationException> {
+    override fun generate(root: ProviderTree): Result4k<GeneratedValue<T>, GenerationException> {
         return root.traversingRight()
             .take(threshold)
-            .mapNotNull { gen.generate(it.left, mode).valueOrNull() }
+            .mapNotNull { gen.generate(it.left).valueOrNull() }
             .filter { predicate(it.value) }
-            .map { buildResult(root, mode, it) }
+            .map { buildResult(root, it) }
             .firstOrNull()
             .asResultOr { GenerationException.FilterLimitReached(threshold) }
     }
@@ -25,12 +25,11 @@ internal class FilterGen<T>(
     override fun edgeCases(root: ProviderTree): List<GeneratedValue<T>> {
         return gen.edgeCases(root)
             .filter { predicate(it.value) }
-            .map { buildResult(root, GenerationMode.EdgeCase, it) }
+            .map { buildResult(root, it) }
     }
 
     private fun buildResult(
         root: ProviderTree,
-        mode: GenerationMode,
         result: GeneratedValue<T>,
     ): GeneratedValue<T> {
         check(predicate(result.value)) { "internal error - value did not match the predicate" }
@@ -39,7 +38,7 @@ internal class FilterGen<T>(
             value = result.value,
             shrinks = result.shrinks
                 .filter { shrunkTree ->
-                    gen.generate(shrunkTree, mode)
+                    gen.generate(shrunkTree)
                         .map { predicate(it.value) }
                         .recover { false }
                 }

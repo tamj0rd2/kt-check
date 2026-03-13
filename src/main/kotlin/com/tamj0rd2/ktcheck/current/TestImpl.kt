@@ -38,11 +38,10 @@ private class TestRunner<T>(
     }
 
     private fun runIteration(iterationIdx: Int): TestIterationResult {
-        val (input, mode) = if (iterationIdx in edgeCases.indices) {
-            edgeCases.elementAt(iterationIdx) to GenerationMode.EdgeCase
+        val input = if (iterationIdx in edgeCases.indices) {
+            edgeCases.elementAt(iterationIdx)
         } else {
-            gen.generate(ProviderTree.new(config.seed.next(iterationIdx)), GenerationMode.Random)
-                .orThrow() to GenerationMode.Random
+            gen.generate(ProviderTree.new(config.seed.next(iterationIdx))).orThrow()
         }
 
         val originalFalsification = property.test(input.value) ?: return TestIterationResult.DidNotFalsify
@@ -52,7 +51,6 @@ private class TestRunner<T>(
                 originalGeneratedValue = input,
                 originalFalsification = originalFalsification,
                 shrinkingConstraint = it,
-                mode = mode,
             )
         }
 
@@ -67,7 +65,6 @@ private class TestRunner<T>(
         originalGeneratedValue: GeneratedValue<T>,
         originalFalsification: Property.Falsification<T>,
         shrinkingConstraint: ShrinkingConstraint,
-        mode: GenerationMode,
     ): Pair<Property.Falsification<T>, Int> {
         shrinkingConstraint.onStart()
 
@@ -78,7 +75,7 @@ private class TestRunner<T>(
         val seenValues = mutableSetOf<T>()
 
         while (shrinkingConstraint.shouldKeepShrinking() && candidates.hasNext()) {
-            val shrunkInput = gen.generate(candidates.next(), mode).onFailure { continue }
+            val shrunkInput = gen.generate(candidates.next()).onFailure { continue }
             if (!seenValues.add(shrunkInput.value)) continue
 
             shrinkingConstraint.onStep()

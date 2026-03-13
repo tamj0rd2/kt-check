@@ -7,7 +7,7 @@ import dev.forkhandles.result4k.asSuccess
 internal class ConstantGen<T>(
     private val value: T,
 ) : Generator<T> {
-    override fun generate(root: ProviderTree, mode: GenerationMode): Result4k<GeneratedValue<T>, GenerationException> =
+    override fun generate(root: ProviderTree): Result4k<GeneratedValue<T>, GenerationException> =
         GeneratedValue(value = value, shrinks = emptySequence(), usedTree = root).asSuccess()
 
     override fun edgeCases(root: ProviderTree): List<GeneratedValue<T>> {
