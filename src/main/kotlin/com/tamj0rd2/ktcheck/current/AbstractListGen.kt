@@ -9,14 +9,14 @@ internal sealed class AbstractListGen<T>(
     protected val sizeGen: Generator<Int>,
     protected val elementGen: Generator<T>,
 ) : Generator<List<T>> {
-    final override fun generate(root: RandomTree): Result4k<GeneratedValue<List<T>>, GenerationException> {
+    final override fun generate(root: ProviderTree): Result4k<GeneratedValue<List<T>>, GenerationException> {
         val sizeResult = sizeGen.generate(root.left).onFailure { return it }
         val listElementResults = generateElements(root.right, sizeResult.value).onFailure { return it }
         return buildResult(root, sizeResult, listElementResults).asSuccess()
     }
 
     protected fun buildResult(
-        root: RandomTree,
+        root: ProviderTree,
         sizeResult: GeneratedValue<Int>,
         listElementResults: List<GeneratedValue<T>>,
     ): GeneratedValue<List<T>> {
@@ -47,23 +47,23 @@ internal sealed class AbstractListGen<T>(
     }
 
     protected abstract fun generateElements(
-        initialTree: RandomTree,
+        initialTree: ProviderTree,
         size: Int,
     ): Result4k<List<GeneratedValue<T>>, GenerationException>
 
-    protected fun RandomTree.withSizeTree(sizeShrink: RandomTree) = withLeft(sizeShrink)
+    protected fun ProviderTree.withSizeTree(sizeShrink: ProviderTree) = withLeft(sizeShrink)
 
     @JvmName("withElementResults")
-    protected fun RandomTree.withElementTrees(elementResults: List<GeneratedValue<T>>) =
+    protected fun ProviderTree.withElementTrees(elementResults: List<GeneratedValue<T>>) =
         withElementTrees(elementResults.map { it.usedTree })
 
-    protected fun RandomTree.withElementTrees(elementTrees: List<RandomTree>): RandomTree {
+    protected fun ProviderTree.withElementTrees(elementTrees: List<ProviderTree>): ProviderTree {
         if (elementTrees.isEmpty()) return this
 
         // todo: make this tail recursive.
-        fun RandomTree.replaceLeftTree(index: Int): RandomTree = when {
+        fun ProviderTree.replaceLeftTree(index: Int): ProviderTree = when {
             index >= elementTrees.size -> {
-                RandomTree.terminal
+                ProviderTree.terminal
             }
 
             else -> {

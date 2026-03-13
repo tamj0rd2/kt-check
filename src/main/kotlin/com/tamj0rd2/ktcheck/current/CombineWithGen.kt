@@ -11,13 +11,13 @@ internal class CombineWithGen<T1, T2, R>(
     private val rightGen: Generator<T2>,
     private val combine: (T1, T2) -> R,
 ) : Generator<R> {
-    override fun generate(root: RandomTree): Result4k<GeneratedValue<R>, GenerationException> {
+    override fun generate(root: ProviderTree): Result4k<GeneratedValue<R>, GenerationException> {
         val leftResult = leftGen.generate(root.left).onFailure { return it }
         val rightResult = rightGen.generate(root.right).onFailure { return it }
         return buildResult(root, leftResult, rightResult).asSuccess()
     }
 
-    override fun edgeCases(root: RandomTree): List<GeneratedValue<R>> {
+    override fun edgeCases(root: ProviderTree): List<GeneratedValue<R>> {
         val leftEdgeCases = leftGen.edgeCases(root.left)
         val rightEdgeCases = rightGen.edgeCases(root.right)
 
@@ -40,7 +40,7 @@ internal class CombineWithGen<T1, T2, R>(
     }
 
     private fun buildResult(
-        root: RandomTree,
+        root: ProviderTree,
         leftResult: GeneratedValue<T1>,
         rightResult: GeneratedValue<T2>,
     ): GeneratedValue<R> {

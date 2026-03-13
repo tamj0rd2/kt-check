@@ -8,11 +8,11 @@ internal class MapGen<T, R>(
     private val wrappedGen: Generator<T>,
     private val fn: (T) -> R,
 ) : Generator<R> {
-    override fun generate(root: RandomTree): Result4k<GeneratedValue<R>, GenerationException> {
+    override fun generate(root: ProviderTree): Result4k<GeneratedValue<R>, GenerationException> {
         return wrappedGen.generate(root).map { it.map(fn) }
     }
 
-    override fun edgeCases(root: RandomTree): List<GeneratedValue<R>> {
+    override fun edgeCases(root: ProviderTree): List<GeneratedValue<R>> {
         return wrappedGen.edgeCases(root).map { it.map(fn) }
     }
 

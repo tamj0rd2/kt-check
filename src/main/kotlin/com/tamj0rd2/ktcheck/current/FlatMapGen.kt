@@ -9,13 +9,13 @@ internal class FlatMapGen<T, R>(
     private val wrappedGen: Generator<T>,
     private val fn: (T) -> Generator<R>,
 ) : Generator<R> {
-    override fun generate(root: RandomTree): Result4k<GeneratedValue<R>, GenerationException> {
+    override fun generate(root: ProviderTree): Result4k<GeneratedValue<R>, GenerationException> {
         val outerResult = wrappedGen.generate(root.left).onFailure { return it }
         val innerResult = fn(outerResult.value).generate(root.right).onFailure { return it }
         return buildResult(root = root, outerResult = outerResult, innerResult = innerResult).asSuccess()
     }
 
-    override fun edgeCases(root: RandomTree): List<GeneratedValue<R>> {
+    override fun edgeCases(root: ProviderTree): List<GeneratedValue<R>> {
         return wrappedGen.edgeCases(root.left).flatMap { outerEdgeCase ->
             fn(outerEdgeCase.value).edgeCases(root.right).map { innerEdgeCase ->
                 val stableRoot = root
@@ -28,7 +28,7 @@ internal class FlatMapGen<T, R>(
     }
 
     private fun buildResult(
-        root: RandomTree,
+        root: ProviderTree,
         outerResult: GeneratedValue<T>,
         innerResult: GeneratedValue<R>,
     ): GeneratedValue<R> {

@@ -11,7 +11,7 @@ internal class ListGen<T>(
 ) : AbstractListGen<T>(sizeGen, elementGen) {
 
     override fun generateElements(
-        initialTree: RandomTree,
+        initialTree: ProviderTree,
         size: Int,
     ): Result4k<List<GeneratedValue<T>>, GenerationException> = buildList {
         for (tree in initialTree.traversingRight().take(size)) {
@@ -19,7 +19,7 @@ internal class ListGen<T>(
         }
     }.asSuccess()
 
-    override fun edgeCases(root: RandomTree): List<GeneratedValue<List<T>>> {
+    override fun edgeCases(root: ProviderTree): List<GeneratedValue<List<T>>> {
         return sizeGen.edgeCases(root.left).flatMap { sizeResult ->
             elementGen.edgeCases(root.right).map { elementResult ->
                 val elementResults = List(sizeResult.value) { elementResult }

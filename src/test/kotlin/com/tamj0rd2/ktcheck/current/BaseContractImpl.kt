@@ -89,22 +89,22 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
         .toList()
 
     //=== Wiring ===//
-    override fun tree(seed: Seed) = RandomTree.new(seed)
-    override fun Tree<*>.withLeft(left: Tree<*>) = (this as RandomTree).withLeft(left as RandomTree)
-    override fun Tree<*>.withRight(right: Tree<*>) = (this as RandomTree).withRight(right as RandomTree)
+    override fun tree(seed: Seed) = ProviderTree.new(seed)
+    override fun Tree<*>.withLeft(left: Tree<*>) = (this as ProviderTree).withLeft(left as ProviderTree)
+    override fun Tree<*>.withRight(right: Tree<*>) = (this as ProviderTree).withRight(right as ProviderTree)
 
     @Suppress("UNCHECKED_CAST")
     override fun <T> IGen<T>.generate(tree: Tree<*>): GenResults<T> {
-        val result = (this as Gen).generate(tree as RandomTree).orThrow()
+        val result = (this as Gen).generate(tree as ProviderTree).orThrow()
         return GenResults(result.value, collectShrinksRecursively(result.shrinks))
     }
 
     override fun <T> IGen<T>.edgeCases(tree: Tree<*>): List<GenResults<T>> {
-        val result = (this as Gen).edgeCases(tree as RandomTree)
+        val result = (this as Gen).edgeCases(tree as ProviderTree)
         return result.map { GenResults(it.value, collectShrinksRecursively(it.shrinks)) }
     }
 
-    private fun <T> Gen<T>.collectShrinksRecursively(shrinks: Sequence<RandomTree>): Sequence<GenResults<T>> =
+    private fun <T> Gen<T>.collectShrinksRecursively(shrinks: Sequence<ProviderTree>): Sequence<GenResults<T>> =
         sequence {
             for (shrink in shrinks) {
                 val result = generate(shrink).onFailure { continue }

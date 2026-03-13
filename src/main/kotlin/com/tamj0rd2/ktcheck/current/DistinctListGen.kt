@@ -12,7 +12,7 @@ internal class DistinctListGen<T>(
 ) : AbstractListGen<T>(sizeGen, elementGen) {
 
     override fun generateElements(
-        initialTree: RandomTree,
+        initialTree: ProviderTree,
         size: Int,
     ): Result4k<List<GeneratedValue<T>>, GenerationException> {
         val trees = initialTree.traversingRight().iterator()
@@ -53,7 +53,7 @@ internal class DistinctListGen<T>(
         return results.asSuccess()
     }
 
-    override fun edgeCases(root: RandomTree): List<GeneratedValue<List<T>>> {
+    override fun edgeCases(root: ProviderTree): List<GeneratedValue<List<T>>> {
         return sizeGen.edgeCases(root.left).map { sizeResult ->
             val elementResults = elementGen.edgeCases(root.right)
                 .distinctBy { it.value }
