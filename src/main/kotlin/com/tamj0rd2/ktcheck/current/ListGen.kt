@@ -12,10 +12,11 @@ internal class ListGen<T>(
 
     override fun generateElements(
         initialTree: ProviderTree,
+        mode: GenerationMode,
         size: Int,
     ): Result4k<List<GeneratedValue<T>>, GenerationException> = buildList {
         for (tree in initialTree.traversingRight().take(size)) {
-            add(elementGen.generate(tree.left).onFailure { return it })
+            add(elementGen.generate(tree.left, mode).onFailure { return it })
         }
     }.asSuccess()
 
@@ -28,7 +29,7 @@ internal class ListGen<T>(
                     .withSizeTree(sizeResult.usedTree)
                     .withElementTrees(elementResults)
 
-                buildResult(reproducibleTree, sizeResult, elementResults)
+                buildResult(reproducibleTree, GenerationMode.EdgeCase, sizeResult, elementResults)
             }
         }
     }

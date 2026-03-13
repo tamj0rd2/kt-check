@@ -8,10 +8,15 @@ import dev.forkhandles.result4k.orThrow
 import kotlin.reflect.KClass
 import com.tamj0rd2.ktcheck.Gen as IGen
 
+enum class GenerationMode {
+    Random,
+    EdgeCase,
+}
+
 // todo: one thing on my mind is that each generator should do a final check to make sure the constraints are upheld
 //  post generation/edge case creation. put that in a contract somewhere.
 internal sealed interface Generator<T> {
-    fun generate(root: ProviderTree): Result4k<GeneratedValue<T>, GenerationException>
+    fun generate(root: ProviderTree, mode: GenerationMode): Result4k<GeneratedValue<T>, GenerationException>
 
     fun edgeCases(root: ProviderTree): List<GeneratedValue<T>>
 }
@@ -19,7 +24,7 @@ internal sealed interface Generator<T> {
 internal data class Gen<T>(
     private val generator: Generator<T>,
 ) : IGen<T>, Generator<T> by generator {
-    override fun sample(seed: Long) = generate(ProviderTree.new(Seed(seed))).orThrow().value
+    override fun sample(seed: Long) = generate(ProviderTree.new(Seed(seed)), GenerationMode.Random).orThrow().value
 
     override fun withoutDefaultEdgeCases() = Gen(EdgeCasesDisabledGen(this))
 

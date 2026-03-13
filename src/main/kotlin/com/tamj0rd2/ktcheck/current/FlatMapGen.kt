@@ -9,9 +9,9 @@ internal class FlatMapGen<T, R>(
     private val wrappedGen: Generator<T>,
     private val fn: (T) -> Generator<R>,
 ) : Generator<R> {
-    override fun generate(root: ProviderTree): Result4k<GeneratedValue<R>, GenerationException> {
-        val outerResult = wrappedGen.generate(root.left).onFailure { return it }
-        val innerResult = fn(outerResult.value).generate(root.right).onFailure { return it }
+    override fun generate(root: ProviderTree, mode: GenerationMode): Result4k<GeneratedValue<R>, GenerationException> {
+        val outerResult = wrappedGen.generate(root.left, mode).onFailure { return it }
+        val innerResult = fn(outerResult.value).generate(root.right, mode).onFailure { return it }
         return buildResult(root = root, outerResult = outerResult, innerResult = innerResult).asSuccess()
     }
 
