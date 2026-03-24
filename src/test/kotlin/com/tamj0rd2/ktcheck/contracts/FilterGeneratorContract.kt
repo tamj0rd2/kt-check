@@ -1,7 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
+import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.api.expectThrows
@@ -15,7 +15,7 @@ internal interface FilterGeneratorContract : BaseContract {
     fun `can filter generated values and their shrinks`() {
         val gen = int(1..10).filter { it % 2 == 0 }
 
-        withCounter {
+        withLabelledCounter {
             fun checkResult(result: GenResults<Int>?) {
                 if (result == null) skipIteration()
                 expectThat(result).value.assertThat("is even") { it % 2 == 0 }
@@ -34,7 +34,7 @@ internal interface FilterGeneratorContract : BaseContract {
     // todo: will need a similar test for exception generation
     @Test
     fun `shrinks of filter are never greater than the originally generated value`() {
-        withCounter {
+        withLabelledCounter {
             val gen = int(1..10).filter { it % 2 == 0 }
 
             fun checkResult(originalResult: GenResults<Int>?) {

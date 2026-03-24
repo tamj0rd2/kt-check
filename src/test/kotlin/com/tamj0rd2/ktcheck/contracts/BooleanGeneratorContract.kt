@@ -1,12 +1,14 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
+import com.tamj0rd2.ktcheck.stats.withCounter
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import strikt.api.expectThat
 import strikt.assertions.all
+import strikt.assertions.getValue
 import strikt.assertions.isEqualTo
+import strikt.assertions.isGreaterThanOrEqualTo
 
 internal interface BooleanGeneratorContract : BaseContract {
     override val exampleGen get() = bool()
@@ -17,12 +19,17 @@ internal interface BooleanGeneratorContract : BaseContract {
 
     @Test
     fun `generates a reasonable distribution of values over multiple runs`() {
-        withCounter {
+        val counter = withCounter {
             bool()
                 .samples()
                 .take(100_000)
                 .forEach { collect(it) }
-        }.checkPercentages(mapOf(true to 49.0, false to 49.0))
+        }
+
+        expectThat(counter.asMap()).getValue(true).get { percentage }.isGreaterThanOrEqualTo(49.0)
+        expectThat(counter.asMap()).getValue(true).get { percentage }.isGreaterThanOrEqualTo(49.0)
+
+        counter.checkPercentages(mapOf(true to 49.0, false to 49.0))
     }
 
     @Test

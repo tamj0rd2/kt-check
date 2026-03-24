@@ -1,8 +1,8 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
 import com.tamj0rd2.ktcheck.core.Seed
+import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
 import strikt.api.expectThat
@@ -41,7 +41,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
             }
             .ignoreExceptions(TestException::class)
 
-        withCounter {
+        withLabelledCounter {
             fun checkResult(result: GenResults<Int>?) {
                 if (result == null) skipIteration()
                 expectThat(result).value.isNotEqualTo(1)
@@ -106,7 +106,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
 
     @Test
     fun `shrinks are never greater than the originally generated value`() {
-        withCounter {
+        withLabelledCounter {
             val gen = int(1..10)
                 .map {
                     when (it) {

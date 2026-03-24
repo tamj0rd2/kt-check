@@ -26,7 +26,7 @@ data class TestConfig private constructor(
     internal val reportingPrintStream: PrintStream,
 ) {
     constructor() : this(
-        iterations = System.getProperty(SYSTEM_PROPERTY_TEST_ITERATIONS)?.toIntOrNull() ?: 1000,
+        iterations = System.getProperty(SYSTEM_PROPERTY_TEST_ITERATIONS)?.toIntOrNull() ?: DEFAULT_ITERATIONS,
         seed = Seed(Random.nextLong()),
         replayIteration = null,
         shrinkingConstraintFactory = ShrinkingConstraint.byDuration(1.seconds),
@@ -57,6 +57,8 @@ data class TestConfig private constructor(
 
     companion object {
         internal const val SYSTEM_PROPERTY_TEST_ITERATIONS = "ktcheck.test.iterations"
+
+        internal const val DEFAULT_ITERATIONS = 1000
     }
 }
 

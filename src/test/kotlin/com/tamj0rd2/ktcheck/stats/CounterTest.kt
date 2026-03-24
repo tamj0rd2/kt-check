@@ -1,5 +1,7 @@
 package com.tamj0rd2.ktcheck
 
+import com.tamj0rd2.ktcheck.stats.Counter
+import com.tamj0rd2.ktcheck.stats.LabelledCounter
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
@@ -64,18 +66,28 @@ class CounterTest {
             expectThrows<AssertionError> {
                 counter.checkPercentages(mapOf("value1" to 50.0))
             }.get { message }.isEqualTo(
-                "expected the recorded percentage for 'value1' under label 'unlabelled' to be at least 50.0% but was 30.0%"
+                "expected the recorded percentage for 'value1' to be at least 50.0% but was 30.0%"
             )
         }
 
         @Test
-        fun `checkPercentages throws when value was never recorded`() {
+        fun `checkPercentages throws when unlabelled value was never recorded`() {
             val counter = Counter()
             repeat(100) { counter.collect("value1") }
 
             expectThrows<AssertionError> {
                 counter.checkPercentages(mapOf("nonexistent" to 1.0))
-            }.get { message }.isEqualTo("'unlabelled' has no recorded statistics for the value 'nonexistent'")
+            }.get { message }.isEqualTo("no recorded statistics for the value 'nonexistent'")
+        }
+
+        @Test
+        fun `checkPercentages throws when labelled value was never recorded`() {
+            val counter = LabelledCounter()
+            repeat(100) { counter.collect("the-label", "value1") }
+
+            expectThrows<AssertionError> {
+                counter.checkPercentages("the-label", mapOf("nonexistent" to 1.0))
+            }.get { message }.isEqualTo("label 'the-label': no recorded statistics for the value 'nonexistent'")
         }
 
         @Test
@@ -98,7 +110,7 @@ class CounterTest {
     inner class `collecting and checking labelled values` {
         @Test
         fun `can collect and verify percentage with labels`() {
-            val counter = Counter()
+            val counter = LabelledCounter()
 
             repeat(60) { counter.collect("label1", "value1") }
             repeat(40) { counter.collect("label1", "value2") }
@@ -108,7 +120,7 @@ class CounterTest {
 
         @Test
         fun `different labels maintain separate statistics`() {
-            val counter = Counter()
+            val counter = LabelledCounter()
 
             repeat(80) { counter.collect("label1", "value1") }
             repeat(20) { counter.collect("label1", "value2") }
@@ -121,19 +133,22 @@ class CounterTest {
         }
 
         @Test
-        fun `labelled and unlabelled collections are separate`() {
+        fun `checkPercentages without label throws when percentage is below minimum`() {
             val counter = Counter()
 
-            repeat(100) { counter.collect("value1") }
-            repeat(100) { counter.collect("label1", "value2") }
+            repeat(25) { counter.collect("value1") }
+            repeat(75) { counter.collect("value2") }
 
-            counter.checkPercentages(mapOf("value1" to 100.0))
-            counter.checkPercentages("label1", mapOf("value2" to 100.0))
+            expectThrows<AssertionError> {
+                counter.checkPercentages(mapOf("value1" to 50.0))
+            }.get { message }.isEqualTo(
+                "expected the recorded percentage for 'value1' to be at least 50.0% but was 25.0%"
+            )
         }
 
         @Test
         fun `checkPercentages with label throws when percentage is below minimum`() {
-            val counter = Counter()
+            val counter = LabelledCounter()
 
             repeat(25) { counter.collect("myLabel", "value1") }
             repeat(75) { counter.collect("myLabel", "value2") }
@@ -141,7 +156,7 @@ class CounterTest {
             expectThrows<AssertionError> {
                 counter.checkPercentages("myLabel", mapOf("value1" to 50.0))
             }.get { message }.isEqualTo(
-                "expected the recorded percentage for 'value1' under label 'myLabel' to be at least 50.0% but was 25.0%"
+                "label 'myLabel': expected the recorded percentage for 'value1' to be at least 50.0% but was 25.0%"
             )
         }
     }
@@ -158,7 +173,7 @@ class CounterTest {
 
             val output = counter.toString()
 
-            expectThat(output).contains("Stats (unlabelled):")
+            expectThat(output).contains("Stats:")
             expectThat(output).contains("value1")
             expectThat(output).contains("value2")
             expectThat(output).contains("value3")
@@ -169,7 +184,7 @@ class CounterTest {
 
         @Test
         fun `formats labelled statistics correctly`() {
-            val counter = Counter()
+            val counter = LabelledCounter()
 
             repeat(70) { counter.collect("myLabel", "value1") }
             repeat(30) { counter.collect("myLabel", "value2") }
@@ -183,7 +198,7 @@ class CounterTest {
 
         @Test
         fun `formats multiple labelled sections`() {
-            val counter = Counter()
+            val counter = LabelledCounter()
 
             repeat(50) { counter.collect("label1", "value1") }
             repeat(50) { counter.collect("label2", "value2") }

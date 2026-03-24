@@ -1,11 +1,13 @@
 package com.tamj0rd2.ktcheck.core.shrinkers
 
+fun IntRange.defaultShrinkTarget() = when {
+    last < 0 -> last
+    first > 0 -> first
+    else -> 0
+}
+
 internal object IntShrinker : Shrinker<Int, IntRange> {
-    override fun defaultShrinkTarget(range: IntRange): Int = when {
-        range.last < 0 -> range.last
-        range.first > 0 -> range.first
-        else -> 0
-    }
+    override fun defaultShrinkTarget(range: IntRange): Int = range.defaultShrinkTarget()
 
     override fun shrink(
         value: Int,

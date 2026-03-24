@@ -1,8 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.BooleanProperty
-import com.tamj0rd2.ktcheck.Counter
-import com.tamj0rd2.ktcheck.Counter.Companion.withCounter
 import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.Gens
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
@@ -10,6 +8,8 @@ import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.core.tuple
 import com.tamj0rd2.ktcheck.forAll
 import com.tamj0rd2.ktcheck.positive
+import com.tamj0rd2.ktcheck.stats.LabelledCounter
+import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
 import strikt.api.expectThrows
@@ -115,11 +115,11 @@ internal interface ShrinkingChallengeContract : BaseContract {
         test: BooleanProperty<T>,
         didShrinkCorrectly: (T) -> Boolean,
         minConfidence: Double = 100.0,
-        categoriseShrinks: Counter.(Boolean, T, T) -> Unit = { _, _, _ -> },
+        categoriseShrinks: LabelledCounter.(Boolean, T, T) -> Unit = { _, _, _ -> },
     ): Unit = assertTimeoutPreemptively(Duration.ofSeconds(5)) {
         val exceptionsWithBadShrinks = mutableListOf<PropertyFalsifiedException>()
 
-        val counter = withCounter {
+        val counter = withLabelledCounter {
             repeatTest { seed ->
                 val exception = expectThrows<PropertyFalsifiedException> {
                     forAll(TestConfig().withSeed(seed.value).withoutReporting(), gen, test)
