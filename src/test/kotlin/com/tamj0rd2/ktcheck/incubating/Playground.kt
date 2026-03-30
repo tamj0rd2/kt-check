@@ -2,20 +2,21 @@ package com.tamj0rd2.ktcheck.incubating
 
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.contracts.repeatTest
+import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker.shrink
 import com.tamj0rd2.ktcheck.full
-import com.tamj0rd2.ktcheck.incubating.Generator.Companion.TARGET_EDGE_CASE_PROBABILITY
+import com.tamj0rd2.ktcheck.incubating.Gen.Companion.defaultEdgeCaseProbability
+import com.tamj0rd2.ktcheck.incubating.Probability.Companion.percent
 import com.tamj0rd2.ktcheck.stats.CountAndPercentage
 import com.tamj0rd2.ktcheck.stats.Counter
 import com.tamj0rd2.ktcheck.stats.LabelledCounter
-import com.tamj0rd2.ktcheck.stats.withCounter
+import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import strikt.api.Assertion
 import strikt.api.expectThat
-import strikt.api.expectThrows
-import strikt.assertions.contains
+import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
 import strikt.assertions.isGreaterThan
 import strikt.assertions.isGreaterThanOrEqualTo
@@ -28,7 +29,7 @@ class Playground {
     @Test
     fun `generates ints within the given range`() {
         val range = 0..10
-        val gen = Gens.int(range)
+        val gen = Gen.int(range)
 
         repeatTest { seed ->
             val generatedValue = gen.generate(seed)
@@ -36,20 +37,22 @@ class Playground {
         }
     }
 
+    // todo: add a couple tests for different shrink targets
     @Test
     fun `generated values can be shrunk`() {
-        val gen = Gens.int(range = 0..10, shrinkTarget = 0)
+        val range = 0..10
+        val gen = Gen.int(range = range, shrinkTarget = range.first)
 
         repeatTest { seed ->
             val original = gen.generate(seed)
-            val shrinks = shrink(original.value, gen.range, gen.shrinkTarget)
+            val shrinks = shrink(original.value, range, range.first)
             expectThat(original).shrunkValues.isEqualTo(shrinks.toList())
         }
     }
 
     @Test
     fun `generation is deterministic`() {
-        val gen = Gens.int(0..10)
+        val gen = Gen.int(0..10)
 
         repeatTest { seed ->
             val original = gen.generate(seed)
@@ -61,49 +64,36 @@ class Playground {
 
     @Test
     fun `includes default edge cases based on the range to help catch off-by-one errors`() {
-        val gen = Gens.int(IntRange.full)
-        expectThat(gen.edgeCases).contains(Int.MIN_VALUE, Int.MIN_VALUE + 1, -1, 0, 1, Int.MAX_VALUE - 1, Int.MAX_VALUE)
-    }
-
-    @Test
-    fun `the user can inject edge cases, in addition to the defaults`() {
-        val userProvidedEdgeCases = setOf(123, 456, 789)
-        val gen = Gens.int(IntRange.full, 0, extraEdgeCases = userProvidedEdgeCases)
-        expectThat(gen.edgeCases).contains(userProvidedEdgeCases)
-        expectThat(gen.edgeCases).contains(Int.MIN_VALUE, Int.MIN_VALUE + 1, -1, 0, 1, Int.MAX_VALUE - 1, Int.MAX_VALUE)
-    }
-
-    @Test
-    fun `user injected edge cases cannot fall outside of the generator's range`() {
-        expectThrows<IllegalArgumentException> {
-            Gens.int(range = 0..10, extraEdgeCases = setOf(11))
-        }
+        val gen = Gen.int(-10..10)
+        expectThat(gen.edgeCases).containsExactlyInAnyOrder(-10, -9, -1, 0, 1, 9, 10)
     }
 
     @TestFactory
     fun `generated values include all edge cases most of the time`(): List<DynamicTest> =
         interestingRanges.map { range ->
             DynamicTest.dynamicTest(range.toString()) {
-                val gen = Gens.int(range = range, extraEdgeCases = setOf(3))
-                val expectedEdgeCases = gen.edgeCases
-                expectThat(expectedEdgeCases).isNotEmpty()
+                val gen = Gen.int(range = range)
+                val possibleEdgeCases = gen.edgeCases
+                expectThat(possibleEdgeCases).isNotEmpty()
 
-                val counter = withCounter {
+                val counter = withLabelledCounter {
                     repeatTest { seed ->
                         val values = gen.samples(seed.value).take(TestConfig.DEFAULT_ITERATIONS)
-                        val seenEdgeCases = values.toSet().filter { it in expectedEdgeCases }
+                        val seenEdgeCases = values.toSet().filter { it in possibleEdgeCases }
 
                         collect(
+                            "category",
                             when (seenEdgeCases.size) {
                                 0 -> "none"
-                                expectedEdgeCases.size -> "all"
+                                possibleEdgeCases.size -> "all"
                                 else -> "some"
                             }
                         )
+                        collect("edgeCasesSeen", seenEdgeCases.sorted())
                     }
                 }
 
-                expectThat(counter) {
+                expectThat(counter).withLabel("category").and {
                     didNotRecord("none")
                     didRecord("all").percentage.isGreaterThanOrEqualTo(75.0)
                 }
@@ -113,12 +103,13 @@ class Playground {
     @TestFactory
     fun `the proportion of generated edge cases is not influenced for small ranges`(): List<DynamicTest> =
         interestingRanges
-            .map(Gens::int)
-            .filter { it.edgeCases.size / it.range.size.toDouble() > TARGET_EDGE_CASE_PROBABILITY }
-            .map { gen ->
-                DynamicTest.dynamicTest(gen.range.toString()) {
-                    val edgeCaseProbability = gen.edgeCases.size / gen.range.size.toDouble()
+            .map { it to Gen.int(it).withEdgeCaseProbability(2.percent) }
+            .filter { (range, gen) -> gen.edgeCases.size / range.size.toDouble() > defaultEdgeCaseProbability.value }
+            .map { (range, gen) ->
+                DynamicTest.dynamicTest(range.toString()) {
                     val measuredEdgeCaseProportions = mutableListOf<Double>()
+                    val possibleEdgeCases = gen.edgeCases
+                    expectThat(possibleEdgeCases).isNotEmpty()
 
                     repeatTest { seed ->
                         val valueCounts = gen
@@ -128,27 +119,30 @@ class Playground {
                             .eachCount()
 
                         val totalValues = valueCounts.values.sum()
-                        val totalEdgeCases = valueCounts.filter { it.key in gen.edgeCases }.values.sum()
+                        val totalEdgeCases = valueCounts.filter { it.key in possibleEdgeCases }.values.sum()
 
                         val proportion = (totalEdgeCases.toDouble() / totalValues) * 100
                         expectThat(proportion).isGreaterThan(0.0)
                         measuredEdgeCaseProportions.add(proportion)
                     }
 
-                    val floor = (edgeCaseProbability - 0.04) * 100
-                    val ceiling = (edgeCaseProbability + 0.04) * 100
-                    expectThat(measuredEdgeCaseProportions.average()).isIn(floor..ceiling)
+                    val edgeCaseProbability = Probability.of(possibleEdgeCases.size / range.size.toDouble())
+                    val min = edgeCaseProbability.asPercentage - (edgeCaseProbability.asPercentage * 0.40)
+                    val max = edgeCaseProbability.asPercentage + (edgeCaseProbability.asPercentage * 0.40)
+                    expectThat(measuredEdgeCaseProportions.median()).isIn(min..max)
                 }
             }
 
     @TestFactory
     fun `the proportion of generated edge cases is around 3 percent for large ranges`(): List<DynamicTest> =
         interestingRanges
-            .map(Gens::int)
-            .filter { it.edgeCases.size / it.range.size.toDouble() <= TARGET_EDGE_CASE_PROBABILITY }
-            .map { gen ->
-                DynamicTest.dynamicTest(gen.range.toString()) {
+            .map { it to Gen.int(it).withEdgeCaseProbability(2.percent) }
+            .filterNot { (range, gen) -> gen.edgeCases.size / range.size.toDouble() > defaultEdgeCaseProbability.value }
+            .map { (range, gen) ->
+                DynamicTest.dynamicTest(range.toString()) {
                     val measuredEdgeCaseProportions = mutableListOf<Double>()
+                    val possibleEdgeCases = gen.edgeCases
+                    expectThat(possibleEdgeCases).isNotEmpty()
 
                     repeatTest { seed ->
                         val valueCounts = gen
@@ -158,20 +152,18 @@ class Playground {
                             .eachCount()
 
                         val totalValues = valueCounts.values.sum()
-                        val totalEdgeCases = valueCounts.filter { it.key in gen.edgeCases }.values.sum()
+                        val totalEdgeCases = valueCounts.filter { it.key in possibleEdgeCases }.values.sum()
 
                         val proportion = (totalEdgeCases.toDouble() / totalValues) * 100
                         expectThat(proportion).isGreaterThan(0.0)
                         measuredEdgeCaseProportions.add(proportion)
                     }
 
-                    val floor = targetEdgeCaseProportion - 4.0
-                    val ceiling = targetEdgeCaseProportion + 4.0
-                    expectThat(measuredEdgeCaseProportions.average()).isIn(floor..ceiling)
+                    val min = defaultEdgeCaseProbability.asPercentage - (defaultEdgeCaseProbability.asPercentage * 0.40)
+                    val max = defaultEdgeCaseProbability.asPercentage + (defaultEdgeCaseProbability.asPercentage * 0.40)
+                    expectThat(measuredEdgeCaseProportions.median()).isIn(min..max)
                 }
             }
-
-    private val targetEdgeCaseProportion = TARGET_EDGE_CASE_PROBABILITY * 100
 
     private val interestingRanges = listOf(
         -10..10,
@@ -185,6 +177,12 @@ class Playground {
         -1_000_000_000..1_000_000_000,
         IntRange.full,
     )
+
+    val <T> Gen<T>.edgeCases: Set<T>
+        get() = withEdgeCaseProbability(100.percent)
+            .samples(Seed.random().value)
+            .take(10_000)
+            .toSet()
 }
 
 private fun Assertion.Builder<LabelledCounter>.withLabel(label: String) =
@@ -212,3 +210,14 @@ internal val <T> Assertion.Builder<GeneratedValue<T>>.value get() = get("value")
 
 internal val <T> GeneratedValue<T>.shrunkValues get() = shrinks.toList().map { it.value }
 internal val <T> Assertion.Builder<GeneratedValue<T>>.shrunkValues get() = get("shrunk values") { shrunkValues }
+
+private fun List<Double>.median(): Double {
+    if (isEmpty()) throw IllegalArgumentException("List is empty")
+    val sorted = sorted()
+    val middle = sorted.size / 2
+    return if (sorted.size % 2 == 0) {
+        (sorted[middle - 1] + sorted[middle]) / 2.0
+    } else {
+        sorted[middle]
+    }
+}
