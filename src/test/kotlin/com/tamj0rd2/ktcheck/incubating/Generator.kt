@@ -3,7 +3,8 @@ package com.tamj0rd2.ktcheck.incubating
 import com.tamj0rd2.ktcheck.ExperimentalKtCheck
 import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.shrinkers.defaultShrinkTarget
-import com.tamj0rd2.ktcheck.incubating.Probability.Companion.percent
+import com.tamj0rd2.ktcheck.stats.Percentage
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import kotlin.random.Random
 
 data class GeneratedValue<T>(
@@ -16,14 +17,14 @@ data class GeneratedValue<T>(
  */
 internal sealed interface Generator<T> {
     fun generate(seed: Seed): GeneratedValue<T>
-    fun generateEdgeCase(seed: Seed, targetProbability: Probability): GeneratedValue<T>?
+    fun generateEdgeCase(seed: Seed, targetProbability: Percentage): GeneratedValue<T>?
 }
 
 @OptIn(ExperimentalKtCheck::class)
 @ConsistentCopyVisibility
 data class Gen<T> private constructor(
     private val impl: Generator<T>,
-    private val edgeCaseProbability: Probability = defaultEdgeCaseProbability,
+    private val edgeCaseProbability: Percentage = defaultEdgeCaseProbability,
 ) {
     internal fun generate(seed: Seed): GeneratedValue<T> {
         val rng = Random(seed.next(1).value)
@@ -38,7 +39,7 @@ data class Gen<T> private constructor(
 
     fun samples(seed: Long): Sequence<T> = Seed.sequence(Seed(seed)).map { generate(it).value }
 
-    fun withEdgeCaseProbability(probability: Probability): Gen<T> = copy(edgeCaseProbability = probability)
+    fun withEdgeCaseProbability(probability: Percentage): Gen<T> = copy(edgeCaseProbability = probability)
 
     companion object {
         fun int(
@@ -47,23 +48,5 @@ data class Gen<T> private constructor(
         ): Gen<Int> = Gen(IntGenerator(range, shrinkTarget))
 
         val defaultEdgeCaseProbability = 3.percent
-    }
-}
-
-@JvmInline
-value class Probability private constructor(val value: Double) {
-    init {
-        require(value in 0.0..1.0) { "Probability must be in range 0..1 but got $value" }
-    }
-
-    val asPercentage get() = value * 100
-
-    companion object {
-        val Int.percent get() = ofPercentage(this)
-
-        fun of(probability: Double): Probability = Probability(probability)
-
-        fun ofPercentage(percentage: Double): Probability = Probability(percentage / 100)
-        fun ofPercentage(percentage: Int): Probability = ofPercentage(percentage.toDouble())
     }
 }

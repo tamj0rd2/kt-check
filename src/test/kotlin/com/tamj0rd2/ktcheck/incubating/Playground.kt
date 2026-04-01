@@ -6,10 +6,13 @@ import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker.shrink
 import com.tamj0rd2.ktcheck.full
 import com.tamj0rd2.ktcheck.incubating.Gen.Companion.defaultEdgeCaseProbability
-import com.tamj0rd2.ktcheck.incubating.Probability.Companion.percent
 import com.tamj0rd2.ktcheck.stats.CountAndPercentage
 import com.tamj0rd2.ktcheck.stats.Counter
 import com.tamj0rd2.ktcheck.stats.LabelledCounter
+import com.tamj0rd2.ktcheck.stats.Percentage
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.asPercentage
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.asPercentageOf
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
@@ -95,7 +98,7 @@ class Playground {
 
                 expectThat(counter).withLabel("category").and {
                     didNotRecord("none")
-                    didRecord("all").percentage.isGreaterThanOrEqualTo(75.0)
+                    didRecord("all").percentage.isGreaterThanOrEqualTo(75.percent)
                 }
             }
         }
@@ -103,11 +106,11 @@ class Playground {
     @TestFactory
     fun `the proportion of generated edge cases is not influenced for small ranges`(): List<DynamicTest> =
         interestingRanges
-            .map { it to Gen.int(it).withEdgeCaseProbability(2.percent) }
-            .filter { (range, gen) -> gen.edgeCases.size / range.size.toDouble() > defaultEdgeCaseProbability.value }
+            .map { it to Gen.int(it).withEdgeCaseProbability(defaultEdgeCaseProbability) }
+            .filter { (range, gen) -> gen.edgeCases.size asPercentageOf range.size > defaultEdgeCaseProbability }
             .map { (range, gen) ->
                 DynamicTest.dynamicTest(range.toString()) {
-                    val measuredEdgeCaseProportions = mutableListOf<Double>()
+                    val measuredEdgeCaseProportions = mutableListOf<Percentage>()
                     val possibleEdgeCases = gen.edgeCases
                     expectThat(possibleEdgeCases).isNotEmpty()
 
@@ -121,14 +124,14 @@ class Playground {
                         val totalValues = valueCounts.values.sum()
                         val totalEdgeCases = valueCounts.filter { it.key in possibleEdgeCases }.values.sum()
 
-                        val proportion = (totalEdgeCases.toDouble() / totalValues) * 100
-                        expectThat(proportion).isGreaterThan(0.0)
+                        val proportion = totalEdgeCases.toDouble() asPercentageOf totalValues
+                        expectThat(proportion).isGreaterThan(0.percent)
                         measuredEdgeCaseProportions.add(proportion)
                     }
 
-                    val edgeCaseProbability = Probability.of(possibleEdgeCases.size / range.size.toDouble())
-                    val min = edgeCaseProbability.asPercentage - (edgeCaseProbability.asPercentage * 0.40)
-                    val max = edgeCaseProbability.asPercentage + (edgeCaseProbability.asPercentage * 0.40)
+                    val edgeCaseProbability = possibleEdgeCases.size asPercentageOf range.size
+                    val min = edgeCaseProbability - (edgeCaseProbability * 0.40)
+                    val max = edgeCaseProbability + (edgeCaseProbability * 0.40)
                     expectThat(measuredEdgeCaseProportions.median()).isIn(min..max)
                 }
             }
@@ -136,11 +139,11 @@ class Playground {
     @TestFactory
     fun `the proportion of generated edge cases is around 3 percent for large ranges`(): List<DynamicTest> =
         interestingRanges
-            .map { it to Gen.int(it).withEdgeCaseProbability(2.percent) }
-            .filterNot { (range, gen) -> gen.edgeCases.size / range.size.toDouble() > defaultEdgeCaseProbability.value }
+            .map { it to Gen.int(it).withEdgeCaseProbability(defaultEdgeCaseProbability) }
+            .filterNot { (range, gen) -> gen.edgeCases.size asPercentageOf range.size > defaultEdgeCaseProbability }
             .map { (range, gen) ->
                 DynamicTest.dynamicTest(range.toString()) {
-                    val measuredEdgeCaseProportions = mutableListOf<Double>()
+                    val measuredEdgeCaseProportions = mutableListOf<Percentage>()
                     val possibleEdgeCases = gen.edgeCases
                     expectThat(possibleEdgeCases).isNotEmpty()
 
@@ -154,13 +157,13 @@ class Playground {
                         val totalValues = valueCounts.values.sum()
                         val totalEdgeCases = valueCounts.filter { it.key in possibleEdgeCases }.values.sum()
 
-                        val proportion = (totalEdgeCases.toDouble() / totalValues) * 100
-                        expectThat(proportion).isGreaterThan(0.0)
+                        val proportion = totalEdgeCases.toDouble() asPercentageOf totalValues
+                        expectThat(proportion).isGreaterThan(0.percent)
                         measuredEdgeCaseProportions.add(proportion)
                     }
 
-                    val min = defaultEdgeCaseProbability.asPercentage - (defaultEdgeCaseProbability.asPercentage * 0.40)
-                    val max = defaultEdgeCaseProbability.asPercentage + (defaultEdgeCaseProbability.asPercentage * 0.40)
+                    val min = defaultEdgeCaseProbability - (defaultEdgeCaseProbability * 0.40)
+                    val max = defaultEdgeCaseProbability + (defaultEdgeCaseProbability * 0.40)
                     expectThat(measuredEdgeCaseProportions.median()).isIn(min..max)
                 }
             }
@@ -210,6 +213,8 @@ internal val <T> Assertion.Builder<GeneratedValue<T>>.value get() = get("value")
 
 internal val <T> GeneratedValue<T>.shrunkValues get() = shrinks.toList().map { it.value }
 internal val <T> Assertion.Builder<GeneratedValue<T>>.shrunkValues get() = get("shrunk values") { shrunkValues }
+
+private fun List<Percentage>.median() = map { it.value }.median().asPercentage
 
 private fun List<Double>.median(): Double {
     if (isEmpty()) throw IllegalArgumentException("List is empty")

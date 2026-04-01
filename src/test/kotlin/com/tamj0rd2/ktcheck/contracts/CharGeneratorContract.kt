@@ -1,6 +1,8 @@
 package com.tamj0rd2.ktcheck.contracts
 
 
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.asPercentageOf
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withCounter
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
@@ -47,8 +49,8 @@ internal interface CharGeneratorContract : BaseContract {
     fun `generates a variety of characters over multiple runs`() {
         val chars = 'a'..'z'
         withCounter {
-            char(chars).samples().take(100000).forEach { collect(it) }
-        }.checkPercentages(chars.associateWith { (100.0 / chars.count()) - 1 })
+            char(chars).samples().take(100_000).forEach { collect(it) }
+        }.checkPercentages(chars.associateWith { (1 asPercentageOf chars.count()) - 1.percent })
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.tamj0rd2.ktcheck
 
 import com.tamj0rd2.ktcheck.stats.Counter
 import com.tamj0rd2.ktcheck.stats.LabelledCounter
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
@@ -21,7 +22,7 @@ class CounterTest {
 
             repeat(100) { counter.collect("value1") }
 
-            counter.checkPercentages(mapOf("value1" to 100.0))
+            counter.checkPercentages(mapOf("value1" to 100.percent))
         }
 
         @Test
@@ -34,9 +35,9 @@ class CounterTest {
 
             counter.checkPercentages(
                 mapOf(
-                    "value1" to 50.0,
-                    "value2" to 30.0,
-                    "value3" to 20.0
+                    "value1" to 50.percent,
+                    "value2" to 30.percent,
+                    "value3" to 20.percent,
                 )
             )
         }
@@ -50,8 +51,8 @@ class CounterTest {
 
             counter.checkPercentages(
                 mapOf(
-                    "value1" to 40.0,  // actual is 50%, so 40% min should pass
-                    "value2" to 40.0
+                    "value1" to 40.percent,
+                    "value2" to 40.percent,
                 )
             )
         }
@@ -64,7 +65,7 @@ class CounterTest {
             repeat(70) { counter.collect("value2") }
 
             expectThrows<AssertionError> {
-                counter.checkPercentages(mapOf("value1" to 50.0))
+                counter.checkPercentages(mapOf("value1" to 50.percent))
             }.get { message }.isEqualTo(
                 "expected the recorded percentage for 'value1' to be at least 50.0% but was 30.0%"
             )
@@ -76,7 +77,7 @@ class CounterTest {
             repeat(100) { counter.collect("value1") }
 
             expectThrows<AssertionError> {
-                counter.checkPercentages(mapOf("nonexistent" to 1.0))
+                counter.checkPercentages(mapOf("nonexistent" to 1.percent))
             }.get { message }.isEqualTo("no recorded statistics for the value 'nonexistent'")
         }
 
@@ -86,7 +87,7 @@ class CounterTest {
             repeat(100) { counter.collect("the-label", "value1") }
 
             expectThrows<AssertionError> {
-                counter.checkPercentages("the-label", mapOf("nonexistent" to 1.0))
+                counter.checkPercentages("the-label", mapOf("nonexistent" to 1.percent))
             }.get { message }.isEqualTo("label 'the-label': no recorded statistics for the value 'nonexistent'")
         }
 
@@ -99,8 +100,8 @@ class CounterTest {
 
             counter.checkPercentages(
                 mapOf(
-                    null to 50.0,
-                    "value1" to 50.0
+                    null to 50.percent,
+                    "value1" to 50.percent
                 )
             )
         }
@@ -115,7 +116,7 @@ class CounterTest {
             repeat(60) { counter.collect("label1", "value1") }
             repeat(40) { counter.collect("label1", "value2") }
 
-            counter.checkPercentages("label1", mapOf("value1" to 60.0, "value2" to 40.0))
+            counter.checkPercentages("label1", mapOf("value1" to 60.percent, "value2" to 40.percent))
         }
 
         @Test
@@ -128,8 +129,8 @@ class CounterTest {
             repeat(30) { counter.collect("label2", "value1") }
             repeat(70) { counter.collect("label2", "value2") }
 
-            counter.checkPercentages("label1", mapOf("value1" to 80.0, "value2" to 20.0))
-            counter.checkPercentages("label2", mapOf("value1" to 30.0, "value2" to 70.0))
+            counter.checkPercentages("label1", mapOf("value1" to 80.percent, "value2" to 20.percent))
+            counter.checkPercentages("label2", mapOf("value1" to 30.percent, "value2" to 70.percent))
         }
 
         @Test
@@ -140,7 +141,7 @@ class CounterTest {
             repeat(75) { counter.collect("value2") }
 
             expectThrows<AssertionError> {
-                counter.checkPercentages(mapOf("value1" to 50.0))
+                counter.checkPercentages(mapOf("value1" to 50.percent))
             }.get { message }.isEqualTo(
                 "expected the recorded percentage for 'value1' to be at least 50.0% but was 25.0%"
             )
@@ -154,7 +155,7 @@ class CounterTest {
             repeat(75) { counter.collect("myLabel", "value2") }
 
             expectThrows<AssertionError> {
-                counter.checkPercentages("myLabel", mapOf("value1" to 50.0))
+                counter.checkPercentages("myLabel", mapOf("value1" to 50.percent))
             }.get { message }.isEqualTo(
                 "label 'myLabel': expected the recorded percentage for 'value1' to be at least 50.0% but was 25.0%"
             )
@@ -167,9 +168,10 @@ class CounterTest {
         fun `formats unlabelled statistics correctly`() {
             val counter = Counter()
 
-            repeat(50) { counter.collect("value1") }
-            repeat(30) { counter.collect("value2") }
-            repeat(20) { counter.collect("value3") }
+            repeat(650) { counter.collect("value1") }
+            repeat(300) { counter.collect("value2") }
+            repeat(1) { counter.collect("value3") }
+            repeat(49) { counter.collect("value4") }
 
             val output = counter.toString()
 
@@ -177,9 +179,10 @@ class CounterTest {
             expectThat(output).contains("value1")
             expectThat(output).contains("value2")
             expectThat(output).contains("value3")
-            expectThat(output).contains("50%")
-            expectThat(output).contains("30%")
-            expectThat(output).contains("20%")
+            expectThat(output).contains("65.0%")
+            expectThat(output).contains("30.0%")
+            expectThat(output).contains("4.9%")
+            expectThat(output).contains("0.1%")
         }
 
         @Test

@@ -1,5 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
@@ -17,7 +18,7 @@ internal interface OneOfGeneratorContract : BaseContract {
         )
 
         withCounter { gen.samples().take(100_000).forEach { collect(it::class.simpleName) } }
-            .checkPercentages(mapOf("Boolean" to 49.0, "Int" to 49.0))
+            .checkPercentages(mapOf("Boolean" to 49.percent, "Int" to 49.percent))
     }
 
     @Test
@@ -43,7 +44,7 @@ internal interface OneOfGeneratorContract : BaseContract {
 
         withCounter {
             gen.samples().take(100_000).forEach { collect(it) }
-        }.checkPercentages(values.associateWith { 32.0 })
+        }.checkPercentages(values.associateWith { 32.percent })
     }
 
     @Test

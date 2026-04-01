@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
@@ -100,7 +101,7 @@ internal interface CombineWithGeneratorContract : BaseContract {
                 collect(edgeCase!!.value.first)
             }
             // make sure all edge cases are seen at least once
-        }.checkPercentages(setOf(0, 1, 9, 10).associateWith { 1.0 })
+        }.checkPercentages(setOf(0, 1, 9, 10).associateWith { 1.percent })
     }
 
     @Test
@@ -119,7 +120,7 @@ internal interface CombineWithGeneratorContract : BaseContract {
                 collect(edgeCase!!.value.second)
             }
             // make sure all edge cases are seen at least once
-        }.checkPercentages(setOf(0, 1, 9, 10).associateWith { 1.0 })
+        }.checkPercentages(setOf(0, 1, 9, 10).associateWith { 1.percent })
     }
 
     @Test

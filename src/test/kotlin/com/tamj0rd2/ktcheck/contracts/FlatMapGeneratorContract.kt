@@ -1,5 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectDoesNotThrow
@@ -111,6 +112,6 @@ internal interface FlatMapGeneratorContract : BaseContract {
                 }
             }
             // ensures that each edge case does actually appear
-        }.checkPercentages(expectedEdgeCases.associateWith { 1.0 })
+        }.checkPercentages(expectedEdgeCases.associateWith { 1.percent })
     }
 }

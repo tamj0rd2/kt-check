@@ -2,6 +2,7 @@ package com.tamj0rd2.ktcheck.incubating
 
 import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
+import com.tamj0rd2.ktcheck.stats.Percentage
 import kotlin.random.Random
 
 data class IntGenerator(
@@ -19,7 +20,7 @@ data class IntGenerator(
 
     private val trueEdgeCaseProbability = edgeCases.size / range.size.toDouble()
 
-    override fun generateEdgeCase(seed: Seed, targetProbability: Probability): GeneratedValue<Int>? {
+    override fun generateEdgeCase(seed: Seed, targetProbability: Percentage): GeneratedValue<Int>? {
         val edgeCasesAreLikelyNaturally = trueEdgeCaseProbability >= targetProbability.value
         if (edgeCasesAreLikelyNaturally) return null
 

@@ -1,8 +1,30 @@
 package com.tamj0rd2.ktcheck.stats
 
-import kotlin.math.roundToInt
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.asPercentageOf
 
-data class CountAndPercentage(val count: Int, val percentage: Double)
+@ConsistentCopyVisibility
+data class Percentage private constructor(val value: Double) : Comparable<Percentage> {
+    override fun toString(): String = "${value * 100}%"
+
+    override fun compareTo(other: Percentage) = value.compareTo(other.value)
+
+    operator fun plus(other: Percentage) = Percentage(value + other.value)
+    operator fun minus(other: Percentage) = Percentage(value - other.value)
+    operator fun times(amount: Double) = Percentage(value * amount)
+
+    companion object {
+        val Int.percent get() = Percentage(this / 100.0)
+        val Double.percent get() = Percentage(this / 100.0)
+        val Double.asPercentage get() = Percentage(this)
+
+        infix fun Number.asPercentageOf(whole: Number) = Percentage(toDouble() / whole.toDouble())
+    }
+}
+
+data class CountAndPercentage(
+    val count: Int,
+    val percentage: Percentage,
+)
 
 class Counter {
     // todo: make this thread safe eventually
@@ -17,7 +39,7 @@ class Counter {
         return recorded.mapValues { (_, count) ->
             CountAndPercentage(
                 count = count,
-                percentage = (count / totalRecordedCount) * 100
+                percentage = count asPercentageOf totalRecordedCount
             )
         }
     }
@@ -29,27 +51,33 @@ class Counter {
 
         val maxKeyLength = countsAndPercentsByKey.keys.maxOfOrNull { it.toString().length } ?: 0
         val maxCountLength = countsAndPercentsByKey.values.maxOfOrNull { it.count }?.toString()?.length ?: 0
+        val maxDecimals = countsAndPercentsByKey.values
+            .map { (it.percentage.value * 100).toString().substringAfter(".") }
+            .filter { it != "0" }
+            .maxOfOrNull { it.length }
+            ?.coerceAtMost(2) ?: 0
 
         val formattedStats = countsAndPercentsByKey.toList()
             .sortedByDescending { it.second.count }
             .joinToString("\n") { (key, data) ->
-                val count = data.count
-                val percentage = data.percentage.roundToInt()
-                "\t%-${maxKeyLength}s (%${maxCountLength}d) : %2s%%".format(key, count, percentage)
+                val formattedKey = key.toString().padEnd(maxKeyLength)
+                val formattedCount = data.count.toString().padStart(maxCountLength)
+                val formattedPercentage =
+                    "%.${maxDecimals}f".format(data.percentage.value * 100).padStart(maxDecimals + 3)
+                "\t$formattedKey ($formattedCount) : $formattedPercentage%"
             }
-
         val heading = if (formattedLabel != null) "Stats ($formattedLabel)" else "Stats"
         return "$heading:\n$formattedStats"
     }
 
-    fun checkPercentages(expected: Map<Any?, Double>) {
+    fun checkPercentages(expected: Map<Any?, Percentage>) {
         val actual = asMap()
         expected.forEach { (value, minPercent) ->
             val recording = actual[value] ?: throw AssertionError("no recorded statistics for the value '$value'")
             val actualPercent = recording.percentage
             if (actualPercent < minPercent) {
                 throw AssertionError(
-                    "expected the recorded percentage for 'value1' to be at least $minPercent% but was $actualPercent%"
+                    "expected the recorded percentage for 'value1' to be at least $minPercent but was $actualPercent"
                 )
             }
         }
@@ -66,7 +94,7 @@ class LabelledCounter {
 
     fun get(label: String): Counter = recorded.getOrDefault(label, Counter())
 
-    fun checkPercentages(label: String, expected: Map<Any?, Double>) {
+    fun checkPercentages(label: String, expected: Map<Any?, Percentage>) {
         val counter = recorded[label] ?: throw AssertionError("No data recorded for label '$label'")
         try {
             counter.checkPercentages(expected)

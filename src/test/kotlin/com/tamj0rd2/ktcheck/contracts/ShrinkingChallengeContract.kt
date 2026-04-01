@@ -9,6 +9,8 @@ import com.tamj0rd2.ktcheck.core.tuple
 import com.tamj0rd2.ktcheck.forAll
 import com.tamj0rd2.ktcheck.positive
 import com.tamj0rd2.ktcheck.stats.LabelledCounter
+import com.tamj0rd2.ktcheck.stats.Percentage
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
@@ -114,7 +116,7 @@ internal interface ShrinkingChallengeContract : BaseContract {
         gen: Gen<T>,
         test: BooleanProperty<T>,
         didShrinkCorrectly: (T) -> Boolean,
-        minConfidence: Double = 100.0,
+        minConfidence: Percentage = 100.percent,
         categoriseShrinks: LabelledCounter.(Boolean, T, T) -> Unit = { _, _, _ -> },
     ): Unit = assertTimeoutPreemptively(Duration.ofSeconds(5)) {
         val exceptionsWithBadShrinks = mutableListOf<PropertyFalsifiedException>()

@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withCounter
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.DynamicTest.dynamicTest
@@ -54,9 +55,9 @@ internal interface IntGeneratorContract : BaseContract {
             }
         }.checkPercentages(
             mapOf(
-                "positive" to 45.0,
-                "negative" to 45.0,
-                "zero" to 0.2
+                "positive" to 45.percent,
+                "negative" to 45.percent,
+                "zero" to 0.2.percent
             )
         )
     }

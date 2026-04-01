@@ -1,5 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withCounter
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
@@ -26,10 +27,10 @@ internal interface BooleanGeneratorContract : BaseContract {
                 .forEach { collect(it) }
         }
 
-        expectThat(counter.asMap()).getValue(true).get { percentage }.isGreaterThanOrEqualTo(49.0)
-        expectThat(counter.asMap()).getValue(true).get { percentage }.isGreaterThanOrEqualTo(49.0)
+        expectThat(counter.asMap()).getValue(true).get { percentage }.isGreaterThanOrEqualTo(49.percent)
+        expectThat(counter.asMap()).getValue(true).get { percentage }.isGreaterThanOrEqualTo(49.percent)
 
-        counter.checkPercentages(mapOf(true to 49.0, false to 49.0))
+        counter.checkPercentages(mapOf(true to 49.percent, false to 49.percent))
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
 import com.tamj0rd2.ktcheck.core.Seed
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
@@ -51,7 +52,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
 
             repeatTest { seed -> checkResult(possiblyThrowingGen.generate(tree(seed))) }
             if (genSupportsEdgeCases) repeatTest { seed -> checkResult(possiblyThrowingGen.edgeCase(seed)) }
-        }.checkPercentages("has-shrinks", mapOf(true to 40.0))
+        }.checkPercentages("has-shrinks", mapOf(true to 40.percent))
 
         // todo: add some - deeply shrunk values are finite function. call it above.
         possiblyThrowingGen.expectGenerationAndShrinkingToEventuallyComplete()
@@ -125,7 +126,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
 
             repeatTest { seed -> checkResult(gen.generate(tree(seed))) }
             if (genSupportsEdgeCases) repeatTest { seed -> checkResult(gen.edgeCase(seed)) }
-        }.checkPercentages("has-shrinks", mapOf(true to 10.0))
+        }.checkPercentages("has-shrinks", mapOf(true to 10.percent))
     }
 
     @Test
