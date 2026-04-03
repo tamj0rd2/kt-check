@@ -25,6 +25,8 @@ data class TestConfig private constructor(
     internal val printShrinkSteps: Boolean,
     internal val reportingPrintStream: PrintStream,
 ) {
+    internal val effectiveIterations = if (replayIteration != null) 1 else iterations
+
     constructor() : this(
         iterations = System.getProperty(SYSTEM_PROPERTY_TEST_ITERATIONS)?.toIntOrNull() ?: DEFAULT_ITERATIONS,
         seed = Seed(Random.nextLong()),
@@ -46,7 +48,6 @@ data class TestConfig private constructor(
 
     @HardcodedTestConfig
     fun replay(seed: Long, iteration: Int) = copy(
-        iterations = 1,
         seed = Seed(seed),
         replayIteration = iteration
     )

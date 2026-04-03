@@ -22,10 +22,10 @@ private class TestRunner<T>(
 
     fun run() {
         val startingIteration = (config.replayIteration ?: 1)
-        repeat(config.iterations) {
+        repeat(config.effectiveIterations) {
             val iteration = startingIteration + it
 
-            val result = runIteration(iteration - 1)
+            val result = runIteration(iteration)
             if (result !is TestIterationResult.DidFalsify<*>) return@repeat
 
             throw PropertyFalsifiedException(
@@ -38,11 +38,11 @@ private class TestRunner<T>(
         }
     }
 
-    private fun runIteration(iterationIdx: Int): TestIterationResult {
-        val input = if (iterationIdx in edgeCases.indices) {
-            edgeCases.elementAt(iterationIdx)
+    private fun runIteration(iteration: Int): TestIterationResult {
+        val input = if (iteration - 1 in edgeCases.indices) {
+            edgeCases.elementAt(iteration - 1)
         } else {
-            gen.generate(ProviderTree.new(config.seed.next(iterationIdx))).orThrow()
+            gen.generate(ProviderTree.new(config.seed.next(iteration))).orThrow()
         }
 
         val originalError = property.falsify(input.value) ?: return TestIterationResult.DidNotFalsify

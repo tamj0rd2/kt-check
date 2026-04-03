@@ -44,7 +44,7 @@ private fun <T> runPropertyTest(config: TestConfig, gen: Gen<T>, property: Prope
         else -> throw IllegalArgumentException("Unsupported Gen implementation: ${gen::class}")
     }
 
-    config.reportingPrintStream.println("Success: ${config.iterations} iterations succeeded")
+    config.reportingPrintStream.println("Success: ${config.effectiveIterations} iterations succeeded")
 }
 
 data class Falsification<T>(
