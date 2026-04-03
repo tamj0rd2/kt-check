@@ -1,8 +1,8 @@
-package com.tamj0rd2.ktcheck.current
+package com.tamj0rd2.ktcheck.incubating
 
 import com.tamj0rd2.ktcheck.GenBuilders
 import com.tamj0rd2.ktcheck.contracts.TestFrameworkContract
 import org.junit.platform.commons.annotation.Testable
 
 @Testable
-internal class TestFrameworkTest : TestFrameworkContract, GenBuilders by GenV2Builders
+class TestFrameworkTest : TestFrameworkContract, GenBuilders by Gen.Companion

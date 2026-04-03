@@ -1,23 +1,26 @@
 package com.tamj0rd2.ktcheck.contracts
 
+import com.tamj0rd2.ktcheck.GenBuilders
 import com.tamj0rd2.ktcheck.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.checkAll
+import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import com.tamj0rd2.ktcheck.forAll
+import com.tamj0rd2.ktcheck.full
 import org.junit.jupiter.api.Test
 import strikt.api.expectDoesNotThrow
 import strikt.api.expectThat
 import strikt.api.expectThrows
 import strikt.assertions.cause
-import strikt.assertions.containsExactlyInAnyOrder
+import strikt.assertions.contains
+import strikt.assertions.filter
 import strikt.assertions.isEqualTo
+import strikt.assertions.isNotEmpty
 import strikt.assertions.isNotNull
 import strikt.assertions.isNull
 
-internal interface TestFrameworkContract : BaseContract {
-    override val exampleGen get() = null
-
+internal interface TestFrameworkContract : GenBuilders {
     @Test
     fun `does not throw if the property is not falsified`() {
         expectDoesNotThrow { forAll(int()) { true } }
@@ -42,6 +45,26 @@ internal interface TestFrameworkContract : BaseContract {
         expectThrows<MyThrowable> { checkAll(int()) { throw throwable } }.isEqualTo(throwable)
     }
 
+    @Test
+    fun `when the test is falsified, shrinks the failing value`() {
+        var hasInitiallyFailed = false
+        val recordedShrinks = mutableSetOf<Int>()
+        expectThrows<PropertyFalsifiedException> {
+            checkAll(int(IntRange.full)) {
+                if (hasInitiallyFailed) {
+                    recordedShrinks.add(it)
+                    return@checkAll
+                }
+
+                if (isShrinkable(it, IntRange.full)) {
+                    hasInitiallyFailed = true
+                    throw AssertionError("fail")
+                }
+            }
+        }
+        expectThat(recordedShrinks).isNotEmpty()
+    }
+
     // todo: write another test to prove it includes user provided edge cases.
     @Test
     fun `includes edge cases during test iterations`() {
@@ -50,11 +73,25 @@ internal interface TestFrameworkContract : BaseContract {
         val expectedEdges = setOf(0, 1, -1, Int.MIN_VALUE, Int.MIN_VALUE + 1, Int.MAX_VALUE, Int.MAX_VALUE - 1)
 
         forAll(gen) { seenValues.add(it); true }
-        expectThat(seenValues.take(expectedEdges.size)).containsExactlyInAnyOrder(expectedEdges)
+        expectThat(seenValues).contains(expectedEdges)
 
         seenValues.clear()
         checkAll(gen) { seenValues.add(it) }
-        expectThat(seenValues.take(expectedEdges.size)).containsExactlyInAnyOrder(expectedEdges)
+        expectThat(seenValues).contains(expectedEdges)
+    }
+
+    @Test
+    fun `values that are not edge cases are also included`() {
+        val seenValues = mutableSetOf<Int>()
+        val gen = int()
+        val expectedEdges = setOf(0, 1, -1, Int.MIN_VALUE, Int.MIN_VALUE + 1, Int.MAX_VALUE, Int.MAX_VALUE - 1)
+
+        forAll(gen) { seenValues.add(it); true }
+        expectThat(seenValues).filter { it !in expectedEdges }.isNotEmpty()
+
+        seenValues.clear()
+        checkAll(gen) { seenValues.add(it) }
+        expectThat(seenValues).filter { it !in expectedEdges }.isNotEmpty()
     }
 
     @Test
@@ -87,4 +124,6 @@ internal interface TestFrameworkContract : BaseContract {
         expectThat(replayedIterations).isEqualTo(1)
         expectThat(valueOnRetry).isEqualTo(valueOnSpecifiedIteration)
     }
+
+    private fun isShrinkable(value: Int, range: IntRange) = IntShrinker.shrink(value, range).any()
 }

@@ -1,0 +1,124 @@
+package com.tamj0rd2.ktcheck.incubating
+
+import com.tamj0rd2.ktcheck.GenBuilders
+import com.tamj0rd2.ktcheck.core.Seed
+import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
+import kotlin.random.Random
+import kotlin.reflect.KClass
+import com.tamj0rd2.ktcheck.Gen as IGen
+
+data class SplittableRandom(
+    private val seed: Seed,
+) {
+    val random get() = Random(seed.value)
+    val left by lazy { SplittableRandom(seed.next(1)) }
+    val right by lazy { SplittableRandom(seed.next(2)) }
+}
+
+@ConsistentCopyVisibility
+internal data class GenContext private constructor(
+    val seed: Seed,
+    val generateEdgeCase: Boolean,
+) {
+    val random get() = Random(seed.value)
+    val left by lazy { new(seed.next(1)) }
+    val right by lazy { new(seed.next(2)) }
+
+    companion object {
+        fun new(seed: Seed): GenContext = GenContext(
+            seed = seed,
+            generateEdgeCase = Random(seed.next(3).value).nextBoolean(),
+        )
+    }
+}
+
+internal data class GenResult<T>(
+    val value: T,
+    val shrinks: Sequence<GenResult<T>>,
+)
+
+internal sealed interface GenProvider<T> {
+    fun generate(ctx: GenContext): GenResult<T>
+}
+
+internal data class IntGen(
+    private val range: IntRange,
+    private val shrinkTarget: Int,
+) : GenProvider<Int> {
+    private val edgeCases = setOf(range.first, range.first + 1, -1, 0, 1, range.last - 1, range.last)
+        .filter { it in range }
+        .distinct()
+
+    override fun generate(ctx: GenContext): GenResult<Int> {
+        val value = if (ctx.generateEdgeCase) {
+            edgeCases.random(ctx.random)
+        } else {
+            range.random(ctx.random)
+        }
+
+        return buildResult(value)
+    }
+
+    private fun buildResult(value: Int): GenResult<Int> = GenResult(
+        value = value,
+        shrinks = IntShrinker.shrink(value, range, shrinkTarget).map { buildResult(it) }
+    )
+}
+
+internal data class Gen<T>(
+    private val provider: GenProvider<T>,
+) : IGen<T>, GenProvider<T> by provider {
+    override fun sample(seed: Long): T {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> map(fn: (T) -> R): IGen<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> flatMap(fn: (T) -> IGen<R>): IGen<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <T2, R> combineWith(
+        nextGen: IGen<T2>,
+        combine: (T, T2) -> R,
+    ): IGen<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun filter(threshold: Int, predicate: (T) -> Boolean): IGen<T> {
+        TODO("Not yet implemented")
+    }
+
+    override fun ignoreExceptions(
+        klass: KClass<out Exception>,
+        threshold: Int,
+    ): IGen<T> {
+        TODO("Not yet implemented")
+    }
+
+    override fun list(size: IntRange): IGen<List<T>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun distinctList(size: IntRange): IGen<List<T>> {
+        TODO("Not yet implemented")
+    }
+
+    companion object : GenBuilders {
+        override fun <T> constant(value: T): IGen<T> {
+            TODO("Not yet implemented")
+        }
+
+        override fun int(
+            range: IntRange,
+            shrinkTarget: Int,
+        ) = Gen(IntGen(range, shrinkTarget))
+
+        override fun long(): IGen<Long> {
+            TODO("Not yet implemented")
+        }
+    }
+}
+
