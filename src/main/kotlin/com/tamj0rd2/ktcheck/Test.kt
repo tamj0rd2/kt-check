@@ -2,21 +2,21 @@ package com.tamj0rd2.ktcheck
 
 import com.tamj0rd2.ktcheck.core.Tuple
 
-sealed interface Property<T> {
-    fun test(input: T): Falsification<T>?
+sealed interface Property<in T> {
+    fun falsify(input: T): Falsified?
 
-    data class Falsification<T>(val input: T, val error: AssertionError?)
+    data class Falsified(val error: AssertionError?)
 }
 
 /** Runs the test on the given input. Should throw an AssertionError if the property fails. */
 fun interface ThrowingProperty<T> : Property<T> {
     operator fun invoke(input: T)
 
-    override fun test(input: T): Property.Falsification<T>? = try {
+    override fun falsify(input: T): Property.Falsified? = try {
         invoke(input)
         null
     } catch (e: AssertionError) {
-        Property.Falsification(input, e)
+        Property.Falsified(e)
     }
 }
 
@@ -24,8 +24,8 @@ fun interface ThrowingProperty<T> : Property<T> {
 fun interface BooleanProperty<T> : Property<T> {
     operator fun invoke(input: T): Boolean
 
-    override fun test(input: T): Property.Falsification<T>? =
-        if (invoke(input)) null else Property.Falsification(input, null)
+    override fun falsify(input: T): Property.Falsified? =
+        if (invoke(input)) null else Property.Falsified(null)
 }
 
 fun <T> forAll(gen: Gen<T>, property: BooleanProperty<T>) = forAll(TestConfig(), gen, property)
@@ -47,11 +47,16 @@ private fun <T> runPropertyTest(config: TestConfig, gen: Gen<T>, property: Prope
     config.reportingPrintStream.println("Success: ${config.iterations} iterations succeeded")
 }
 
+data class Falsification<T>(
+    val input: T,
+    val error: AssertionError?,
+)
+
 class PropertyFalsifiedException internal constructor(
     val seed: Long,
     val iteration: Int,
-    val original: Property.Falsification<*>,
-    val shrunk: Property.Falsification<*>?,
+    val original: Falsification<*>,
+    val shrunk: Falsification<*>?,
     val shrinkSteps: Int,
 ) : AssertionError() {
     internal val smallest = shrunk ?: original
@@ -71,7 +76,7 @@ class PropertyFalsifiedException internal constructor(
 
     private fun formatFalsification(
         prefix: String,
-        result: Property.Falsification<*>,
+        result: Falsification<*>,
     ) = buildString {
         appendLine("${prefix}Arguments:")
         appendLine("--------------------")

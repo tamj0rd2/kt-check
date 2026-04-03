@@ -21,8 +21,6 @@ internal data class Gen<T>(
 ) : IGen<T>, Generator<T> by generator {
     override fun sample(seed: Long) = generate(ProviderTree.new(Seed(seed))).orThrow().value
 
-    override fun withoutDefaultEdgeCases() = Gen(EdgeCasesDisabledGen(this))
-
     override fun <R> map(fn: (T) -> R) = Gen(MapGen(this, fn))
 
     @Suppress("UNCHECKED_CAST")

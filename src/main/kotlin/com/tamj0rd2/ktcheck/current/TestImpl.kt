@@ -1,5 +1,6 @@
 package com.tamj0rd2.ktcheck.current
 
+import com.tamj0rd2.ktcheck.Falsification
 import com.tamj0rd2.ktcheck.Property
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.ShrinkingConstraint
@@ -44,7 +45,8 @@ private class TestRunner<T>(
             gen.generate(ProviderTree.new(config.seed.next(iterationIdx))).orThrow()
         }
 
-        val originalFalsification = property.test(input.value) ?: return TestIterationResult.DidNotFalsify
+        val originalError = property.falsify(input.value) ?: return TestIterationResult.DidNotFalsify
+        val originalFalsification = Falsification(input.value, originalError.error)
 
         val (shrunkFalsification, shrinkSteps) = config.shrinkingConstraintFactory.new().use {
             findSimplestFalsification(
@@ -63,9 +65,9 @@ private class TestRunner<T>(
 
     private fun findSimplestFalsification(
         originalGeneratedValue: GeneratedValue<T>,
-        originalFalsification: Property.Falsification<T>,
+        originalFalsification: Falsification<T>,
         shrinkingConstraint: ShrinkingConstraint,
-    ): Pair<Property.Falsification<T>, Int> {
+    ): Pair<Falsification<T>, Int> {
         shrinkingConstraint.onStart()
 
         // todo: these 2 values are entirely coupled. They should probably be a single thing.
@@ -80,9 +82,9 @@ private class TestRunner<T>(
 
             shrinkingConstraint.onStep()
 
-            val testResult = property.test(shrunkInput.value) ?: continue
+            val testResult = property.falsify(shrunkInput.value) ?: continue
 
-            simplestFalsification = testResult
+            simplestFalsification = Falsification(shrunkInput.value, testResult.error)
             candidates = shrunkInput.shrinks.iterator()
         }
 
@@ -91,8 +93,8 @@ private class TestRunner<T>(
 
     private sealed interface TestIterationResult {
         data class DidFalsify<T>(
-            val originalFalsification: Property.Falsification<T>,
-            val shrunkFalsification: Property.Falsification<T>,
+            val originalFalsification: Falsification<T>,
+            val shrunkFalsification: Falsification<T>,
             val shrinkSteps: Int,
         ) : TestIterationResult
 

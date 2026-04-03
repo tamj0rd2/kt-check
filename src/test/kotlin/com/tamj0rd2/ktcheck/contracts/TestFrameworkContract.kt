@@ -67,19 +67,6 @@ internal interface TestFrameworkContract : BaseContract {
     }
 
     @Test
-    fun `can disable edge cases`() {
-        val seenValues = mutableSetOf<Int>()
-
-        forAll(int().withoutDefaultEdgeCases()) {
-            seenValues.add(it)
-            true
-        }
-
-        val expectedEdges = setOf(0, 1, -1, Int.MIN_VALUE, Int.MIN_VALUE + 1, Int.MAX_VALUE, Int.MAX_VALUE - 1)
-        expectThat(seenValues.take(expectedEdges.size)).not().containsExactlyInAnyOrder(expectedEdges)
-    }
-
-    @Test
     @OptIn(HardcodedTestConfig::class)
     fun `can hardcode a specific test iteration to run`() {
         val initialConfig = TestConfig().withIterations(100)
