@@ -8,7 +8,7 @@ import strikt.api.expectThat
 import strikt.assertions.contains
 import strikt.assertions.first
 import strikt.assertions.isContainedIn
-import strikt.assertions.isEqualTo
+import strikt.assertions.isIn
 import strikt.assertions.isNotEmpty
 import strikt.assertions.isNotNull
 import strikt.assertions.isNull
@@ -21,15 +21,13 @@ internal interface CombineWithGeneratorContract : BaseContract {
     fun `combineWith merges two independent generators`() {
         val smallGen = int(0..5)
         val bigGen = int(10..20)
-        val gen = smallGen.combineWith(bigGen) { a, b -> a + b }
+        val gen = smallGen.combineWith(bigGen, ::Pair)
 
         repeatTest { seed ->
-            val tree = tree(seed)
-            val expectedOuterValue = smallGen.generate(tree.left).value
-            val expectedInnerValue = bigGen.generate(tree.right).value
-
+            val tree = ctx(seed)
             val value = gen.generate(tree).value
-            expectThat(value).isEqualTo(expectedOuterValue + expectedInnerValue)
+            expectThat(value).first.isIn(0..5)
+            expectThat(value).second.isIn(10..20)
         }
     }
 
@@ -40,7 +38,7 @@ internal interface CombineWithGeneratorContract : BaseContract {
         val gen = oneToThree.combineWith(fourToSix, ::Pair)
 
         repeatTest { seed ->
-            val result = gen.generate(tree())
+            val result = gen.generate(ctx())
             if (result.value == 1 to 4) skipIteration()
 
             // todo: later, I want to change this to isEqualTo and stop providing the cartesian product.

@@ -14,8 +14,8 @@ internal interface MapGeneratorContract : BaseContract {
         val doublingGen = originalGen.map { it * 2 }
 
         repeatTest { seed ->
-            val originalResult = originalGen.generate(tree(seed))
-            val doubledResult = doublingGen.generate(tree(seed))
+            val originalResult = originalGen.generate(ctx(seed))
+            val doubledResult = doublingGen.generate(ctx(seed))
 
             expectThat(doubledResult.value).isEqualTo(originalResult.value * 2)
             expectThat(doubledResult).shrunkValues.isEqualTo(originalResult.shrunkValues.map { it * 2 })

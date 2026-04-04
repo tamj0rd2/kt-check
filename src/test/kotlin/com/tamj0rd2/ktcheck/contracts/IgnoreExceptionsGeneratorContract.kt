@@ -50,7 +50,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
                 collect("has-shrinks", result.shrunkValues.isNotEmpty())
             }
 
-            repeatTest { seed -> checkResult(possiblyThrowingGen.generate(tree(seed))) }
+            repeatTest { seed -> checkResult(possiblyThrowingGen.generate(ctx(seed))) }
             if (genSupportsEdgeCases) repeatTest { seed -> checkResult(possiblyThrowingGen.edgeCase(seed)) }
         }.checkPercentages("has-shrinks", mapOf(true to 40.percent))
 
@@ -80,7 +80,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
             .map { throw NotIgnoredException() }
             .ignoreExceptions(IgnoredException::class)
 
-        expectThrows<NotIgnoredException> { throwingGen.generate(tree()) }
+        expectThrows<NotIgnoredException> { throwingGen.generate(ctx()) }
     }
 
     @Test
@@ -100,7 +100,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
             .ignoreExceptions(IgnoredException2::class)
 
         repeatTest { seed ->
-            val result = possiblyThrowingGen.generate(tree(seed))
+            val result = possiblyThrowingGen.generate(ctx(seed))
             expectThat(result).value.isEqualTo(3)
         }
     }
@@ -124,7 +124,7 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
                 collect("has-shrinks", result.shrunkValues.any())
             }
 
-            repeatTest { seed -> checkResult(gen.generate(tree(seed))) }
+            repeatTest { seed -> checkResult(gen.generate(ctx(seed))) }
             if (genSupportsEdgeCases) repeatTest { seed -> checkResult(gen.edgeCase(seed)) }
         }.checkPercentages("has-shrinks", mapOf(true to 10.percent))
     }

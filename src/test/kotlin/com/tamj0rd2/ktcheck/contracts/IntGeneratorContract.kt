@@ -72,7 +72,7 @@ internal interface IntGeneratorContract : BaseContract {
 
             val gen = int(range = range, shrinkTarget = shrinkTarget)
 
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             val expectedShrinks = IntShrinker.shrink(result.value, range, shrinkTarget).toList()
             if (expectedShrinks.isEmpty()) skipIteration()
             expectThat(result).shrunkValues.isEqualTo(expectedShrinks)

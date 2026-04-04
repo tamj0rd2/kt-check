@@ -59,7 +59,7 @@ internal interface CharGeneratorContract : BaseContract {
         val gen = char(chars)
 
         repeatTest { seed ->
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             if (result.value == chars.first()) skipIteration()
             expectThat(result).shrunkValues.first().isEqualTo(chars.first())
         }
@@ -70,7 +70,7 @@ internal interface CharGeneratorContract : BaseContract {
         val gen = char('a'..'z')
 
         repeatTest { seed ->
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             expectThat(result).shrunkValues.doesNotContain(result.value)
         }
     }
@@ -80,7 +80,7 @@ internal interface CharGeneratorContract : BaseContract {
         val chars = 'a'..'z'
 
         repeatTest {
-            val result = char(chars).generate(tree(it))
+            val result = char(chars).generate(ctx(it))
             if (result.value != chars.first()) skipIteration()
             expectThat(result).shrunkValues.isEmpty()
         }
@@ -93,7 +93,7 @@ internal interface CharGeneratorContract : BaseContract {
         val gen = char(chars)
 
         repeatTest { seed ->
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             if (result.value == minimal) skipIteration()
 
             val originalIndex = chars.indexOf(result.value)

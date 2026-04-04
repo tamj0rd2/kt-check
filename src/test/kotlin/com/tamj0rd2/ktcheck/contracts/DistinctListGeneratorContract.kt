@@ -4,7 +4,6 @@ import com.tamj0rd2.ktcheck.GenerationException.DistinctCollectionSizeImpossible
 import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker.shrink
-import com.tamj0rd2.ktcheck.full
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.DynamicTest.dynamicTest
 import org.junit.jupiter.api.Test
@@ -17,7 +16,6 @@ import strikt.assertions.any
 import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.filter
 import strikt.assertions.first
-import strikt.assertions.get
 import strikt.assertions.hasSize
 import strikt.assertions.isEmpty
 import strikt.assertions.isEqualTo
@@ -36,7 +34,7 @@ internal interface DistinctListGeneratorContract : BaseContract {
     fun `generates lists with distinct elements`() {
         repeatTest { seed ->
             val gen = int(0..10).distinctList(0..10)
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             expectThat(result.value.toSet()).hasSize(result.value.size)
         }
     }
@@ -58,7 +56,7 @@ internal interface DistinctListGeneratorContract : BaseContract {
     fun `shrinks a list of 1 element`() {
         repeatTest { seed ->
             val gen = int(0..10).distinctList(size = 0..5)
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             if (result.value.size != 1) skipIteration()
 
             val expectedValueShrinks = shrink(result.value.single(), 0..10).map { listOf(it) }.toList()
@@ -74,7 +72,7 @@ internal interface DistinctListGeneratorContract : BaseContract {
     @Test
     fun `shrinks a list of 2 elements`() = repeatTest { seed ->
         val gen = int(0..10).distinctList(size = 0..10)
-        val result = gen.generate(tree(seed))
+        val result = gen.generate(ctx(seed))
         if (result.value.size != 2) skipIteration()
 
         val firstValue = result.value[0]
@@ -109,7 +107,7 @@ internal interface DistinctListGeneratorContract : BaseContract {
             val intGen = int(1..3)
             val gen = intGen.distinctList(3)
 
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             expectThat(result).value.hasSize(3)
             expectThat(result).shrunkValues.isEmpty()
         }
@@ -120,7 +118,7 @@ internal interface DistinctListGeneratorContract : BaseContract {
         val gen = int(0..10).distinctList(0..5)
 
         repeatTest { seed ->
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             if (result.value.isEmpty()) skipIteration()
             expectThat(result).shrunkValues.first().isEqualTo(emptyList())
         }
@@ -131,7 +129,7 @@ internal interface DistinctListGeneratorContract : BaseContract {
         repeatTest { seed ->
             val gen = int(0..10).distinctList(0..4)
 
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             if (result.value.isEmpty()) skipIteration()
 
             val maxOriginalValue = result.value.max()
@@ -147,7 +145,7 @@ internal interface DistinctListGeneratorContract : BaseContract {
             val range = 0..10
             val gen = int(range).distinctList(0..5)
 
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             if (result.value.isEmpty()) skipIteration()
             expectThat(result).shrunkValues.all { all { isIn(range) } }
         }
@@ -159,26 +157,9 @@ internal interface DistinctListGeneratorContract : BaseContract {
             val minSize = 2
             val gen = int(0..10).distinctList(minSize..10)
 
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             val originalSize = result.value.size
             expectThat(result).shrunkValues.all { size.isIn(minSize..originalSize) }
-        }
-    }
-
-    @Test
-    fun `follows the left generation, right continuation pattern`() {
-        repeatTest { seed ->
-            // using the full int range should make conflicts (and thereby flaky tests) incredibly unlikely.
-            val intGen = int(IntRange.full)
-            val listGen = intGen.distinctList(2)
-            val root = tree(seed)
-            val result = listGen.generate(root)
-
-            expectThat(result.value) {
-                // both preceded with root.right because root.left is used for size generation
-                get(0).isEqualTo(intGen.generate(root.right.left).value)
-                get(1).isEqualTo(intGen.generate(root.right.right.left).value)
-            }
         }
     }
 

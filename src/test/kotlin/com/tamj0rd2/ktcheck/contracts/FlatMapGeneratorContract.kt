@@ -19,16 +19,13 @@ internal interface FlatMapGeneratorContract : BaseContract {
     @Test
     fun `generates the second value based on the first`() {
         val smallGen = int(0..5)
-        val bigGen = int(10..20)
+        val bigGen = int(10..15)
         val gen = smallGen.flatMap { a -> bigGen.map { b -> a + b } }
 
         repeatTest { seed ->
-            val tree = tree(seed)
-            val expectedOuterValue = smallGen.generate(tree.left).value
-            val expectedInnerValue = bigGen.generate(tree.right).value
-
+            val tree = ctx(seed)
             val value = gen.generate(tree).value
-            expectThat(value).isEqualTo(expectedOuterValue + expectedInnerValue)
+            expectThat(value).isIn(10..20)
         }
     }
 
@@ -43,7 +40,7 @@ internal interface FlatMapGeneratorContract : BaseContract {
         }
 
         repeatTest { seed ->
-            val result = gen.generate(tree())
+            val result = gen.generate(ctx())
             if (result.value == 1 to 4) skipIteration()
 
             // todo: later, I want to change this to isEqualTo and stop providing the cartesian product.

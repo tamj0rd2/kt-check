@@ -5,8 +5,8 @@ import com.tamj0rd2.ktcheck.GenBuilders
 import com.tamj0rd2.ktcheck.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.TestConfig
+import com.tamj0rd2.ktcheck.core.GenerationContext
 import com.tamj0rd2.ktcheck.core.Seed
-import com.tamj0rd2.ktcheck.core.Tree
 import com.tamj0rd2.ktcheck.forAll
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
@@ -18,7 +18,6 @@ import strikt.api.expectThat
 import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
-import java.time.Duration
 import java.time.Duration.ofSeconds
 
 internal interface BaseContract : GenBuilders {
@@ -43,8 +42,8 @@ internal interface BaseContract : GenBuilders {
     fun `generated values are deterministic`() {
         repeatTest { seed ->
             val gen = getGenIfDefined()
-            val originalResult = gen.generate(tree(seed))
-            val regenerated = gen.generate(tree(seed))
+            val originalResult = gen.generate(ctx(seed))
+            val regenerated = gen.generate(ctx(seed))
 
             expectThat(regenerated).value.isEqualTo(originalResult.value)
         }
@@ -56,8 +55,8 @@ internal interface BaseContract : GenBuilders {
 
         repeatTest { seed ->
             val gen = getGenIfDefined()
-            val originalResult = gen.generate(tree(seed))
-            val regenerated = gen.generate(tree(seed))
+            val originalResult = gen.generate(ctx(seed))
+            val regenerated = gen.generate(ctx(seed))
 
             expectThat(regenerated).shrunkValues.containsExactlyInAnyOrder(originalResult.shrunkValues)
             // this is the assertion I actually want, but the output is easier to read when split into 2 assertions.
@@ -97,9 +96,9 @@ internal interface BaseContract : GenBuilders {
     }
 
     //=== Wiring ===//
-    fun tree(seed: Seed = Seed.random()): Tree<*>
+    fun ctx(seed: Seed = Seed.random()): GenerationContext
 
-    fun <T> Gen<T>.generate(tree: Tree<*>): GenResults<T>
+    fun <T> Gen<T>.generate(ctx: GenerationContext): GenResults<T>
 
     fun <T> Gen<T>.edgeCase(seed: Seed): GenResults<T>?
 
@@ -107,7 +106,7 @@ internal interface BaseContract : GenBuilders {
     fun <T> Gen<T>.generating(value: T): GenResults<T> =
         assertTimeoutPreemptively(ofSeconds(10)) {
             Seed.sequence(Seed.random())
-                .map(::tree)
+                .map(::ctx)
                 .take(1_000_000)
                 .map { generate(it) }
                 .first { it.value == value }

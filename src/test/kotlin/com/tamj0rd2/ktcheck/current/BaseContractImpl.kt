@@ -7,8 +7,8 @@ import com.tamj0rd2.ktcheck.contracts.repeatTest
 import com.tamj0rd2.ktcheck.contracts.shrunkValues
 import com.tamj0rd2.ktcheck.contracts.skipIteration
 import com.tamj0rd2.ktcheck.contracts.value
+import com.tamj0rd2.ktcheck.core.GenerationContext
 import com.tamj0rd2.ktcheck.core.Seed
-import com.tamj0rd2.ktcheck.core.Tree
 import dev.forkhandles.result4k.onFailure
 import dev.forkhandles.result4k.orThrow
 import dev.forkhandles.result4k.valueOrNull
@@ -23,8 +23,8 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
     fun `generated values are reproducible via their returned tree`() {
         repeatTest { seed ->
             val gen = getGenIfDefined() as Gen
-            val originalResult = gen.generate(tree(seed)).orThrow()
-            val regenerated = gen.generate(originalResult.usedTree as Tree<*>)
+            val originalResult = gen.generate(ctx(seed)).orThrow()
+            val regenerated = gen.generate(originalResult.usedTree as GenerationContext)
 
             expectThat(regenerated).value.isEqualTo(originalResult.value)
         }
@@ -36,11 +36,11 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
 
         repeatTest { seed ->
             val gen = getGenIfDefined() as Gen
-            val originalResult = gen.generate(tree(seed)).orThrow()
+            val originalResult = gen.generate(ctx(seed)).orThrow()
             val originalShrunkValues = originalResult.getShrinks(gen)
             if (originalShrunkValues.isEmpty()) skipIteration()
 
-            val regenerated = gen.generate(originalResult.usedTree as Tree<*>)
+            val regenerated = gen.generate(originalResult.usedTree as GenerationContext)
 
             expectThat(regenerated).shrunkValues.isEqualTo(originalShrunkValues)
         }
@@ -52,11 +52,11 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
 
         repeatTest { seed ->
             val gen = getGenIfDefined() as Gen
-            val edgeCases = gen.edgeCases(tree(seed))
+            val edgeCases = gen.edgeCases(ctx(seed))
 
             val anEdgeCase = edgeCases.random(Random(seed.value))
             val originalShrunkValues = anEdgeCase.getShrinks(gen)
-            val regenerated = gen.generate(anEdgeCase.usedTree as Tree<*>)
+            val regenerated = gen.generate(anEdgeCase.usedTree as GenerationContext)
 
             expectThat(regenerated).value.isEqualTo(anEdgeCase.value)
             expectThat(regenerated).shrunkValues.isEqualTo(originalShrunkValues)
@@ -70,11 +70,11 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
 
         repeatTest { seed ->
             val gen = getGenIfDefined() as Gen
-            val edgeCases = gen.edgeCases(tree(seed))
+            val edgeCases = gen.edgeCases(ctx(seed))
 
             val anEdgeCase = edgeCases.random(Random(seed.value))
             val originalShrunkValues = anEdgeCase.getShrinks(gen)
-            val regenerated = gen.generate(anEdgeCase.usedTree as Tree<*>)
+            val regenerated = gen.generate(anEdgeCase.usedTree as GenerationContext)
 
             expectThat(regenerated).value.isEqualTo(anEdgeCase.value)
             expectThat(regenerated).shrunkValues.isEqualTo(originalShrunkValues)
@@ -89,16 +89,16 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
         .toList()
 
     //=== Wiring ===//
-    override fun tree(seed: Seed) = ProviderTree.new(seed)
+    override fun ctx(seed: Seed) = ProviderTree.new(seed)
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T> IGen<T>.generate(tree: Tree<*>): GenResults<T> {
-        val result = (this as Gen).generate(tree as ProviderTree).orThrow()
+    override fun <T> IGen<T>.generate(ctx: GenerationContext): GenResults<T> {
+        val result = (this as Gen).generate(ctx as ProviderTree).orThrow()
         return GenResults(result.value, collectShrinksRecursively(result.shrinks))
     }
 
     override fun <T> IGen<T>.edgeCase(seed: Seed): GenResults<T>? {
-        val result = (this as Gen).edgeCases((tree(seed))).randomOrNull(Random(seed.value)) ?: return null
+        val result = (this as Gen).edgeCases((ctx(seed))).randomOrNull(Random(seed.value)) ?: return null
         return GenResults(result.value, collectShrinksRecursively(result.shrinks))
     }
 

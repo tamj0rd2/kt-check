@@ -39,7 +39,7 @@ internal interface ListGeneratorContract : BaseContract {
         val gen = int(range, 0).list(0..5)
 
         repeatTest { seed ->
-            val result = gen.generate(tree(seed))
+            val result = gen.generate(ctx(seed))
             if (result.value.size != 1) skipIteration()
 
             val expectedValueShrinks = IntShrinker.shrink(result.value.single(), range, 0).toList()
@@ -94,7 +94,7 @@ internal interface ListGeneratorContract : BaseContract {
         }
 
 
-        repeatTest { seed -> checkShrinks(gen.generate(tree(seed))) }
+        repeatTest { seed -> checkShrinks(gen.generate(ctx(seed))) }
         repeatTest { seed -> checkShrinks(gen.edgeCase(seed)) }
     }
 
@@ -109,7 +109,7 @@ internal interface ListGeneratorContract : BaseContract {
         }
 
 
-        repeatTest { seed -> checkShrinks(gen.generate(tree(seed))) }
+        repeatTest { seed -> checkShrinks(gen.generate(ctx(seed))) }
         repeatTest { seed -> checkShrinks(gen.edgeCase(seed)) }
     }
 
@@ -126,7 +126,7 @@ internal interface ListGeneratorContract : BaseContract {
             }
         }
 
-        repeatTest { seed -> checkShrinks(gen.generate(tree(seed))) }
+        repeatTest { seed -> checkShrinks(gen.generate(ctx(seed))) }
         repeatTest { seed -> checkShrinks(gen.edgeCase(seed)) }
     }
 
@@ -141,7 +141,7 @@ internal interface ListGeneratorContract : BaseContract {
             expectThat(originalResult).shrunkValues.isNotEmpty().all { all { isIn(range) } }
         }
 
-        repeatTest { seed -> checkShrinks(gen.generate(tree(seed))) }
+        repeatTest { seed -> checkShrinks(gen.generate(ctx(seed))) }
         repeatTest { seed -> checkShrinks(gen.edgeCase(seed)) }
     }
 

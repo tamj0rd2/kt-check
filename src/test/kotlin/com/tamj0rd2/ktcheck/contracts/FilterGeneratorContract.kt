@@ -24,7 +24,7 @@ internal interface FilterGeneratorContract : BaseContract {
                 collect("has-shrinks", result.shrunkValues.any())
             }
 
-            repeatTest { seed -> checkResult(gen.generate(tree(seed))) }
+            repeatTest { seed -> checkResult(gen.generate(ctx(seed))) }
             repeatTest { seed -> checkResult(gen.edgeCase(seed)) }
         }.checkPercentages("has-shrinks", mapOf(true to 10.percent))
 
@@ -45,7 +45,7 @@ internal interface FilterGeneratorContract : BaseContract {
                 collect("has-shrinks", originalResult.shrunkValues.any())
             }
 
-            repeatTest { seed -> checkResult(gen.generate(tree(seed))) }
+            repeatTest { seed -> checkResult(gen.generate(ctx(seed))) }
             repeatTest { seed -> checkResult(gen.edgeCase(seed)) }
         }.checkPercentages("has-shrinks", mapOf(true to 10.percent))
     }
@@ -53,6 +53,6 @@ internal interface FilterGeneratorContract : BaseContract {
     @Test
     fun `throws if the filter threshold is exceeded`() {
         val gen = int(1..10).filter { it > 10 }
-        expectThrows<FilterLimitReached> { gen.generate(tree()) }
+        expectThrows<FilterLimitReached> { gen.generate(ctx()) }
     }
 }

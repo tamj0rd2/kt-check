@@ -36,7 +36,7 @@ internal interface BooleanGeneratorContract : BaseContract {
     @Test
     fun `using the same tree generates the same value`() {
         val gen = bool()
-        val tree = tree()
+        val tree = ctx()
         val values = List(1000) { gen.generate(tree).value }
         val firstValue = values.first()
         expectThat(values.drop(1)).all { isEqualTo(firstValue) }

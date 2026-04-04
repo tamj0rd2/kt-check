@@ -10,7 +10,7 @@ internal class IntGeneratorTest : BaseContractImpl(), IntGeneratorContract {
     @Test
     fun `falls back to random generation if the predetermined value falls outside of the generator's range`() {
         val gen = int(0..10)
-        val tree = tree().withPredeterminedValue(100)
+        val tree = ctx().withPredeterminedValue(100)
         expectThat(gen.generate(tree)).value.isIn(0..10)
     }
 }
