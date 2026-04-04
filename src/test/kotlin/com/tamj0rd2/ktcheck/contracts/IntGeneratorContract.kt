@@ -1,6 +1,9 @@
 package com.tamj0rd2.ktcheck.contracts
 
+import com.tamj0rd2.ktcheck.TestConfig
+import com.tamj0rd2.ktcheck.checkAll
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
+import com.tamj0rd2.ktcheck.full
 import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withCounter
 import org.junit.jupiter.api.DynamicTest
@@ -9,7 +12,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.assertThrows
 import strikt.api.expectThat
-import strikt.assertions.isContainedIn
+import strikt.assertions.all
+import strikt.assertions.hasSize
 import strikt.assertions.isEqualTo
 import strikt.assertions.isIn
 import kotlin.random.Random
@@ -33,33 +37,20 @@ internal interface IntGeneratorContract : BaseContract {
 
         return testCases.map { (desc, range) ->
             dynamicTest(desc) {
-                int(range)
-                    .samples()
-                    .take(10000)
-                    .forEach { expectThat(it).isIn(range) }
+                val values = int(range).samples().take(TestConfig.DEFAULT_ITERATIONS).toList()
+                expectThat(values).all { isIn(range) }.hasSize(TestConfig.DEFAULT_ITERATIONS)
             }
         }
     }
 
     @Test
     fun `generates both positive and negative integers over multiple runs`() {
-        withCounter {
-            int(-100..100).samples().take(10000).forEach { value ->
-                collect(
-                    when {
-                        value > 0 -> "positive"
-                        value < 0 -> "negative"
-                        else -> "zero"
-                    }
-                )
+        val counter = withCounter {
+            checkAll(int(IntRange.full)) {
+                collect(if (it >= 0) "positive" else "negative")
             }
-        }.checkPercentages(
-            mapOf(
-                "positive" to 45.percent,
-                "negative" to 45.percent,
-                "zero" to 0.2.percent
-            )
-        )
+        }
+        counter.checkPercentages(mapOf("positive" to 45.percent, "negative" to 45.percent))
     }
 
     @Test
@@ -72,10 +63,14 @@ internal interface IntGeneratorContract : BaseContract {
 
             val gen = int(range = range, shrinkTarget = shrinkTarget)
 
-            val result = gen.generate(ctx(seed))
-            val expectedShrinks = IntShrinker.shrink(result.value, range, shrinkTarget).toList()
-            if (expectedShrinks.isEmpty()) skipIteration()
-            expectThat(result).shrunkValues.isEqualTo(expectedShrinks)
+            val (originalValue, shrinks) = gen.collectShrunkValues(
+                seed = seed,
+                startShrinkingOnce = { it != shrinkTarget }
+            )
+
+            expectThat(shrinks)
+                .describedAs { "shrinks of $originalValue (range=$range | shrinkTarget=$shrinkTarget)" }
+                .isEqualTo(IntShrinker.shrink(originalValue, range, shrinkTarget).toList())
         }
     }
 
@@ -89,16 +84,16 @@ internal interface IntGeneratorContract : BaseContract {
     @Test
     fun `creates common edge cases and their shrinks`() {
         val gen = int(-10..10)
+        val expectedEdgeCases = setOf(-10, -9, -1, 0, 1, 9, 10)
 
         repeatTest { seed ->
-            val edgeCase = gen.edgeCase(seed)!!
-            expectThat(edgeCase.value).isContainedIn(setOf(-10, -9, -1, 0, 1, 9, 10))
-
-            // todo: better off in a separate test
-            if (edgeCase.value == 9) {
-                val expectedShrinks = IntShrinker.shrink(9, 0..10, 0).toList()
-                expectThat(edgeCase).shrunkValues.isEqualTo(expectedShrinks)
-            }
+            val (originalValue, shrinks) = gen.collectShrunkValues(
+                seed = seed,
+                startShrinkingOnce = { it in expectedEdgeCases }
+            )
+            expectThat(shrinks)
+                .describedAs { "shrinks of $originalValue" }
+                .isEqualTo(IntShrinker.shrink(originalValue, -10..10, 0).toList())
         }
     }
 }

@@ -31,7 +31,7 @@ data class TestConfig private constructor(
         iterations = System.getProperty(SYSTEM_PROPERTY_TEST_ITERATIONS)?.toIntOrNull() ?: DEFAULT_ITERATIONS,
         seed = Seed(Random.nextLong()),
         replayIteration = null,
-        shrinkingConstraintFactory = ShrinkingConstraint.byDuration(1.seconds),
+        shrinkingConstraintFactory = ShrinkingConstraintFactory.byDuration(1.seconds),
         printShrinkSteps = false,
         reportingPrintStream = System.out,
     )
@@ -65,6 +65,12 @@ data class TestConfig private constructor(
 
 fun interface ShrinkingConstraintFactory {
     fun new(): ShrinkingConstraint
+
+    companion object {
+        fun infinite(): ShrinkingConstraintFactory = { Unconstrained }
+        fun bySteps(maxSteps: Int): ShrinkingConstraintFactory = { ConstrainedBySteps(maxSteps) }
+        fun byDuration(duration: Duration): ShrinkingConstraintFactory = { ConstrainedByDuration(duration) }
+    }
 }
 
 interface ShrinkingConstraint : AutoCloseable {
@@ -75,12 +81,6 @@ interface ShrinkingConstraint : AutoCloseable {
     // todo: contract
     fun shouldStopShrinking(): Boolean
     fun shouldKeepShrinking(): Boolean = !shouldStopShrinking()
-
-    companion object {
-        fun infinite(): ShrinkingConstraintFactory = { Unconstrained }
-        fun bySteps(maxSteps: Int): ShrinkingConstraintFactory = { ConstrainedBySteps(maxSteps) }
-        fun byDuration(duration: Duration): ShrinkingConstraintFactory = { ConstrainedByDuration(duration) }
-    }
 }
 
 private object Unconstrained : ShrinkingConstraint {

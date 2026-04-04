@@ -4,7 +4,9 @@ import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilders
 import com.tamj0rd2.ktcheck.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
+import com.tamj0rd2.ktcheck.ShrinkingConstraintFactory
 import com.tamj0rd2.ktcheck.TestConfig
+import com.tamj0rd2.ktcheck.checkAll
 import com.tamj0rd2.ktcheck.core.GenerationContext
 import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.forAll
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.fail
 import org.opentest4j.TestSkippedException
 import strikt.api.Assertion
 import strikt.api.expectThat
+import strikt.api.expectThrows
 import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
@@ -188,3 +191,29 @@ internal fun repeatTest(seed: Long, property: (Seed) -> Unit) {
 internal fun skipIteration(): Nothing = throw TestSkippedException()
 
 private class TestSkippedException : AssertionError("Test skipped")
+
+internal fun <T> Gen<T>.collectShrunkValues(
+    seed: Seed,
+    startShrinkingOnce: (T) -> Boolean = { true },
+): Pair<T, List<T>> {
+    var originalValue: T? = null
+    val seenShrinks = mutableListOf<T>()
+    expectThrows<PropertyFalsifiedException> {
+        val config = TestConfig()
+            .withSeed(seed.value)
+            .withShrinkingConstraint(ShrinkingConstraintFactory.infinite())
+            .withoutReporting()
+
+        checkAll(config, this) {
+            when {
+                originalValue != null -> seenShrinks.add(it)
+                startShrinkingOnce(it) -> {
+                    originalValue = it
+                    throw AssertionError("failing to trigger shrinking.")
+                }
+            }
+        }
+    }
+
+    return originalValue!! to seenShrinks
+}

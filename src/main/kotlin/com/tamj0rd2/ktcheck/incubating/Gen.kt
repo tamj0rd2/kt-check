@@ -1,6 +1,7 @@
 package com.tamj0rd2.ktcheck.incubating
 
 import com.tamj0rd2.ktcheck.GenBuilders
+import com.tamj0rd2.ktcheck.core.GenerationContext
 import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import kotlin.random.Random
@@ -19,16 +20,32 @@ data class SplittableRandom(
 internal data class GenContext private constructor(
     val seed: Seed,
     val generateEdgeCase: Boolean,
-) {
+) : GenerationContext {
     val random get() = Random(seed.value)
     val left by lazy { new(seed.next(1)) }
     val right by lazy { new(seed.next(2)) }
 
     companion object {
-        fun new(seed: Seed): GenContext = GenContext(
+        fun new(seed: Seed): GenContext = new(seed, ShouldGenerateEdgeCase.BasedOnRng)
+
+        fun new(seed: Seed, shouldGenerateEdgeCase: ShouldGenerateEdgeCase): GenContext = GenContext(
             seed = seed,
-            generateEdgeCase = Random(seed.next(3).value).nextBoolean(),
+            generateEdgeCase = shouldGenerateEdgeCase(seed.next(3)),
         )
+    }
+}
+
+internal fun interface ShouldGenerateEdgeCase {
+    operator fun invoke(seed: Seed): Boolean
+
+    data object BasedOnRng : ShouldGenerateEdgeCase {
+        override fun invoke(seed: Seed): Boolean {
+            return Random(seed.value).nextBoolean()
+        }
+    }
+
+    data object Always : ShouldGenerateEdgeCase {
+        override fun invoke(seed: Seed): Boolean = true
     }
 }
 
@@ -45,6 +62,10 @@ internal data class IntGen(
     private val range: IntRange,
     private val shrinkTarget: Int,
 ) : GenProvider<Int> {
+    init {
+        require(shrinkTarget in range) { "shrinkTarget $shrinkTarget not in range $range" }
+    }
+
     private val edgeCases = setOf(range.first, range.first + 1, -1, 0, 1, range.last - 1, range.last)
         .filter { it in range }
         .distinct()
@@ -68,9 +89,7 @@ internal data class IntGen(
 internal data class Gen<T>(
     private val provider: GenProvider<T>,
 ) : IGen<T>, GenProvider<T> by provider {
-    override fun sample(seed: Long): T {
-        TODO("Not yet implemented")
-    }
+    override fun sample(seed: Long): T = provider.generate(GenContext.new(Seed(seed))).value
 
     override fun <R> map(fn: (T) -> R): IGen<R> {
         TODO("Not yet implemented")

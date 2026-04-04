@@ -5,4 +5,4 @@ import com.tamj0rd2.ktcheck.contracts.TestFrameworkContract
 import org.junit.platform.commons.annotation.Testable
 
 @Testable
-class TestFrameworkTest : TestFrameworkContract, GenBuilders by Gen.Companion
+class IncubatingTestFrameworkTest : TestFrameworkContract, GenBuilders by Gen.Companion
