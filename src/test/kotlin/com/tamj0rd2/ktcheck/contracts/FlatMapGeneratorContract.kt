@@ -1,5 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
+import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withCounter
 import org.junit.jupiter.api.Test
@@ -10,6 +11,7 @@ import strikt.assertions.contains
 import strikt.assertions.isContainedIn
 import strikt.assertions.isEqualTo
 import strikt.assertions.isIn
+import strikt.assertions.isNotEmpty
 
 internal interface FlatMapGeneratorContract : BaseContract {
     override val exampleGen get() = int(0..5).flatMap { int(10..10 + it) }
@@ -40,18 +42,19 @@ internal interface FlatMapGeneratorContract : BaseContract {
             }
         }
 
-        val tree = tree()
-            .withLeft(oneToThree.findTreeProducing(3))
-            .withRight(fourToSix.findTreeProducing(6))
+        repeatTest { seed ->
+            val result = gen.generate(tree())
+            if (result.value == 1 to 4) skipIteration()
 
-        val result = gen.generate(tree)
-        expectThat(result.value).isEqualTo(3 to 6)
-        expectThat(result).shrunkValues.contains(
-            // outer value shrunk
-            1 to 6,
-            // inner value shrunk
-            3 to 4,
-        )
+            // todo: later, I want to change this to isEqualTo and stop providing the cartesian product.
+            //  I want a different generate to inject duplicates.
+            expectThat(result).shrunkValues.isNotEmpty().contains(
+                listOf(
+                    IntShrinker.shrink(result.value.first, 1..3).map { result.value.copy(first = it) }.toList(),
+                    IntShrinker.shrink(result.value.second, 4..6).map { result.value.copy(second = it) }.toList()
+                ).flatten()
+            )
+        }
     }
 
     @Test

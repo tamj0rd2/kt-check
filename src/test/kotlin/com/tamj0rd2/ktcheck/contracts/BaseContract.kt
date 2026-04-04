@@ -19,6 +19,7 @@ import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
 import java.time.Duration
+import java.time.Duration.ofSeconds
 
 internal interface BaseContract : GenBuilders {
     val exampleGen: Gen<*>?
@@ -97,14 +98,6 @@ internal interface BaseContract : GenBuilders {
 
     //=== Wiring ===//
     fun tree(seed: Seed = Seed.random()): Tree<*>
-    fun Tree<*>.withLeft(left: Tree<*>): Tree<*>
-    fun Tree<*>.withRight(right: Tree<*>): Tree<*>
-
-    fun trees(seed: Seed = Seed.random()) =
-        Seed.sequence(seed).map(::tree)
-
-    fun treeWhere(seed: Seed = Seed.random(), predicate: (Tree<*>) -> Boolean): Tree<*> =
-        trees(seed).take(1_000_000).first(predicate)
 
     fun <T> Gen<T>.generate(tree: Tree<*>): GenResults<T>
 
@@ -112,18 +105,12 @@ internal interface BaseContract : GenBuilders {
 
     /** Retries generations until the exact [value] is produced. */
     fun <T> Gen<T>.generating(value: T): GenResults<T> =
-        generating { it == value }
-
-    /** Retries generations until some value satisfying [predicate] is produced. */
-    fun <T> Gen<T>.generating(predicate: (T) -> Boolean): GenResults<T> =
-        generate(findTreeProducing(Seed.random(), predicate))
-
-    fun <T> Gen<T>.findTreeProducing(value: T, seed: Seed = Seed.random()): Tree<*> =
-        findTreeProducing(seed) { it == value }
-
-    fun <T> Gen<T>.findTreeProducing(seed: Seed = Seed.random(), predicate: (T) -> Boolean): Tree<*> =
-        assertTimeoutPreemptively(Duration.ofSeconds(10)) {
-            treeWhere(seed) { predicate(generate(it).value) }
+        assertTimeoutPreemptively(ofSeconds(10)) {
+            Seed.sequence(Seed.random())
+                .map(::tree)
+                .take(1_000_000)
+                .map { generate(it) }
+                .first { it.value == value }
         }
 }
 
@@ -141,7 +128,7 @@ internal class GenResults<T>(
 fun <T> Gen<T>.expectGenerationAndShrinkingToEventuallyComplete() {
     var shrinksBeforeTimeout = -1
     try {
-        assertTimeoutPreemptively(Duration.ofSeconds(1), "Shrinking took too long") {
+        assertTimeoutPreemptively(ofSeconds(1), "Shrinking took too long") {
             try {
                 forAll(TestConfig().withoutReporting(), this) {
                     shrinksBeforeTimeout += 1
@@ -174,7 +161,7 @@ internal fun <T> ignoreSkips(block: () -> T): Boolean =
     }
 
 internal fun repeatTest(property: (Seed) -> Unit) {
-    assertTimeoutPreemptively(Duration.ofSeconds(2)) {
+    assertTimeoutPreemptively(ofSeconds(2)) {
         var successCount = 0
         var iteration = 0
 
@@ -196,7 +183,7 @@ internal fun repeatTest(property: (Seed) -> Unit) {
 @HardcodedTestConfig
 @Suppress("unused")
 internal fun repeatTest(seed: Long, property: (Seed) -> Unit) {
-    assertTimeoutPreemptively(Duration.ofSeconds(2)) { property(Seed(seed)) }
+    assertTimeoutPreemptively(ofSeconds(2)) { property(Seed(seed)) }
 }
 
 internal fun skipIteration(): Nothing = throw TestSkippedException()

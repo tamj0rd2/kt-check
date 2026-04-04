@@ -90,8 +90,6 @@ internal abstract class BaseContractImpl : BaseContract, GenBuilders by GenV2Bui
 
     //=== Wiring ===//
     override fun tree(seed: Seed) = ProviderTree.new(seed)
-    override fun Tree<*>.withLeft(left: Tree<*>) = (this as ProviderTree).withLeft(left as ProviderTree)
-    override fun Tree<*>.withRight(right: Tree<*>) = (this as ProviderTree).withRight(right as ProviderTree)
 
     @Suppress("UNCHECKED_CAST")
     override fun <T> IGen<T>.generate(tree: Tree<*>): GenResults<T> {
