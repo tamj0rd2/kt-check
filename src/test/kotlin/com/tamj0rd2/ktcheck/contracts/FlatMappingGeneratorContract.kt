@@ -13,7 +13,7 @@ import strikt.assertions.isEqualTo
 import strikt.assertions.isIn
 import strikt.assertions.isNotEmpty
 
-internal interface FlatMapGeneratorContract : BaseContract {
+internal interface FlatMappingGeneratorContract : BaseContract {
     override val exampleGen get() = int(0..5).flatMap { int(10..10 + it) }
 
     @Test

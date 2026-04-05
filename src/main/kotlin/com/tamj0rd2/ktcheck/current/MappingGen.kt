@@ -4,7 +4,7 @@ import com.tamj0rd2.ktcheck.GenerationException
 import dev.forkhandles.result4k.Result4k
 import dev.forkhandles.result4k.map
 
-internal class MapGen<T, R>(
+internal class MappingGen<T, R>(
     private val wrappedGen: Generator<T>,
     private val fn: (T) -> R,
 ) : Generator<R> {

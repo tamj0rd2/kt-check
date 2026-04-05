@@ -5,7 +5,7 @@ import strikt.api.expectThat
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
 
-internal interface MapGeneratorContract : BaseContract {
+internal interface MappingGeneratorContract : BaseContract {
     override val exampleGen get() = int(-100..100).map { it * 2 }
 
     @Test
