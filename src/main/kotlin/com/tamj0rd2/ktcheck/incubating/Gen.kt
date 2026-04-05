@@ -5,7 +5,8 @@ import com.tamj0rd2.ktcheck.core.Seed
 import kotlin.reflect.KClass
 import com.tamj0rd2.ktcheck.Gen as IGen
 
-internal data class Gen<T>(
+@ConsistentCopyVisibility
+internal data class Gen<T> private constructor(
     private val provider: GenProvider<T>,
 ) : IGen<T>, GenProvider<T> by provider {
     override fun sample(seed: Long): T = provider.generate(GenContext.new(Seed(seed))).value
@@ -23,9 +24,8 @@ internal data class Gen<T>(
         TODO("Not yet implemented")
     }
 
-    override fun filter(threshold: Int, predicate: (T) -> Boolean): Gen<T> {
-        TODO("Not yet implemented")
-    }
+    override fun filter(threshold: Int, predicate: (T) -> Boolean): Gen<T> =
+        Gen(FilterGen(this, threshold, predicate))
 
     override fun ignoreExceptions(
         klass: KClass<out Exception>,
@@ -55,4 +55,3 @@ internal data class Gen<T>(
         }
     }
 }
-

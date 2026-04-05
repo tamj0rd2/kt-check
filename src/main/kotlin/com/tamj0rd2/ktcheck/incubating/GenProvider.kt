@@ -16,6 +16,11 @@ internal data class GenResult<T>(
         value = fn(value),
         shrinks = shrinks.map { it.map(fn) },
     )
+
+    fun filter(fn: (T) -> Boolean): GenResult<T>? {
+        if (!fn(value)) return null
+        return copy(shrinks = shrinks.mapNotNull { it.filter(fn) })
+    }
 }
 
 @ConsistentCopyVisibility
