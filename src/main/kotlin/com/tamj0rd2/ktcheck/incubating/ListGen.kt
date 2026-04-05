@@ -12,7 +12,7 @@ internal data class ListGen<T>(
     override fun generate(ctx: GenContext): Result4k<GeneratedValue<List<T>>, GenerationException> {
         val size = Gen.int(sizeRange).generate(ctx.left).onFailure { return it }
         val elements = buildList {
-            var ctx = ctx
+            var ctx = ctx.right
             repeat(size.value) {
                 add(gen.generate(ctx.left).onFailure { return it })
                 ctx = ctx.right

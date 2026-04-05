@@ -41,9 +41,7 @@ internal class Gen<T> private constructor(
 
     override fun list(size: IntRange): Gen<List<T>> = Gen(ListGen(this, size))
 
-    override fun distinctList(size: IntRange): Gen<List<T>> {
-        TODO("Not yet implemented")
-    }
+    override fun distinctList(size: IntRange): Gen<List<T>> = Gen(DistinctListGen(this, size))
 
     companion object : GenBuilders {
         override fun <T> constant(value: T): Gen<T> = Gen(ConstantGen(value))

@@ -17,6 +17,7 @@ internal interface ConstantGeneratorContract : BaseContract {
         checkAll(exampleGen) { expectThat(it).isEqualTo("hello") }
     }
 
+    // todo: could move this into base contract with an assumption.
     @Test
     fun `does not shrink`() {
         val (originalValue, shrinks) = exampleGen.collectShrunkValues(Seed.random())
