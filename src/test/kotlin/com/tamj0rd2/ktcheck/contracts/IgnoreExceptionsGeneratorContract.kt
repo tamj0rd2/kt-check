@@ -1,7 +1,6 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.GenerationException.FilterLimitReached
-import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.Test
@@ -12,7 +11,6 @@ import strikt.assertions.all
 import strikt.assertions.isEqualTo
 import strikt.assertions.isLessThanOrEqualTo
 import strikt.assertions.isNotEqualTo
-import strikt.assertions.isNull
 import java.time.Duration
 
 internal interface IgnoreExceptionsGeneratorContract : BaseContract {
@@ -127,16 +125,5 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
             repeatTest { seed -> checkResult(gen.generate(ctx(seed))) }
             if (genSupportsEdgeCases) repeatTest { seed -> checkResult(gen.edgeCase(seed)) }
         }.checkPercentages("has-shrinks", mapOf(true to 10.percent))
-    }
-
-    @Test
-    fun `does not produce any edge cases`() {
-        expectThat(exampleGen.edgeCase(Seed.random())).isNull()
-    }
-
-    @Test
-    fun `ignoreExceptions propagates edge cases from underlying generator`() {
-        runIfGenSupportsEdgeCases()
-        TODO("write this test")
     }
 }

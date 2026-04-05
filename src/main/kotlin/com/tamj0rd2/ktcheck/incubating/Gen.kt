@@ -25,15 +25,16 @@ internal data class Gen<T> private constructor(
         TODO("Not yet implemented")
     }
 
-    override fun filter(threshold: Int, predicate: (T) -> Boolean): Gen<T> =
+    override fun filter(
+        threshold: Int,
+        predicate: (T) -> Boolean,
+    ): Gen<T> =
         Gen(FilterGen(this, threshold, predicate))
 
     override fun ignoreExceptions(
         klass: KClass<out Exception>,
         threshold: Int,
-    ): Gen<T> {
-        TODO("Not yet implemented")
-    }
+    ): Gen<T> = Gen(IgnoreExceptionsGen(this, threshold, klass))
 
     override fun list(size: IntRange): Gen<List<T>> {
         TODO("Not yet implemented")
