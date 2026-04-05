@@ -29,16 +29,30 @@ internal data class GeneratedValue<T>(
 internal data class GenContext private constructor(
     val seed: Seed,
     val generateEdgeCase: Boolean,
+    private val lazyLeft: Lazy<GenContext>,
+    private val lazyRight: Lazy<GenContext>,
 ) : GenerationContext {
     val random get() = Random(seed.value)
-    val left by lazy { new(seed.next(1)) }
-    val right by lazy { new(seed.next(2)) }
+    val left by lazyLeft
+    val right by lazyRight
+
+    override fun toString(): String {
+        return """
+            Root: ${formatNode()}
+            Left: ${left.formatNode()}
+            Rght: ${right.formatNode()}
+        """.trimIndent()
+    }
+
+    private fun formatNode() = "$seed | generateEdgeCase=$generateEdgeCase"
 
     companion object {
         fun new(seed: Seed): GenContext = new(seed, ShouldGenerateEdgeCase.BasedOnRng)
 
         fun new(seed: Seed, shouldGenerateEdgeCase: ShouldGenerateEdgeCase): GenContext = GenContext(
             seed = seed,
+            lazyLeft = lazy { new(seed.next(1), shouldGenerateEdgeCase) },
+            lazyRight = lazy { new(seed.next(2), shouldGenerateEdgeCase) },
             generateEdgeCase = shouldGenerateEdgeCase(seed.next(3)),
         )
     }

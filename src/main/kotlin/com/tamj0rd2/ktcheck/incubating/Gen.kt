@@ -6,17 +6,22 @@ import dev.forkhandles.result4k.orThrow
 import kotlin.reflect.KClass
 import com.tamj0rd2.ktcheck.Gen as IGen
 
-@ConsistentCopyVisibility
-internal data class Gen<T> private constructor(
-    private val provider: GenProvider<T>,
+internal class Gen<T> private constructor(
+    provider: GenProvider<T>,
 ) : IGen<T>, GenProvider<T> by provider {
-    override fun sample(seed: Long): T = provider.generate(GenContext.new(Seed(seed))).orThrow().value
+    override fun sample(seed: Long): T = generate(GenContext.new(Seed(seed))).orThrow().value
 
-    override fun <R> map(fn: (T) -> R): Gen<R> = Gen(MappingGen(provider, fn))
+    override fun <R> map(fn: (T) -> R): Gen<R> = Gen(MappingGen(this, fn))
 
-    override fun <R> flatMap(fn: (T) -> IGen<R>): Gen<R> {
-        TODO("Not yet implemented")
-    }
+    override fun <R> flatMap(fn: (T) -> IGen<R>): Gen<R> = Gen(
+        FlatMappingGen(
+            gen = this,
+            fn = let {
+                @Suppress("UNCHECKED_CAST")
+                fn as (T) -> Gen<R>
+            }
+        )
+    )
 
     override fun <T2, R> combineWith(
         nextGen: IGen<T2>,

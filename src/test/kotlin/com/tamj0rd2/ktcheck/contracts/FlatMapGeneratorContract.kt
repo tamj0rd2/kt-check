@@ -81,19 +81,14 @@ internal interface FlatMapGeneratorContract : BaseContract {
             repeatTest { seed ->
                 val gen = int(0..5).flatMap { outer -> int(10..15 + outer) }
                 val edgeCase = gen.edgeCase(seed)!!
-
                 collect(edgeCase.value)
 
-                expectThat(edgeCase).and {
-                    value.isContainedIn(expectedEdgeCases)
+                expectThat(edgeCase).value.isContainedIn(expectedEdgeCases)
+                // this does allow for shrunk values to include the original value, which can be argued is not a shrink.
+                // explanation is detailed below. It's a known problem that I'm not going to work-around.
+                expectThat(edgeCase).shrunkValues.all { isIn(10..edgeCase.value) }
 
-                    val originalValue = subject.value
-                    // this does allow for shrunk values to include the original value, which can be argued is not a shrink.
-                    // explanation is detailed below. It's a known problem that I'm not going to work-around.
-                    shrunkValues.all { isIn(10..originalValue) }
-                }
-
-                if (edgeCase.value == 18) {
+                if (gen is com.tamj0rd2.ktcheck.current.Gen && edgeCase.value == 18) {
                     /**
                      * So here, we're looking at the edge case 18. That edge case is reached by setting left = 4, right = 18.
                      * In the state where the edge case is created, the maximum value of the inner generator is 19.
