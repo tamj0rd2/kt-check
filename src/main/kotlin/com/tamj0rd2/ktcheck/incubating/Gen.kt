@@ -26,9 +26,7 @@ internal class Gen<T> private constructor(
     override fun <T2, R> combineWith(
         nextGen: IGen<T2>,
         combine: (T, T2) -> R,
-    ): Gen<R> {
-        TODO("Not yet implemented")
-    }
+    ): Gen<R> = Gen(CombineGen(this, nextGen as Gen<T2>, combine))
 
     override fun filter(
         threshold: Int,
