@@ -1,9 +1,7 @@
 package com.tamj0rd2.ktcheck.contracts
 
 
-import com.tamj0rd2.ktcheck.stats.Percentage.Companion.asPercentageOf
-import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
-import com.tamj0rd2.ktcheck.stats.withCounter
+import com.tamj0rd2.ktcheck.TestConfig
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -45,12 +43,13 @@ internal interface CharGeneratorContract : BaseContract {
         }
     }
 
+    // todo: very similar to the IntGenerator test... which makes sense, given it's just int, mapped
+    //  it should be possible to express this property regardless of the kind of generator it is :)
     @Test
     fun `generates a variety of characters over multiple runs`() {
         val chars = 'a'..'z'
-        withCounter {
-            char(chars).samples().take(100_000).forEach { collect(it) }
-        }.checkPercentages(chars.associateWith { (1 asPercentageOf chars.count()) - 1.percent })
+        val seenValues = char(chars).samples().take(TestConfig.DEFAULT_ITERATIONS).toSet()
+        expectThat(seenValues).isEqualTo(chars.toSet())
     }
 
     @Test

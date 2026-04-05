@@ -52,7 +52,12 @@ internal fun interface ShouldGenerateEdgeCase {
 internal data class GenResult<T>(
     val value: T,
     val shrinks: Sequence<GenResult<T>>,
-)
+) {
+    fun <R> map(fn: (T) -> R): GenResult<R> = GenResult(
+        value = fn(value),
+        shrinks = shrinks.map { it.map(fn) },
+    )
+}
 
 internal sealed interface GenProvider<T> {
     fun generate(ctx: GenContext): GenResult<T>
@@ -86,47 +91,52 @@ internal data class IntGen(
     )
 }
 
+internal data class MappingGen<T, R>(
+    private val provider: GenProvider<T>,
+    private val fn: (T) -> R,
+) : GenProvider<R> {
+    override fun generate(ctx: GenContext): GenResult<R> = provider.generate(ctx).map(fn)
+}
+
 internal data class Gen<T>(
     private val provider: GenProvider<T>,
 ) : IGen<T>, GenProvider<T> by provider {
     override fun sample(seed: Long): T = provider.generate(GenContext.new(Seed(seed))).value
 
-    override fun <R> map(fn: (T) -> R): IGen<R> {
-        TODO("Not yet implemented")
-    }
+    override fun <R> map(fn: (T) -> R): Gen<R> = Gen(MappingGen(provider, fn))
 
-    override fun <R> flatMap(fn: (T) -> IGen<R>): IGen<R> {
+    override fun <R> flatMap(fn: (T) -> IGen<R>): Gen<R> {
         TODO("Not yet implemented")
     }
 
     override fun <T2, R> combineWith(
         nextGen: IGen<T2>,
         combine: (T, T2) -> R,
-    ): IGen<R> {
+    ): Gen<R> {
         TODO("Not yet implemented")
     }
 
-    override fun filter(threshold: Int, predicate: (T) -> Boolean): IGen<T> {
+    override fun filter(threshold: Int, predicate: (T) -> Boolean): Gen<T> {
         TODO("Not yet implemented")
     }
 
     override fun ignoreExceptions(
         klass: KClass<out Exception>,
         threshold: Int,
-    ): IGen<T> {
+    ): Gen<T> {
         TODO("Not yet implemented")
     }
 
-    override fun list(size: IntRange): IGen<List<T>> {
+    override fun list(size: IntRange): Gen<List<T>> {
         TODO("Not yet implemented")
     }
 
-    override fun distinctList(size: IntRange): IGen<List<T>> {
+    override fun distinctList(size: IntRange): Gen<List<T>> {
         TODO("Not yet implemented")
     }
 
     companion object : GenBuilders {
-        override fun <T> constant(value: T): IGen<T> {
+        override fun <T> constant(value: T): Gen<T> {
             TODO("Not yet implemented")
         }
 
@@ -135,7 +145,7 @@ internal data class Gen<T>(
             shrinkTarget: Int,
         ) = Gen(IntGen(range, shrinkTarget))
 
-        override fun long(): IGen<Long> {
+        override fun long(): Gen<Long> {
             TODO("Not yet implemented")
         }
     }
