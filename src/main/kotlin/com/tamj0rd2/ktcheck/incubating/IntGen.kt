@@ -19,9 +19,9 @@ internal data class IntGen(
 
     override fun generate(ctx: GenContext): Result4k<GeneratedValue<Int>, GenerationException> {
         val value = if (ctx.generateEdgeCase) {
-            edgeCases.random(ctx.random)
+            edgeCases[ctx.int(edgeCases.indices)]
         } else {
-            range.random(ctx.random)
+            ctx.int(range)
         }
 
         return buildResult(value).asSuccess()
