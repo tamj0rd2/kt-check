@@ -1,11 +1,13 @@
 package com.tamj0rd2.ktcheck.incubating
 
+import com.tamj0rd2.ktcheck.GenerationException
 import com.tamj0rd2.ktcheck.core.GenerationContext
 import com.tamj0rd2.ktcheck.core.Seed
+import dev.forkhandles.result4k.Result4k
 import kotlin.random.Random
 
 internal sealed interface GenProvider<T> {
-    fun generate(ctx: GenContext): GeneratedValue<T>
+    fun generate(ctx: GenContext): Result4k<GeneratedValue<T>, GenerationException>
 }
 
 internal data class GeneratedValue<T>(

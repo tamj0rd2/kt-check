@@ -2,6 +2,7 @@ package com.tamj0rd2.ktcheck.incubating
 
 import com.tamj0rd2.ktcheck.GenBuilders
 import com.tamj0rd2.ktcheck.core.Seed
+import dev.forkhandles.result4k.orThrow
 import kotlin.reflect.KClass
 import com.tamj0rd2.ktcheck.Gen as IGen
 
@@ -9,7 +10,7 @@ import com.tamj0rd2.ktcheck.Gen as IGen
 internal data class Gen<T> private constructor(
     private val provider: GenProvider<T>,
 ) : IGen<T>, GenProvider<T> by provider {
-    override fun sample(seed: Long): T = provider.generate(GenContext.new(Seed(seed))).value
+    override fun sample(seed: Long): T = provider.generate(GenContext.new(Seed(seed))).orThrow().value
 
     override fun <R> map(fn: (T) -> R): Gen<R> = Gen(MappingGen(provider, fn))
 

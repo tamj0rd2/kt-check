@@ -5,6 +5,7 @@ import com.tamj0rd2.ktcheck.Property
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.ShrinkingConstraint
 import com.tamj0rd2.ktcheck.TestConfig
+import dev.forkhandles.result4k.orThrow
 
 internal fun <T> test(config: TestConfig, gen: Gen<T>, property: Property<T>) {
     TestRunner(config = config, gen = gen, property = property).run()
@@ -36,7 +37,7 @@ private class TestRunner<T>(
 
     private fun runIteration(iteration: Int): TestIterationResult {
         val seed = config.seed.next(iteration)
-        val genResult = gen.generate(GenContext.new(seed))
+        val genResult = gen.generate(GenContext.new(seed)).orThrow()
         val originalError = property.falsify(genResult.value) ?: return TestIterationResult.DidNotFalsify
         val originalFalsification = Falsification(genResult.value, originalError.error)
 

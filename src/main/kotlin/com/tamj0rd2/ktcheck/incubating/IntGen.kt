@@ -1,6 +1,9 @@
 package com.tamj0rd2.ktcheck.incubating
 
+import com.tamj0rd2.ktcheck.GenerationException
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
+import dev.forkhandles.result4k.Result4k
+import dev.forkhandles.result4k.asSuccess
 
 internal data class IntGen(
     private val range: IntRange,
@@ -14,14 +17,14 @@ internal data class IntGen(
         .filter { it in range }
         .distinct()
 
-    override fun generate(ctx: GenContext): GeneratedValue<Int> {
+    override fun generate(ctx: GenContext): Result4k<GeneratedValue<Int>, GenerationException> {
         val value = if (ctx.generateEdgeCase) {
             edgeCases.random(ctx.random)
         } else {
             range.random(ctx.random)
         }
 
-        return buildResult(value)
+        return buildResult(value).asSuccess()
     }
 
     private fun buildResult(value: Int): GeneratedValue<Int> = GeneratedValue(
