@@ -52,7 +52,7 @@ internal interface ListGeneratorContract : BaseContract {
     }
 
     @Test
-    fun `recursively shrinks a list of 2 elements`() {
+    fun `shrinks a list of 2 elements`() {
         val gen = int(0..4).list()
 
         val result = gen.generating(listOf(3, 4))

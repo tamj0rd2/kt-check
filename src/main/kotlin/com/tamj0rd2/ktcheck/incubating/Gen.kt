@@ -39,9 +39,7 @@ internal class Gen<T> private constructor(
         threshold: Int,
     ): Gen<T> = Gen(IgnoreExceptionsGen(this, threshold, klass))
 
-    override fun list(size: IntRange): Gen<List<T>> {
-        TODO("Not yet implemented")
-    }
+    override fun list(size: IntRange): Gen<List<T>> = Gen(ListGen(this, size))
 
     override fun distinctList(size: IntRange): Gen<List<T>> {
         TODO("Not yet implemented")
