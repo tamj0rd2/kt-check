@@ -5,12 +5,8 @@ import kotlin.random.Random
 @JvmInline
 // todo: make constructor private and see what breaks/flakes
 value class Seed internal constructor(val value: Long) {
-    // todo: just require offset != 0
     fun next(offset: Int): Seed {
-        if (value == 0L && offset == 0) {
-            throw IllegalArgumentException("$this cannot produce a new seed using offset 0")
-        }
-
+        require(offset > 0) { "$this cannot produce a new seed using offset 0" }
         return Seed(value * SPLIT_MIX_64_MULTIPLIER + offset)
     }
 
@@ -19,8 +15,6 @@ value class Seed internal constructor(val value: Long) {
 
         internal fun random(): Seed = Seed(Random.nextLong())
 
-        internal fun sequence(seed: Seed = random()): Sequence<Seed> = generateSequence(seed) {
-            it.next(if (it.value == 0L) 1 else 0)
-        }
+        internal fun sequence(seed: Seed = random()): Sequence<Seed> = generateSequence(seed) { it.next(1) }
     }
 }
