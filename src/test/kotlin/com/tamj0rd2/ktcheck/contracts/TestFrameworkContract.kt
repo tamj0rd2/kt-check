@@ -46,6 +46,17 @@ internal interface TestFrameworkContract : GenBuilders {
     }
 
     @Test
+    fun `runs the property multiple times`() {
+        var iterationsRun = 0
+        forAll(int()) { iterationsRun += 1; true }
+        expectThat(iterationsRun).isEqualTo(TestConfig.DEFAULT_ITERATIONS)
+
+        iterationsRun = 0
+        checkAll(int()) { iterationsRun += 1 }
+        expectThat(iterationsRun).isEqualTo(TestConfig.DEFAULT_ITERATIONS)
+    }
+
+    @Test
     fun `when the test is falsified, shrinks the failing value`() {
         var hasInitiallyFailed = false
         val recordedShrinks = mutableSetOf<Int>()

@@ -5,6 +5,7 @@ import kotlin.random.Random
 @JvmInline
 // todo: make constructor private and see what breaks/flakes
 value class Seed internal constructor(val value: Long) {
+    // todo: just require offset != 0
     fun next(offset: Int): Seed {
         if (value == 0L && offset == 0) {
             throw IllegalArgumentException("$this cannot produce a new seed using offset 0")

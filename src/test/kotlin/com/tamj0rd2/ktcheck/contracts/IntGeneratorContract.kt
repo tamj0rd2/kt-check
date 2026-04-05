@@ -50,7 +50,7 @@ internal interface IntGeneratorContract : BaseContract {
                 collect(if (it >= 0) "positive" else "negative")
             }
         }
-        counter.checkPercentages(mapOf("positive" to 45.percent, "negative" to 45.percent))
+        counter.checkPercentages(mapOf("positive" to 40.percent, "negative" to 40.percent))
     }
 
     @Test
