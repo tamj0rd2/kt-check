@@ -34,8 +34,8 @@ internal sealed class BaseListGen<T> : GenProvider<List<T>> {
             )
         }
 
-        val elementBasedShrinks = elements.indices.asSequence().flatMap { index ->
-            elements[index].shrinks.mapNotNull { shrunkElement ->
+        val elementBasedShrinks = elements.asSequence().flatMapIndexed { index, element ->
+            element.shrinks.mapNotNull { shrunkElement ->
                 elements
                     .toMutableList()
                     .apply { set(index, shrunkElement) }

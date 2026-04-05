@@ -38,7 +38,10 @@ private class TestRunner<T>(
     private fun runIteration(iteration: Int): TestIterationResult {
         val seed = config.seed.next(iteration)
         val genResult = gen.generate(GenContext.new(seed)).orThrow()
-        val originalError = property.falsify(genResult.value) ?: return TestIterationResult.DidNotFalsify
+        val originalError = property.falsify(genResult.value)
+            .also { printGeneratedValue(it, iteration, genResult.value) }
+            ?: return TestIterationResult.DidNotFalsify
+
         val originalFalsification = Falsification(genResult.value, originalError.error)
 
         val (shrunkFalsification, shrinkSteps) = config.shrinkingConstraintFactory.new().use {
@@ -75,13 +78,29 @@ private class TestRunner<T>(
 
             shrinkingConstraint.onStep()
 
-            val testResult = property.falsify(shrunkInput.value) ?: continue
+            val testResult = property.falsify(shrunkInput.value)
+                .also { printShrinkStep(it, seenValues.size, shrunkInput.value) }
+                ?: continue
 
             simplestFalsification = Falsification(shrunkInput.value, testResult.error)
             shrinkCandidates = shrunkInput.shrinks.iterator()
         }
 
         return simplestFalsification to seenValues.size
+    }
+
+    private fun printGeneratedValue(falsified: Property.Falsified?, iteration: Int, input: T) {
+        if (config.printShrinkSteps) {
+            val tag = if (falsified == null) "not" else "was"
+            println("iteration $iteration ($tag falsified): $input")
+        }
+    }
+
+    private fun printShrinkStep(falsified: Property.Falsified?, step: Int, input: T) {
+        if (config.printShrinkSteps) {
+            val tag = if (falsified == null) "not" else "was"
+            println("step $step ($tag falsified): $input")
+        }
     }
 
     private sealed interface TestIterationResult {

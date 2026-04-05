@@ -63,7 +63,7 @@ internal fun interface ShouldGenerateEdgeCase {
 
     data object BasedOnRng : ShouldGenerateEdgeCase {
         override fun invoke(seed: Seed): Boolean {
-            return Random(seed.value).nextBoolean()
+            return Random(seed.value).nextDouble() <= 0.1
         }
     }
 

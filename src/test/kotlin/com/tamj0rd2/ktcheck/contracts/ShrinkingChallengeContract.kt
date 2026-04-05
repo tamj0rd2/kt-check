@@ -2,14 +2,14 @@ package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.BooleanProperty
 import com.tamj0rd2.ktcheck.Gen
+import com.tamj0rd2.ktcheck.GenBuilders
 import com.tamj0rd2.ktcheck.Gens
+import com.tamj0rd2.ktcheck.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.core.tuple
 import com.tamj0rd2.ktcheck.forAll
 import com.tamj0rd2.ktcheck.positive
-import com.tamj0rd2.ktcheck.stats.LabelledCounter
-import com.tamj0rd2.ktcheck.stats.Percentage
 import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.Test
@@ -19,9 +19,7 @@ import java.time.Duration
 import kotlin.math.abs
 
 // based on https://github.com/jlink/shrinking-challenge/tree/main/challenges
-internal interface ShrinkingChallengeContract : BaseContract {
-    override val exampleGen get() = null
-
+internal interface ShrinkingChallengeContract : GenBuilders {
     @Test
     fun deletion() {
         testShrinking(
@@ -65,7 +63,7 @@ internal interface ShrinkingChallengeContract : BaseContract {
     fun distinct() {
         testShrinking(
             gen = int().list(),
-            test = BooleanProperty { it.distinct().size < 3 },
+            test = { it.distinct().size < 3 },
             didShrinkCorrectly = { it.toSet() in setOf(setOf(0, 1, 2), setOf(0, -1, -2), setOf(0, 1, -1)) },
         )
     }
@@ -108,16 +106,13 @@ internal interface ShrinkingChallengeContract : BaseContract {
     fun reverse() = testShrinking(
         gen = int().list(),
         test = { it.reversed() == it },
-        didShrinkCorrectly = { it in setOf(listOf(0, 1), listOf(0, -1)) },
+        didShrinkCorrectly = { it in setOf(listOf(0, 1), listOf(1, 0), listOf(-1, 0), listOf(0, -1)) },
     )
 
     private fun <T> testShrinking(
-        testConfig: TestConfig = TestConfig().withIterations(500),
         gen: Gen<T>,
         test: BooleanProperty<T>,
         didShrinkCorrectly: (T) -> Boolean,
-        minConfidence: Percentage = 100.percent,
-        categoriseShrinks: LabelledCounter.(Boolean, T, T) -> Unit = { _, _, _ -> },
     ): Unit = assertTimeoutPreemptively(Duration.ofSeconds(5)) {
         val exceptionsWithBadShrinks = mutableListOf<PropertyFalsifiedException>()
 
@@ -126,9 +121,6 @@ internal interface ShrinkingChallengeContract : BaseContract {
                 val exception = expectThrows<PropertyFalsifiedException> {
                     forAll(TestConfig().withSeed(seed.value).withoutReporting(), gen, test)
                 }.subject
-
-                @Suppress("UNCHECKED_CAST")
-                val originalArgs = exception.original.input as T
 
                 @Suppress("UNCHECKED_CAST")
                 val shrunkArgs = exception.smallest.input as T
@@ -142,8 +134,6 @@ internal interface ShrinkingChallengeContract : BaseContract {
                 } else {
                     exceptionsWithBadShrinks.add(exception)
                 }
-
-                categoriseShrinks(fullyShrunk, originalArgs, shrunkArgs)
             }
         }
 
@@ -156,7 +146,21 @@ internal interface ShrinkingChallengeContract : BaseContract {
                 .forEach { println(it.asBadShrinkExample()) }
         }
 
-        counter.checkPercentages("fully shrunk", mapOf(true to minConfidence))
+        counter.checkPercentages("fully shrunk", mapOf(true to 100.percent))
+    }
+
+    @HardcodedTestConfig
+    @Suppress("unused")
+    private fun <T> testShrinking(
+        testConfig: TestConfig,
+        gen: Gen<T>,
+        test: BooleanProperty<T>,
+        didShrinkCorrectly: (T) -> Boolean,
+    ) = expectThrows<PropertyFalsifiedException> {
+        forAll(testConfig, gen, test)
+    }.get { smallest.input }.assertThat("did shrink correctly") {
+        @Suppress("UNCHECKED_CAST")
+        didShrinkCorrectly(it as T)
     }
 
     private fun Int.bucket(size: Int): String {

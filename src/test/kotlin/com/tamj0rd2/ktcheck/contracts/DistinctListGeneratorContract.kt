@@ -71,7 +71,7 @@ internal interface DistinctListGeneratorContract : BaseContract {
 
     @Test
     fun `shrinks a list of 2 elements`() = repeatTest { seed ->
-        val gen = int(0..10).distinctList(size = 0..10)
+        val gen = int(0..10).distinctList(size = 0..5)
         val result = gen.generate(ctx(seed))
         if (result.value.size != 2) skipIteration()
 
