@@ -5,19 +5,19 @@ import com.tamj0rd2.ktcheck.core.Seed
 import kotlin.random.Random
 
 internal sealed interface GenProvider<T> {
-    fun generate(ctx: GenContext): GenResult<T>
+    fun generate(ctx: GenContext): GeneratedValue<T>
 }
 
-internal data class GenResult<T>(
+internal data class GeneratedValue<T>(
     val value: T,
-    val shrinks: Sequence<GenResult<T>>,
+    val shrinks: Sequence<GeneratedValue<T>>,
 ) {
-    fun <R> map(fn: (T) -> R): GenResult<R> = GenResult(
+    fun <R> map(fn: (T) -> R): GeneratedValue<R> = GeneratedValue(
         value = fn(value),
         shrinks = shrinks.map { it.map(fn) },
     )
 
-    fun filter(fn: (T) -> Boolean): GenResult<T>? {
+    fun filter(fn: (T) -> Boolean): GeneratedValue<T>? {
         if (!fn(value)) return null
         return copy(shrinks = shrinks.mapNotNull { it.filter(fn) })
     }

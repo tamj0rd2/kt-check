@@ -7,7 +7,7 @@ internal data class FilterGen<T>(
     private val threshold: Int,
     private val predicate: (T) -> Boolean,
 ) : GenProvider<T> {
-    override fun generate(ctx: GenContext): GenResult<T> {
+    override fun generate(ctx: GenContext): GeneratedValue<T> {
         return generateSequence(ctx) { it.right }
             .take(threshold)
             .map { delegate.generate(it.left) }

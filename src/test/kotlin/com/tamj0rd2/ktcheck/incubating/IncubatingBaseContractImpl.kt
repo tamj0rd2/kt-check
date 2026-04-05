@@ -17,7 +17,7 @@ internal abstract class IncubatingBaseContractImpl : BaseContract, GenBuilders b
         return generate(GenContext.new(seed, ShouldGenerateEdgeCase.Always))
     }
 
-    private fun <T> buildGenResults(result: GenResult<T>): GenResults<T> = GenResults(
+    private fun <T> buildGenResults(result: GeneratedValue<T>): GenResults<T> = GenResults(
         value = result.value,
         shrinks = result.shrinks.map { buildGenResults(it) }
     )

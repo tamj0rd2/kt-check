@@ -56,7 +56,7 @@ private class TestRunner<T>(
     }
 
     private fun findSimplestFalsification(
-        originalGeneratedValue: GenResult<T>,
+        originalGeneratedValue: GeneratedValue<T>,
         originalFalsification: Falsification<T>,
         shrinkingConstraint: ShrinkingConstraint,
     ): Pair<Falsification<T>, Int> {

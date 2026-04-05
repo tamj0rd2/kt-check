@@ -14,7 +14,7 @@ internal data class IntGen(
         .filter { it in range }
         .distinct()
 
-    override fun generate(ctx: GenContext): GenResult<Int> {
+    override fun generate(ctx: GenContext): GeneratedValue<Int> {
         val value = if (ctx.generateEdgeCase) {
             edgeCases.random(ctx.random)
         } else {
@@ -24,7 +24,7 @@ internal data class IntGen(
         return buildResult(value)
     }
 
-    private fun buildResult(value: Int): GenResult<Int> = GenResult(
+    private fun buildResult(value: Int): GeneratedValue<Int> = GeneratedValue(
         value = value,
         shrinks = IntShrinker.shrink(value, range, shrinkTarget).map { buildResult(it) }
     )
