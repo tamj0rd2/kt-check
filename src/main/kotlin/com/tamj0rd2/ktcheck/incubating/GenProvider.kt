@@ -7,47 +7,89 @@ import dev.forkhandles.result4k.Result4k
 import kotlin.random.Random
 
 internal sealed interface GenProvider<T> {
-    fun generate(ctx: GenContext): Result4k<GeneratedValue<T>, GenerationException>
+    fun generate(rootCtx: GenContext): Result4k<GeneratedValue<T>, GenerationException>
 }
 
 internal data class GeneratedValue<T>(
+    val ctx: GenContext,
     val value: T,
-    val shrinks: Sequence<GeneratedValue<T>>,
+    val shrinks: Sequence<GenContext>,
 ) {
-    fun <R> map(fn: (T) -> R): GeneratedValue<R> = GeneratedValue(
-        value = fn(value),
-        shrinks = shrinks.map { it.map(fn) },
-    )
+    override fun toString(): String {
+        return "value $value produced from:\n$ctx"
+    }
 
-    fun filter(fn: (T) -> Boolean): GeneratedValue<T>? {
-        if (!fn(value)) return null
-        return copy(shrinks = shrinks.mapNotNull { it.filter(fn) })
+    fun <R> map(fn: (T) -> R): GeneratedValue<R> = GeneratedValue(
+        ctx = ctx,
+        value = fn(value),
+        shrinks = shrinks,
+    )
+}
+
+sealed interface PrimitiveProvider {
+    fun int(range: IntRange): Int
+}
+
+private data class RngBasedPrimitiveProvider(
+    private val seed: Seed,
+) : PrimitiveProvider {
+    private val random get() = Random(seed.value)
+
+    override fun int(range: IntRange): Int {
+        return range.random(random)
     }
 }
 
-internal sealed class GenContext : GenerationContext {
-    abstract val generateEdgeCase: Boolean
+private data class PredeterminedPrimitiveProvider(
+    private val primitive: Any,
+) : PrimitiveProvider {
+    override fun int(range: IntRange): Int = when (primitive) {
+        !is Int -> error("$primitive is not an int")
+        !in range -> error("$primitive is out of range $range")
+        else -> primitive
+    }
+}
 
-    protected abstract val lazyLeft: Lazy<GenContext>
-    protected abstract val lazyRight: Lazy<GenContext>
-
+@ConsistentCopyVisibility
+internal data class GenContext private constructor(
+    val primitives: PrimitiveProvider,
+    private val lazyLeft: Lazy<GenContext>,
+    private val lazyRight: Lazy<GenContext>,
+    val generateEdgeCase: Boolean,
+    private val metadata: Set<String>,
+) : GenerationContext {
     val left get() = lazyLeft.value
     val right get() = lazyRight.value
 
-    abstract fun int(range: IntRange): Int
+    fun withShrunkPrimitive(primitive: Any): GenContext = copy(
+        primitives = PredeterminedPrimitiveProvider(primitive),
+        generateEdgeCase = false,
+    )
+
+    fun traverseRight() = generateSequence(this) { it.right }
+
+    fun withMetadata(key: String) = copy(metadata = metadata + key)
+    fun hasMetadata(key: String): Boolean = key in metadata
 
     companion object {
-        fun new(seed: Seed): GenContext = new(seed, ShouldGenerateEdgeCase.BasedOnRng)
-
-        fun new(seed: Seed, shouldGenerateEdgeCase: ShouldGenerateEdgeCase): GenContext = InitialGenContext(
-            seed = seed,
-            lazyLeft = lazy { new(seed.next(1), shouldGenerateEdgeCase) },
-            lazyRight = lazy { new(seed.next(2), shouldGenerateEdgeCase) },
-            generateEdgeCase = shouldGenerateEdgeCase(seed.next(3)),
+        fun new(
+            seed: Seed,
+            influenceEdgeCases: InfluenceGeneration = InfluenceGeneration.BasedOnRng,
+        ): GenContext = GenContext(
+            primitives = RngBasedPrimitiveProvider(seed),
+            lazyLeft = lazy { new(seed.next(1), influenceEdgeCases) },
+            lazyRight = lazy { new(seed.next(2), influenceEdgeCases) },
+            generateEdgeCase = influenceEdgeCases(seed.next(3)),
+            metadata = emptySet(),
         )
     }
 
-    protected abstract fun formatNode(): String
+    fun withLeft(newLeft: GenContext) = copy(lazyLeft = lazyOf(newLeft))
+    fun withRight(newRight: GenContext) = copy(lazyRight = lazyOf(newRight))
+
+    override fun toString(): String = visualise(maxDepth = 10)
+
+    private fun formatNode() = "$primitives | generateEdgeCase=$generateEdgeCase"
 
     internal fun visualise(maxDepth: Int = 3, forceEval: Boolean = false): String {
         fun visualise(
@@ -88,32 +130,16 @@ internal sealed class GenContext : GenerationContext {
     }
 }
 
-private data class InitialGenContext(
-    val seed: Seed,
-    override val generateEdgeCase: Boolean,
-    override val lazyLeft: Lazy<GenContext>,
-    override val lazyRight: Lazy<GenContext>,
-) : GenContext() {
-    private val random get() = Random(seed.value)
-
-    override fun int(range: IntRange): Int {
-        return range.random(random)
-    }
-
-    override fun toString(): String = visualise(maxDepth = 10)
-    override fun formatNode() = "$seed | generateEdgeCase=$generateEdgeCase"
-}
-
-internal fun interface ShouldGenerateEdgeCase {
+internal fun interface InfluenceGeneration {
     operator fun invoke(seed: Seed): Boolean
 
-    data object BasedOnRng : ShouldGenerateEdgeCase {
+    data object BasedOnRng : InfluenceGeneration {
         override fun invoke(seed: Seed): Boolean {
             return Random(seed.value).nextDouble() <= 0.1
         }
     }
 
-    data object Always : ShouldGenerateEdgeCase {
+    data object Always : InfluenceGeneration {
         override fun invoke(seed: Seed): Boolean = true
     }
 }

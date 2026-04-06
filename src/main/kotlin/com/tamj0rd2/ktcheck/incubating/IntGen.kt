@@ -17,18 +17,17 @@ internal data class IntGen(
         .filter { it in range }
         .distinct()
 
-    override fun generate(ctx: GenContext): Result4k<GeneratedValue<Int>, GenerationException> {
-        val value = if (ctx.generateEdgeCase) {
-            edgeCases[ctx.int(edgeCases.indices)]
+    override fun generate(rootCtx: GenContext): Result4k<GeneratedValue<Int>, GenerationException> {
+        val value = if (rootCtx.generateEdgeCase) {
+            edgeCases[rootCtx.primitives.int(edgeCases.indices)]
         } else {
-            ctx.int(range)
+            rootCtx.primitives.int(range)
         }
 
-        return buildResult(value).asSuccess()
+        return GeneratedValue(
+            ctx = rootCtx,
+            value = value,
+            shrinks = IntShrinker.shrink(value, range, shrinkTarget).map { rootCtx.withShrunkPrimitive(it) }
+        ).asSuccess()
     }
-
-    private fun buildResult(value: Int): GeneratedValue<Int> = GeneratedValue(
-        value = value,
-        shrinks = IntShrinker.shrink(value, range, shrinkTarget).map { buildResult(it) }
-    )
 }

@@ -5,6 +5,7 @@ import com.tamj0rd2.ktcheck.Property
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.ShrinkingConstraint
 import com.tamj0rd2.ktcheck.TestConfig
+import dev.forkhandles.result4k.onFailure
 import dev.forkhandles.result4k.orThrow
 
 internal fun <T> test(config: TestConfig, gen: Gen<T>, property: Property<T>) {
@@ -73,7 +74,8 @@ private class TestRunner<T>(
         val seenValues = mutableSetOf<T>()
 
         while (shrinkingConstraint.shouldKeepShrinking() && shrinkCandidates.hasNext()) {
-            val shrunkInput = shrinkCandidates.next()
+            val shrunkInput = gen.generate(shrinkCandidates.next()).onFailure { continue }
+            
             if (!seenValues.add(shrunkInput.value)) continue
 
             shrinkingConstraint.onStep()

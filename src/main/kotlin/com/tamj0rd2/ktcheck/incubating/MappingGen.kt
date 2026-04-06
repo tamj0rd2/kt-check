@@ -8,6 +8,6 @@ internal data class MappingGen<T, R>(
     private val gen: Gen<T>,
     private val fn: (T) -> R,
 ) : GenProvider<R> {
-    override fun generate(ctx: GenContext): Result4k<GeneratedValue<R>, GenerationException> =
-        gen.generate(ctx).map { it.map(fn) }
+    override fun generate(rootCtx: GenContext): Result4k<GeneratedValue<R>, GenerationException> =
+        gen.generate(rootCtx).map { it.map(fn) }
 }

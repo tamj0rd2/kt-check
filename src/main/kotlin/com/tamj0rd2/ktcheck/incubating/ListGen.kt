@@ -5,15 +5,39 @@ import dev.forkhandles.result4k.Result
 import dev.forkhandles.result4k.Result4k
 import dev.forkhandles.result4k.asFailure
 import dev.forkhandles.result4k.asSuccess
+import dev.forkhandles.result4k.map
 import dev.forkhandles.result4k.onFailure
+import dev.forkhandles.result4k.recover
 
 internal sealed class BaseListGen<T> : GenProvider<List<T>> {
     protected abstract val sizeRange: IntRange
 
-    final override fun generate(ctx: GenContext): Result4k<GeneratedValue<List<T>>, GenerationException> {
-        val size = Gen.int(sizeRange).generate(ctx.left).onFailure { return it }
-        val elements = generateElements(ctx.right, size.value).onFailure { return it }
-        return buildResult(size, elements).asSuccess()
+    final override fun generate(rootCtx: GenContext): Result4k<GeneratedValue<List<T>>, GenerationException> {
+        val size = Gen.int(sizeRange).generate(rootCtx.left).onFailure { return it }
+        val elements = generateElements(rootCtx.right, size.value).onFailure { return it }
+
+        val sizeBasedShrinks = size.shrinks.flatMap { ctx ->
+            Gen.int(sizeRange).generate(ctx)
+                .map { size ->
+                    sequence {
+                        yield(rootCtx.withSizeCtx(ctx).withElementsCtx(elements.map { it.ctx }.take(size.value)))
+                        yield(rootCtx.withSizeCtx(ctx).withElementsCtx(elements.map { it.ctx }.takeLast(size.value)))
+                    }
+                }
+                .recover { emptySequence() }
+        }
+
+        val elementBasedShrinks = elements.asSequence().flatMapIndexed { index, element ->
+            element.shrinks.map { shrunkElement ->
+                rootCtx.withElementsCtx(elements.map { it.ctx }.replaceAtIndex(index, shrunkElement))
+            }
+        }
+
+        return GeneratedValue(
+            ctx = rootCtx,
+            value = elements.map { it.value },
+            shrinks = sizeBasedShrinks + elementBasedShrinks,
+        ).asSuccess()
     }
 
     protected abstract fun generateElements(
@@ -23,32 +47,23 @@ internal sealed class BaseListGen<T> : GenProvider<List<T>> {
 
     protected open fun List<GeneratedValue<T>>.isValid(targetSize: Int): Boolean = true
 
-    private fun buildResult(
-        size: GeneratedValue<Int>,
-        elements: List<GeneratedValue<T>>,
-    ): GeneratedValue<List<T>> {
-        val sizeBasedShrinks = size.shrinks.flatMap { size ->
-            sequenceOf(
-                buildResult(size, elements.take(size.value)),
-                buildResult(size, elements.takeLast(size.value)),
-            )
+    private fun GenContext.withSizeCtx(sizeShrink: GenContext) = withLeft(sizeShrink)
+
+    private fun GenContext.withElementsCtx(elementContexts: List<GenContext>): GenContext {
+        val originalTraversalNodes = right.traverseRight().take(elementContexts.size + 1).toList()
+
+        var current = originalTraversalNodes.last().withMetadata(listTerminator)
+        for (i in elementContexts.indices.reversed()) {
+            current = originalTraversalNodes[i].withLeft(elementContexts[i]).withRight(current)
         }
 
-        val elementBasedShrinks = elements.asSequence().flatMapIndexed { index, element ->
-            element.shrinks.mapNotNull { shrunkElement ->
-                elements
-                    .toMutableList()
-                    .apply { set(index, shrunkElement) }
-                    .takeIf { it.isValid(size.value) }
-                    ?.let { buildResult(size, it) }
-            }
-        }
-
-        return GeneratedValue(
-            value = elements.map { it.value },
-            shrinks = sizeBasedShrinks + elementBasedShrinks,
-        )
+        return withRight(current)
     }
+
+    private fun <T> List<T>.replaceAtIndex(index: Int, replacement: T): List<T> =
+        toMutableList().apply { set(index, replacement) }
+
+    protected val listTerminator = "${this::class.simpleName}.terminate"
 }
 
 internal data class ListGen<T>(
@@ -82,7 +97,7 @@ internal data class DistinctListGen<T>(
         var attempts = 0
         val seenValues = mutableSetOf<T>()
         while (size < targetSize) {
-            if (attempts > MAX_ATTEMPTS_PER_ELEMENT) {
+            if (attempts > MAX_ATTEMPTS_PER_ELEMENT || ctx.hasMetadata(listTerminator)) {
                 return GenerationException.DistinctCollectionSizeImpossible(
                     minSize = targetSize,
                     achievedSize = size,

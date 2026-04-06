@@ -2,12 +2,8 @@ package com.tamj0rd2.ktcheck.incubating
 
 import com.tamj0rd2.ktcheck.GenerationException
 import dev.forkhandles.result4k.Result4k
-import dev.forkhandles.result4k.Success
-import dev.forkhandles.result4k.asFailure
-import dev.forkhandles.result4k.asSuccess
-import dev.forkhandles.result4k.onFailure
+import dev.forkhandles.result4k.asResultOr
 import dev.forkhandles.result4k.orThrow
-import dev.forkhandles.result4k.valueOrNull
 import kotlin.reflect.KClass
 
 internal data class IgnoreExceptionsGen<T>(
@@ -15,39 +11,56 @@ internal data class IgnoreExceptionsGen<T>(
     private val threshold: Int,
     private val klass: KClass<out Exception>,
 ) : GenProvider<T> {
-    override fun generate(ctx: GenContext): Result4k<GeneratedValue<T>, GenerationException> {
-        var ctx = ctx
-
-        repeat(threshold) {
-            val generatedValue = buildResult { delegate.generate(ctx.left).orThrow() }.onFailure { return it }
-            if (generatedValue != null) return generatedValue.asSuccess()
-            ctx = ctx.right
-        }
-
-        throw GenerationException.FilterLimitReached(threshold)
+    override fun generate(rootCtx: GenContext): Result4k<GeneratedValue<T>, GenerationException> {
+        var lastException: Throwable? = null
+        return rootCtx.traverseRight()
+            .take(threshold)
+            // ensures that during shrinking, we don't go further than the intended shrink tree
+            .takeWhile { !it.hasMetadata(terminator) }
+            .mapNotNull {
+                catchError { delegate.generate(it.left).orThrow() }
+                    .onFailure { lastException = it }
+                    .getOrNull()
+            }
+            .map {
+                GeneratedValue(
+                    ctx = rootCtx,
+                    value = it.value,
+                    shrinks = it.shrinks.map { ctx ->
+                        rootCtx.withLeft(ctx).withRight(rootCtx.right.withMetadata(terminator))
+                    }
+                )
+            }
+            .firstOrNull()
+            .asResultOr { GenerationException.FilterLimitReached(threshold, lastException) }
     }
 
-    private fun buildResult(
-        makeGeneratedValue: () -> GeneratedValue<T>,
-    ): Result4k<GeneratedValue<T>?, GenerationException> =
-        try {
-            val generatedValue = makeGeneratedValue()
-            GeneratedValue(
-                value = generatedValue.value,
-                shrinks = sequence {
-                    val iterator = generatedValue.shrinks.iterator()
-                    while (iterator.hasNext()) {
-                        buildResult { iterator.next() }.valueOrNull()?.let { yield(it) }
-                    }
-                }
-            ).asSuccess()
-        } catch (e: Exception) {
-            when {
-                klass.isInstance(e) -> Success(null)
-                e is GenerationException -> e.asFailure()
-                else -> throw e
-            }
-        }
+    // todo: pretty sure I'm also about to add this for exception ignoring. maybe I should just introduce a way to
+    //  mark a node as terminal.
+    private val terminator = "${this::class.simpleName}.terminate"
+
+    //private fun buildResult(
+    //    makeGeneratedValue: () -> GeneratedValue<T>,
+    //): Result4k<GeneratedValue<T>?, GenerationException> =
+    //    try {
+    //        val generatedValue = makeGeneratedValue()
+    //        GeneratedValue(
+    //            value = generatedValue.value,
+    //            shrinks = sequence {
+    //                //val iterator = generatedValue.shrinks.iterator()
+    //                //while (iterator.hasNext()) {
+    //                //    buildResult { iterator.next() }.valueOrNull()?.let { yield(it) }
+    //                //}
+    //                TODO()
+    //            }
+    //        ).asSuccess()
+    //    } catch (e: Exception) {
+    //        when {
+    //            klass.isInstance(e) -> Success(null)
+    //            e is GenerationException -> e.asFailure()
+    //            else -> throw e
+    //        }
+    //    }
 
     private fun <T> catchError(fn: () -> T) =
         runCatching { fn() }.onFailure { if (!klass.isInstance(it)) throw it }
