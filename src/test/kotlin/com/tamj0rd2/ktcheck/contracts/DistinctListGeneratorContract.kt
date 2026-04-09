@@ -86,9 +86,14 @@ internal interface DistinctListGeneratorContract : BaseContract {
             listOf(secondValue),
             // element shrinks
             *let {
-                val firstValueShrunk = IntShrinker.shrink(firstValue, 0..10).map { listOf(it, secondValue) }
-                val secondValueShrunk = IntShrinker.shrink(secondValue, 0..10).map { listOf(firstValue, it) }
-                (firstValueShrunk + secondValueShrunk).filter { it.toSet().size == 2 }.toList()
+                val firstValueShrinks = IntShrinker.shrink(firstValue, 0..10)
+                val secondValueShrinks = IntShrinker.shrink(secondValue, 0..10)
+
+                val firstValueShrunk = firstValueShrinks.map { listOf(it, secondValue) }
+                val secondValueShrunk = secondValueShrinks.map { listOf(firstValue, it) }
+                val bothValueShrinks = firstValueShrinks.zip(secondValueShrinks).map { listOf(it.first, it.second) }
+
+                (firstValueShrunk + secondValueShrunk + bothValueShrinks).filter { it.toSet().size == 2 }.toList()
             }.toTypedArray<List<Int>>(),
         )
     }

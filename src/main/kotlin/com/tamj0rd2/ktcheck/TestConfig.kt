@@ -44,7 +44,7 @@ data class TestConfig private constructor(
         copy(shrinkingConstraintFactory = constraint)
 
     @Deprecated("I might move this functionality to the Reporter")
-    fun printShrinkSteps() = copy(printShrinkSteps = true)
+    internal fun printShrinkSteps(value: Boolean = true) = copy(printShrinkSteps = value)
 
     @HardcodedTestConfig
     fun replay(seed: Long, iteration: Int) = copy(

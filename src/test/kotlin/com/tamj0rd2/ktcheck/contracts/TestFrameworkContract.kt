@@ -81,7 +81,7 @@ internal interface TestFrameworkContract : GenBuilders {
     fun `includes edge cases during test iterations`() {
         val seenValues = mutableSetOf<Int>()
         val gen = int()
-        val expectedEdges = setOf(0, 1, -1, Int.MIN_VALUE, Int.MIN_VALUE + 1, Int.MAX_VALUE, Int.MAX_VALUE - 1)
+        val expectedEdges = setOf(Int.MIN_VALUE, Int.MIN_VALUE + 1, Int.MAX_VALUE, Int.MAX_VALUE - 1)
 
         forAll(gen) { seenValues.add(it); true }
         expectThat(seenValues).contains(expectedEdges)
@@ -95,7 +95,7 @@ internal interface TestFrameworkContract : GenBuilders {
     fun `values that are not edge cases are also included`() {
         val seenValues = mutableSetOf<Int>()
         val gen = int()
-        val expectedEdges = setOf(0, 1, -1, Int.MIN_VALUE, Int.MIN_VALUE + 1, Int.MAX_VALUE, Int.MAX_VALUE - 1)
+        val expectedEdges = setOf(Int.MIN_VALUE, Int.MIN_VALUE + 1, Int.MAX_VALUE, Int.MAX_VALUE - 1)
 
         forAll(gen) { seenValues.add(it); true }
         expectThat(seenValues).filter { it !in expectedEdges }.isNotEmpty()

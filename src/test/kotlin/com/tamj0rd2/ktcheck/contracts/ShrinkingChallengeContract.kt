@@ -3,8 +3,6 @@ package com.tamj0rd2.ktcheck.contracts
 import com.tamj0rd2.ktcheck.BooleanProperty
 import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilders
-import com.tamj0rd2.ktcheck.Gens
-import com.tamj0rd2.ktcheck.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.core.tuple
@@ -13,17 +11,19 @@ import com.tamj0rd2.ktcheck.positive
 import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertTimeoutPreemptively
-import strikt.api.expectThrows
+import org.junit.jupiter.api.fail
 import java.time.Duration
 import kotlin.math.abs
 
 // based on https://github.com/jlink/shrinking-challenge/tree/main/challenges
 internal interface ShrinkingChallengeContract : GenBuilders {
+    // can falsify by producing duplicates within the list and shrinking the in a way that maintains duplication
     @Test
     fun deletion() {
+        // todo: for this to fail, list needs to produce duplicates.
+        //  can raise the likelihood by causing elements of the list to be edge cases.
         testShrinking(
-            gen = Gens.zip(int().list(), int(0..10)).filter { (list, index) -> index < list.size },
+            gen = zip(int().list(), int(0..10)).filter { (list, index) -> index < list.size },
             test = { (list, index) ->
                 val element = list[index]
                 element !in list.toMutableList().apply { remove(element) }
@@ -32,10 +32,11 @@ internal interface ShrinkingChallengeContract : GenBuilders {
         )
     }
 
+    // can falsify by producing duplicates and shrinking them in a way that maintains the duplication
     @Test
     fun `difference must not be zero`() {
         testShrinking(
-            gen = Gens.zip(int(IntRange.positive), int(IntRange.positive)),
+            gen = zip(int(IntRange.positive), int(IntRange.positive)),
             test = { (a, b) -> a < 10 || abs(a - b) != 0 },
             didShrinkCorrectly = { it == tuple(10, 10) },
         )
@@ -44,16 +45,17 @@ internal interface ShrinkingChallengeContract : GenBuilders {
     @Test
     fun `difference must not be small`() {
         testShrinking(
-            gen = Gens.zip(int(IntRange.positive), int(IntRange.positive)),
+            gen = zip(int(IntRange.positive), int(IntRange.positive)),
             test = { (a, b) -> a < 10 || abs(a - b) !in 1..4 },
             didShrinkCorrectly = { it == tuple(10, 6) },
         )
     }
 
+    // can falsify by producing range.max and range.max-1 and shrinking them in a way that maintains the distance
     @Test
     fun `difference must not be one`() {
         testShrinking(
-            gen = Gens.zip(int(IntRange.positive), int(IntRange.positive)),
+            gen = zip(int(IntRange.positive), int(IntRange.positive)),
             test = { (a, b) -> a < 10 || abs(a - b) != 1 },
             didShrinkCorrectly = { it == tuple(10, 9) },
         )
@@ -110,17 +112,29 @@ internal interface ShrinkingChallengeContract : GenBuilders {
     )
 
     private fun <T> testShrinking(
+        testConfig: TestConfig = TestConfig(),
         gen: Gen<T>,
         test: BooleanProperty<T>,
         didShrinkCorrectly: (T) -> Boolean,
-    ): Unit = assertTimeoutPreemptively(Duration.ofSeconds(5)) {
+    ) {
         val exceptionsWithBadShrinks = mutableListOf<PropertyFalsifiedException>()
 
         val counter = withLabelledCounter {
-            repeatTest { seed ->
-                val exception = expectThrows<PropertyFalsifiedException> {
-                    forAll(TestConfig().withSeed(seed.value).withoutReporting(), gen, test)
-                }.subject
+            repeatTest(testConfig, timeout = Duration.ofSeconds(5)) { seed ->
+                val exception = runCatching {
+                    forAll(
+                        config = TestConfig()
+                            .withSeed(seed.value)
+                            .withoutReporting()
+                            .printShrinkSteps(testConfig.printShrinkSteps),
+                        gen = gen,
+                        property = test
+                    )
+                }.exceptionOrNull() ?: fail("the property was not falsified")
+
+                if (exception !is PropertyFalsifiedException) {
+                    fail("property failed due to uncaught exception", exception)
+                }
 
                 @Suppress("UNCHECKED_CAST")
                 val shrunkArgs = exception.smallest.input as T
@@ -141,26 +155,13 @@ internal interface ShrinkingChallengeContract : GenBuilders {
             println("\nSome bad shrinks encountered:")
 
             exceptionsWithBadShrinks
+                .distinctBy { "${it.seed}_${it.iteration}" }
                 .sortedBy { it.smallest.input.toString().length }
                 .take(5)
-                .forEach { println(it.asBadShrinkExample()) }
+                .forEach { println(it.asBadShrinkExample(testConfig)) }
         }
 
         counter.checkPercentages("fully shrunk", mapOf(true to 100.percent))
-    }
-
-    @HardcodedTestConfig
-    @Suppress("unused")
-    private fun <T> testShrinking(
-        testConfig: TestConfig,
-        gen: Gen<T>,
-        test: BooleanProperty<T>,
-        didShrinkCorrectly: (T) -> Boolean,
-    ) = expectThrows<PropertyFalsifiedException> {
-        forAll(testConfig, gen, test)
-    }.get { smallest.input }.assertThat("did shrink correctly") {
-        @Suppress("UNCHECKED_CAST")
-        didShrinkCorrectly(it as T)
     }
 
     private fun Int.bucket(size: Int): String {
@@ -169,9 +170,9 @@ internal interface ShrinkingChallengeContract : GenBuilders {
         return "$lowerBound-$upperBound"
     }
 
-    private fun PropertyFalsifiedException.asBadShrinkExample(): String {
+    private fun PropertyFalsifiedException.asBadShrinkExample(testConfig: TestConfig?): String {
         val shortenedOriginalInput = original.input.toString().let {
-            if (it.length > 100) it.take(100) + " (remaining args truncated)" else it
+            if (it.length > 100 && testConfig == null) it.take(100) + " (remaining args truncated)" else it
         }
 
         return """

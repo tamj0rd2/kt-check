@@ -16,7 +16,7 @@ internal sealed class BaseListGen<T> : GenProvider<List<T>> {
         val size = Gen.int(sizeRange).generate(rootCtx.left).onFailure { return it }
         val elements = generateElements(rootCtx.right, size.value).onFailure { return it }
 
-        val sizeBasedShrinks = size.shrinks.flatMap { ctx ->
+        val sizeBasedShrinks = size.shrinks.takeIf { size.value > sizeRange.first }.orEmpty().flatMap { ctx ->
             Gen.int(sizeRange).generate(ctx)
                 .map { size ->
                     sequence {
@@ -27,16 +27,24 @@ internal sealed class BaseListGen<T> : GenProvider<List<T>> {
                 .recover { emptySequence() }
         }
 
-        val elementBasedShrinks = elements.asSequence().flatMapIndexed { index, element ->
+        val individualElementShrinks = elements.asSequence().flatMapIndexed { index, element ->
             element.shrinks.map { shrunkElement ->
                 rootCtx.withElementsCtx(elements.map { it.ctx }.replaceAtIndex(index, shrunkElement))
             }
         }
 
+        val allElementShrinks = sequence {
+            val allElementShrinks = elements.map { it.shrinks.iterator() }.ifEmpty { return@sequence }
+
+            while (allElementShrinks.all { it.hasNext() }) {
+                val shrunkContexts = allElementShrinks.map { it.next() }
+                yield(rootCtx.withElementsCtx(shrunkContexts))
+            }
+        }
         return GeneratedValue(
             ctx = rootCtx,
             value = elements.map { it.value },
-            shrinks = sizeBasedShrinks + elementBasedShrinks,
+            shrinks = sizeBasedShrinks + individualElementShrinks + allElementShrinks,
         ).asSuccess()
     }
 

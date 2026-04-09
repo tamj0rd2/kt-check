@@ -33,15 +33,15 @@ internal interface CombineWithGeneratorContract : BaseContract {
         val gen = oneToThree.combineWith(fourToSix, ::Pair)
 
         repeatTest { seed ->
-            val result = gen.generate(ctx())
-            if (result.value == 1 to 4) skipIteration()
+            val (originalValue, shrunkValues) = gen.collectShrunkValues(
+                seed = seed,
+                startShrinkingOnce = { it != Pair(1, 4) }
+            )
 
-            // todo: later, I want to change this to isEqualTo and stop providing the cartesian product.
-            //  I want a different generate to inject duplicates.
-            expectThat(result).shrunkValues.isNotEmpty().contains(
+            expectThat(shrunkValues).describedAs { "shrinks of $originalValue" }.isNotEmpty().contains(
                 listOf(
-                    IntShrinker.shrink(result.value.first, 1..3).map { result.value.copy(first = it) }.toList(),
-                    IntShrinker.shrink(result.value.second, 4..6).map { result.value.copy(second = it) }.toList()
+                    IntShrinker.shrink(originalValue.first, 1..3).map { originalValue.copy(first = it) }.toList(),
+                    IntShrinker.shrink(originalValue.second, 4..6).map { originalValue.copy(second = it) }.toList()
                 ).flatten()
             )
         }

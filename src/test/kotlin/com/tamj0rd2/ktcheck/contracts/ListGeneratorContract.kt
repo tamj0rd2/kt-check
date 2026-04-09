@@ -11,7 +11,6 @@ import strikt.assertions.all
 import strikt.assertions.any
 import strikt.assertions.contains
 import strikt.assertions.containsExactlyInAnyOrder
-import strikt.assertions.first
 import strikt.assertions.isEmpty
 import strikt.assertions.isEqualTo
 import strikt.assertions.isGreaterThan
@@ -82,67 +81,98 @@ internal interface ListGeneratorContract : BaseContract {
     fun `size shrinks include the first half of the list, and the second half of the list`() {
         val gen = int().list(0..20)
 
-        fun checkShrinks(originalResult: GenResults<List<Int>>?) {
-            if (originalResult == null) skipIteration()
-            if (originalResult.value.size < 2 || originalResult.value.size % 2 != 0) skipIteration()
-            val halfSize = originalResult.value.size / 2
-
-            expectThat(originalResult).shrunkValues.isNotEmpty().contains(
-                originalResult.value.take(halfSize),
-                originalResult.value.takeLast(halfSize),
+        repeatTest { seed ->
+            val (originalList, shrunkValues) = gen.collectShrunkValues(
+                seed = seed,
+                startShrinkingOnce = { it.size >= 2 && it.size % 2 == 0 }
             )
+            val halfSize = originalList.size / 2
+
+            expectThat(shrunkValues)
+                .describedAs { "shrunk values of $originalList" }
+                .isNotEmpty()
+                .contains(originalList.take(halfSize), originalList.takeLast(halfSize))
         }
-
-
-        repeatTest { seed -> checkShrinks(gen.generate(ctx(seed))) }
-        repeatTest { seed -> checkShrinks(gen.edgeCase(seed)) }
     }
 
     @Test
     fun `shrinks to empty list when list is not empty`() {
         val gen = int(0..10).list()
 
-        fun checkShrinks(originalResult: GenResults<List<Int>>?) {
-            if (originalResult == null) skipIteration()
-            if (originalResult.value.isEmpty()) skipIteration()
-            expectThat(originalResult).shrunkValues.isNotEmpty().first().isEqualTo(emptyList())
+        repeatTest { seed ->
+            val (originalList, shrunkValues) = gen.collectShrunkValues(
+                seed = seed,
+                startShrinkingOnce = { it.isNotEmpty() }
+            )
+            expectThat(originalList).isNotEmpty()
+            expectThat(shrunkValues).describedAs { "shrunk values" }.any { isEmpty() }
         }
+    }
 
+    @Test
+    fun `empty lists don't shrink`() {
+        val gen = int(0..10).list(0)
 
-        repeatTest { seed -> checkShrinks(gen.generate(ctx(seed))) }
-        repeatTest { seed -> checkShrinks(gen.edgeCase(seed)) }
+        repeatTest { seed ->
+            val (originalList, shrunkValues) = gen.collectShrunkValues(
+                seed = seed,
+                startShrinkingOnce = { it.isEmpty() }
+            )
+            expectThat(originalList).isEmpty()
+            expectThat(shrunkValues).describedAs { "shrunk values" }.isEmpty()
+        }
     }
 
     @Test
     fun `shrunk element values do not exceed max original value`() {
         val gen = int(0..10).list(size = 0..4)
-        fun checkShrinks(originalResult: GenResults<List<Int>>?) {
-            if (originalResult == null) skipIteration()
-            if (originalResult.value.isEmpty()) skipIteration()
-            val maxOriginalValue = originalResult.value.max()
 
-            expectThat(originalResult).shrunkValues.isNotEmpty().all {
-                all { isLessThanOrEqualTo(maxOriginalValue) }
-            }
+        repeatTest { seed ->
+            val (originalList, shrunkValues) = gen.collectShrunkValues(
+                seed = seed,
+                startShrinkingOnce = { it.isNotEmpty() }
+            )
+            val originalMaxElement = originalList.max()
+
+            expectThat(shrunkValues)
+                .describedAs { "shrinks of $originalList" }
+                .isNotEmpty()
+                .all { all { isLessThanOrEqualTo(originalMaxElement) } }
         }
-
-        repeatTest { seed -> checkShrinks(gen.generate(ctx(seed))) }
-        repeatTest { seed -> checkShrinks(gen.edgeCase(seed)) }
     }
 
     @Test
     fun `all shrunk element values are within the generator range`() {
         val range = 0..10
-        val gen = int(range).list()
+        val gen = int(range).list(0..5)
 
-        fun checkShrinks(originalResult: GenResults<List<Int>>?) {
-            if (originalResult == null) skipIteration()
-            if (originalResult.value.isEmpty()) skipIteration()
-            expectThat(originalResult).shrunkValues.isNotEmpty().all { all { isIn(range) } }
+        repeatTest { seed ->
+            val (originalList, shrunkValues) = gen.collectShrunkValues(
+                seed = seed,
+                startShrinkingOnce = { it.isNotEmpty() }
+            )
+            expectThat(shrunkValues)
+                .describedAs { "shrinks of $originalList" }
+                .isNotEmpty()
+                .all { all { isIn(range) } }
         }
+    }
 
-        repeatTest { seed -> checkShrinks(gen.generate(ctx(seed))) }
-        repeatTest { seed -> checkShrinks(gen.edgeCase(seed)) }
+    @Test
+    fun `all shrunk lists are within the generator's size bounds`() {
+        val sizeRange = 0..5
+        val gen = int(0..10).list(sizeRange)
+
+        repeatTest { seed ->
+            val (originalList, shrunkValues) = gen.collectShrunkValues(
+                seed = seed,
+                startShrinkingOnce = { it.isNotEmpty() && it != listOf(0) }
+            )
+            expectThat(shrunkValues)
+                .describedAs { "shrinks of $originalList" }
+                .isNotEmpty()
+                .all { size.isIn(sizeRange) }
+        }
     }
 
     @TestFactory

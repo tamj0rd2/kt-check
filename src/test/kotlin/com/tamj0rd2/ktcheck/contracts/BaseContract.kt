@@ -2,7 +2,6 @@ package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilders
-import com.tamj0rd2.ktcheck.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.ShrinkingConstraintFactory
 import com.tamj0rd2.ktcheck.TestConfig
@@ -17,11 +16,12 @@ import org.junit.jupiter.api.fail
 import org.opentest4j.TestSkippedException
 import strikt.api.Assertion
 import strikt.api.expectThat
-import strikt.api.expectThrows
 import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
+import java.time.Duration
 import java.time.Duration.ofSeconds
+import kotlin.time.measureTimedValue
 
 internal interface BaseContract : GenBuilders {
     val exampleGen: Gen<*>?
@@ -61,9 +61,10 @@ internal interface BaseContract : GenBuilders {
             val originalResult = gen.generate(ctx(seed))
             val regenerated = gen.generate(ctx(seed))
 
-            expectThat(regenerated).shrunkValues.containsExactlyInAnyOrder(originalResult.shrunkValues)
-            // this is the assertion I actually want, but the output is easier to read when split into 2 assertions.
-            expectThat(regenerated).shrunkValues.isEqualTo(originalResult.shrunkValues)
+            expectThat(regenerated).shrunkValues
+                .containsExactlyInAnyOrder(originalResult.shrunkValues)
+                // this is the assertion I actually want, but the output is easier to read when split into 2 assertions.
+                .isEqualTo(originalResult.shrunkValues)
         }
     }
 
@@ -124,7 +125,7 @@ internal class GenResults<T>(
         return "GenResults(value=$value)"
     }
 
-    val shrunkValues get() = shrinks.map { it.value }.distinct().toList()
+    val shrunkValues by lazy { shrinks.map { it.value }.distinct().toList() }
 }
 
 fun <T> Gen<T>.expectGenerationAndShrinkingToEventuallyComplete() {
@@ -147,8 +148,8 @@ fun <T> Gen<T>.expectGenerationAndShrinkingToEventuallyComplete() {
     }
 }
 
-internal val <T> Assertion.Builder<GenResults<T>>.value get() = get { value }
-internal val <T> Assertion.Builder<GenResults<T>>.shrunkValues get() = get { shrunkValues }.describedAs { "shrunk values: ($this)" }
+internal val <T> Assertion.Builder<GenResults<T>>.value get() = get("value: %s") { value }
+internal val <T> Assertion.Builder<GenResults<T>>.shrunkValues get() = get("shrunk values: (%s)") { shrunkValues }
 
 /**
  * @return true if the property ran. false if the property was skipped
@@ -162,30 +163,34 @@ internal fun <T> ignoreSkips(block: () -> T): Boolean =
         false
     }
 
-internal fun repeatTest(property: (Seed) -> Unit) {
-    assertTimeoutPreemptively(ofSeconds(2)) {
-        var successCount = 0
-        var iteration = 0
+@Suppress("unused")
+internal fun <T> timed(description: String, block: () -> T) = measureTimedValue(block).also {
+    println("$description took ${it.duration}")
+}.value
 
-        while (successCount < 500) {
-            iteration++
+internal fun repeatTest(
+    testConfig: TestConfig = TestConfig(),
+    timeout: Duration = ofSeconds(2),
+    property: (Seed) -> Unit,
+) {
+    val testConfig = testConfig.withIterations(500)
+    var successCount = 0
+    var iteration = testConfig.replayIteration ?: 1
+    val startingSeed = testConfig.seed
 
-            val seed = Seed.random()
-            try {
+    try {
+        assertTimeoutPreemptively(timeout) {
+            while (successCount < testConfig.effectiveIterations) {
+                val seed = startingSeed.next(iteration)
                 if (ignoreSkips { property(seed) }) successCount += 1
-            } catch (e: Throwable) {
-                println("Test failed on iteration $iteration - $seed")
-                println("Successes beforehand: $successCount")
-                throw e
+                iteration++
             }
         }
+    } catch (e: Throwable) {
+        println("Test failed on iteration $iteration of $startingSeed")
+        println("Successes beforehand: $successCount")
+        throw e
     }
-}
-
-@HardcodedTestConfig
-@Suppress("unused")
-internal fun repeatTest(seed: Long, property: (Seed) -> Unit) {
-    assertTimeoutPreemptively(ofSeconds(2)) { property(Seed(seed)) }
 }
 
 internal fun skipIteration(): Nothing = throw TestSkippedException()
@@ -198,7 +203,7 @@ internal fun <T> Gen<T>.collectShrunkValues(
 ): Pair<T, List<T>> {
     var originalValue: T? = null
     val seenShrinks = mutableListOf<T>()
-    expectThrows<PropertyFalsifiedException> {
+    try {
         val config = TestConfig()
             .withSeed(seed.value)
             .withShrinkingConstraint(ShrinkingConstraintFactory.infinite())
@@ -213,6 +218,9 @@ internal fun <T> Gen<T>.collectShrunkValues(
                 }
             }
         }
+        fail { "property was not falsified" }
+    } catch (e: PropertyFalsifiedException) {
+        // good
     }
 
     return originalValue!! to seenShrinks
