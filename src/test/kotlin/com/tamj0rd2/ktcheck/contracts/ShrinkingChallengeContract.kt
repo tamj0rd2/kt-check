@@ -3,7 +3,9 @@ package com.tamj0rd2.ktcheck.contracts
 import com.tamj0rd2.ktcheck.BooleanProperty
 import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilders
+import com.tamj0rd2.ktcheck.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
+import com.tamj0rd2.ktcheck.ShrinkingConstraintFactory
 import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.core.tuple
 import com.tamj0rd2.ktcheck.forAll
@@ -12,6 +14,7 @@ import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import com.tamj0rd2.ktcheck.stats.withLabelledCounter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
+import strikt.api.expectThat
 import java.time.Duration
 import kotlin.math.abs
 
@@ -20,10 +23,8 @@ internal interface ShrinkingChallengeContract : GenBuilders {
     // can falsify by producing duplicates within the list and shrinking the in a way that maintains duplication
     @Test
     fun deletion() {
-        // todo: for this to fail, list needs to produce duplicates.
-        //  can raise the likelihood by causing elements of the list to be edge cases.
         testShrinking(
-            gen = zip(int().list(), int(0..10)).filter { (list, index) -> index < list.size },
+            gen = int().list(1..100).flatMap { zip(constant(it), int(it.indices)) },
             test = { (list, index) ->
                 val element = list[index]
                 element !in list.toMutableList().apply { remove(element) }
@@ -94,7 +95,7 @@ internal interface ShrinkingChallengeContract : GenBuilders {
     @Test
     fun `nested lists`() {
         testShrinking(
-            gen = int(Int.MIN_VALUE..Int.MAX_VALUE).list().list(),
+            gen = int().list().list(),
             test = { listOfLists -> listOfLists.sumOf { it.size } <= 10 },
             // todo: although it works, it'd may be nice if later I can make it normalise the list to a single list.
             didShrinkCorrectly = { listOfLists ->
@@ -111,8 +112,37 @@ internal interface ShrinkingChallengeContract : GenBuilders {
         didShrinkCorrectly = { it in setOf(listOf(0, 1), listOf(1, 0), listOf(-1, 0), listOf(0, -1)) },
     )
 
+    /**
+     * Replays a specific iteration from forAll
+     */
+    @HardcodedTestConfig
+    // todo: revisit this stuff, I'm sure there's a much better way.
     private fun <T> testShrinking(
-        testConfig: TestConfig = TestConfig(),
+        seed: Long,
+        iteration: Int,
+        gen: Gen<T>,
+        test: BooleanProperty<T>,
+        didShrinkCorrectly: (T) -> Boolean,
+    ) = try {
+        forAll(
+            config = TestConfig()
+                .replay(seed, iteration)
+                .withShrinkingConstraint(ShrinkingConstraintFactory.infinite())
+                .printShrinkSteps(),
+            gen = gen,
+            property = test
+        )
+        fail("the property wasn't falsified")
+    } catch (e: PropertyFalsifiedException) {
+        expectThat(e)
+            .get("smallest input %s") { smallest.input }
+            .assertThat("did shrink correctly") { didShrinkCorrectly(it as T) }
+    }
+
+    @OptIn(HardcodedTestConfig::class)
+    // todo: revisit this stuff, I'm sure there's a much better way.
+    private fun <T> testShrinking(
+        repeatTestConfig: TestConfig = TestConfig(),
         gen: Gen<T>,
         test: BooleanProperty<T>,
         didShrinkCorrectly: (T) -> Boolean,
@@ -120,13 +150,15 @@ internal interface ShrinkingChallengeContract : GenBuilders {
         val exceptionsWithBadShrinks = mutableListOf<PropertyFalsifiedException>()
 
         val counter = withLabelledCounter {
-            repeatTest(testConfig, timeout = Duration.ofSeconds(5)) { seed ->
+            repeatTest(repeatTestConfig.withIterations(500), Duration.ofSeconds(2)) { seed ->
                 val exception = runCatching {
                     forAll(
+                        // todo: options pattern might be nice to try here, internally at least.
                         config = TestConfig()
                             .withSeed(seed.value)
                             .withoutReporting()
-                            .printShrinkSteps(testConfig.printShrinkSteps),
+                            .withShrinkingConstraint(ShrinkingConstraintFactory.infinite())
+                            .printShrinkSteps(repeatTestConfig.printShrinkSteps),
                         gen = gen,
                         property = test
                     )
@@ -143,6 +175,7 @@ internal interface ShrinkingChallengeContract : GenBuilders {
                 collect("fully shrunk", fullyShrunk)
 
                 if (fullyShrunk) {
+                    // todo: I should bucket these using percentiles instead. the current bucketing system is pretty useless
                     collect("fully shrunk steps", exception.shrinkSteps.bucket(size = 50))
                     collect("fully shrunk args", shrunkArgs.toString())
                 } else {
@@ -158,7 +191,7 @@ internal interface ShrinkingChallengeContract : GenBuilders {
                 .distinctBy { "${it.seed}_${it.iteration}" }
                 .sortedBy { it.smallest.input.toString().length }
                 .take(5)
-                .forEach { println(it.asBadShrinkExample(testConfig)) }
+                .forEach { println(it.asBadShrinkExample()) }
         }
 
         counter.checkPercentages("fully shrunk", mapOf(true to 100.percent))
@@ -170,9 +203,9 @@ internal interface ShrinkingChallengeContract : GenBuilders {
         return "$lowerBound-$upperBound"
     }
 
-    private fun PropertyFalsifiedException.asBadShrinkExample(testConfig: TestConfig?): String {
+    private fun PropertyFalsifiedException.asBadShrinkExample(): String {
         val shortenedOriginalInput = original.input.toString().let {
-            if (it.length > 100 && testConfig == null) it.take(100) + " (remaining args truncated)" else it
+            if (it.length > 1000) it.take(1000) + " (remaining args truncated)" else it
         }
 
         return """
@@ -182,6 +215,7 @@ internal interface ShrinkingChallengeContract : GenBuilders {
             |Original args: $shortenedOriginalInput
             |Shrunk args: ${smallest.input}
             |Shrink steps: $shrinkSteps
+            |Shrinking ended early: $shrinkingConstrained
             """.trimMargin()
     }
 }

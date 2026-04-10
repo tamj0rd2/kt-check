@@ -2,6 +2,7 @@ package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilders
+import com.tamj0rd2.ktcheck.HardcodedTestConfig
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.ShrinkingConstraintFactory
 import com.tamj0rd2.ktcheck.TestConfig
@@ -9,6 +10,8 @@ import com.tamj0rd2.ktcheck.checkAll
 import com.tamj0rd2.ktcheck.core.GenerationContext
 import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.forAll
+import com.tamj0rd2.ktcheck.stats.Percentage
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
@@ -21,6 +24,7 @@ import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
 import java.time.Duration
 import java.time.Duration.ofSeconds
+import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
 
 internal interface BaseContract : GenBuilders {
@@ -169,20 +173,22 @@ internal fun <T> timed(description: String, block: () -> T) = measureTimedValue(
 }.value
 
 internal fun repeatTest(
-    testConfig: TestConfig = TestConfig(),
+    testConfig: TestConfig = TestConfig().withIterations(500),
     timeout: Duration = ofSeconds(2),
     property: (Seed) -> Unit,
 ) {
-    val testConfig = testConfig.withIterations(500)
     var successCount = 0
     var iteration = testConfig.replayIteration ?: 1
     val startingSeed = testConfig.seed
+    val timings = mutableMapOf<Int, kotlin.time.Duration>()
 
     try {
         assertTimeoutPreemptively(timeout) {
             while (successCount < testConfig.effectiveIterations) {
                 val seed = startingSeed.next(iteration)
-                if (ignoreSkips { property(seed) }) successCount += 1
+                timings[iteration] = measureTime {
+                    if (ignoreSkips { property(seed) }) successCount += 1
+                }
                 iteration++
             }
         }
@@ -190,13 +196,31 @@ internal fun repeatTest(
         println("Test failed on iteration $iteration of $startingSeed")
         println("Successes beforehand: $successCount")
         throw e
+    } finally {
+        val timingList = timings.toList().sortedBy { it.second }
+        println(
+            """
+            |--------
+            |Timings for starting seed ${testConfig.seed.value}:
+            |5th percentile:  ${timingList.percentile(5.percent)}
+            |Median:          ${timingList.percentile(50.percent)}
+            |95th percentile: ${timingList.percentile(95.percent)}
+            |--------
+            """.trimMargin()
+        )
     }
+}
+
+fun <T> List<T>.percentile(percentile: Percentage): T? {
+    if (this.isEmpty()) return null
+    return this[(size * percentile.value).toInt().coerceAtMost(size - 1)]
 }
 
 internal fun skipIteration(): Nothing = throw TestSkippedException()
 
 private class TestSkippedException : AssertionError("Test skipped")
 
+@OptIn(HardcodedTestConfig::class)
 internal fun <T> Gen<T>.collectShrunkValues(
     seed: Seed,
     startShrinkingOnce: (T) -> Boolean = { true },

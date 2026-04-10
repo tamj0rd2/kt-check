@@ -59,6 +59,8 @@ class PropertyFalsifiedException internal constructor(
     val original: Falsification<*>,
     val shrunk: Falsification<*>?,
     val shrinkSteps: Int,
+    // todo: remove default value when I remove the old impl
+    val shrinkingConstrained: Boolean = false,
 ) : AssertionError() {
     internal val smallest = shrunk ?: original
     override val cause = smallest.error
@@ -67,17 +69,20 @@ class PropertyFalsifiedException internal constructor(
         appendLine("Property falsified on iteration ${iteration}, seed $seed\n")
 
         if (shrunk != null) {
-            appendLine(formatFalsification(prefix = "Shrunk ", result = shrunk))
+            appendLine(
+                formatFalsification(prefix = "Shrunk ", result = shrunk, showShrinkWarning = shrinkingConstrained)
+            )
         } else {
             appendLine("Warning - Could not shrink the input arguments")
         }
 
-        appendLine(formatFalsification(prefix = "Original ", result = original))
+        appendLine(formatFalsification(prefix = "Original ", result = original, showShrinkWarning = false))
     }
 
     private fun formatFalsification(
         prefix: String,
         result: Falsification<*>,
+        showShrinkWarning: Boolean,
     ) = buildString {
         appendLine("${prefix}Arguments:")
         appendLine("--------------------")
@@ -89,6 +94,10 @@ class PropertyFalsifiedException internal constructor(
             }
 
             else -> appendLine(result.input)
+        }
+
+        if (showShrinkWarning) {
+            appendLine("Warning - The shrinking process was stopped before completion. Did $shrinkSteps steps.")
         }
 
         if (result.error != null) {

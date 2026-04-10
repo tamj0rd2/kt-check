@@ -5,6 +5,8 @@ import com.tamj0rd2.ktcheck.Property
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.ShrinkingConstraint
 import com.tamj0rd2.ktcheck.TestConfig
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.asPercentageOf
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import dev.forkhandles.result4k.onFailure
 import dev.forkhandles.result4k.orThrow
 
@@ -30,22 +32,33 @@ private class TestRunner<T>(
                 seed = config.seed.value,
                 iteration = iteration,
                 original = result.originalFalsification,
-                shrunk = result.shrunkFalsification.takeIf { it.input != result.originalFalsification.input },
-                shrinkSteps = result.shrinkSteps
+                shrunk = result.shrinking.falsification.takeIf { it.input != result.originalFalsification.input },
+                shrinkSteps = result.shrinking.steps,
+                shrinkingConstrained = result.shrinking.wasConstrained,
             )
         }
     }
 
     private fun runIteration(iteration: Int): TestIterationResult {
         val seed = config.seed.next(iteration)
-        val genResult = gen.generate(GenContext.new(seed)).orThrow()
+        val ctx = GenContext.new(
+            seed = seed,
+            influenceEdgeCases = let {
+                // todo: can I get rid of this yet?
+                val progress = iteration asPercentageOf config.iterations
+                val edgeCaseChance = (100.percent - progress).coerceIn(5.percent..15.percent)
+                InfluenceGeneration.BasedOnRng(edgeCaseChance)
+            }
+        )
+
+        val genResult = gen.generate(ctx).orThrow()
         val originalError = property.falsify(genResult.value)
             .also { printGeneratedValue(it, iteration, genResult.value) }
             ?: return TestIterationResult.DidNotFalsify
 
         val originalFalsification = Falsification(genResult.value, originalError.error)
 
-        val (shrunkFalsification, shrinkSteps) = config.shrinkingConstraintFactory.new().use {
+        val shrinking = config.shrinkingConstraintFactory.new().use {
             findSimplestFalsification(
                 originalGeneratedValue = genResult,
                 originalFalsification = originalFalsification,
@@ -55,16 +68,21 @@ private class TestRunner<T>(
 
         return TestIterationResult.DidFalsify(
             originalFalsification = originalFalsification,
-            shrunkFalsification = shrunkFalsification,
-            shrinkSteps = shrinkSteps
+            shrinking = shrinking,
         )
     }
+
+    private data class ShrinkingResult<T>(
+        val falsification: Falsification<T>,
+        val steps: Int,
+        val wasConstrained: Boolean,
+    )
 
     private fun findSimplestFalsification(
         originalGeneratedValue: GeneratedValue<T>,
         originalFalsification: Falsification<T>,
         shrinkingConstraint: ShrinkingConstraint,
-    ): Pair<Falsification<T>, Int> {
+    ): ShrinkingResult<T> {
         shrinkingConstraint.onStart()
 
         // todo: these 2 values are entirely coupled. They should probably be a single thing.
@@ -73,9 +91,15 @@ private class TestRunner<T>(
 
         val seenValues = mutableSetOf<T>()
 
-        while (shrinkingConstraint.shouldKeepShrinking() && shrinkCandidates.hasNext()) {
+        while (shrinkCandidates.hasNext()) {
+            if (shrinkingConstraint.shouldStopShrinking()) return ShrinkingResult(
+                falsification = simplestFalsification,
+                steps = seenValues.size,
+                wasConstrained = true
+            )
+
             val shrunkInput = gen.generate(shrinkCandidates.next()).onFailure { continue }
-            
+
             if (!seenValues.add(shrunkInput.value)) continue
 
             shrinkingConstraint.onStep()
@@ -88,7 +112,11 @@ private class TestRunner<T>(
             shrinkCandidates = shrunkInput.shrinks.iterator()
         }
 
-        return simplestFalsification to seenValues.size
+        return ShrinkingResult(
+            falsification = simplestFalsification,
+            steps = seenValues.size,
+            wasConstrained = false
+        )
     }
 
     private fun printGeneratedValue(falsified: Property.Falsified?, iteration: Int, input: T) {
@@ -108,8 +136,7 @@ private class TestRunner<T>(
     private sealed interface TestIterationResult {
         data class DidFalsify<T>(
             val originalFalsification: Falsification<T>,
-            val shrunkFalsification: Falsification<T>,
-            val shrinkSteps: Int,
+            val shrinking: ShrinkingResult<T>,
         ) : TestIterationResult
 
         data object DidNotFalsify : TestIterationResult

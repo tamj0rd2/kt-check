@@ -13,16 +13,9 @@ internal data class IntGen(
         require(shrinkTarget in range) { "shrinkTarget $shrinkTarget not in range $range" }
     }
 
-    private val edgeCases = setOf(range.first, range.first + 1, -1, 0, 1, range.last - 1, range.last)
-        .filter { it in range }
-        .distinct()
-
     override fun generate(rootCtx: GenContext): Result4k<GeneratedValue<Int>, GenerationException> {
-        val value = if (rootCtx.generateEdgeCase) {
-            edgeCases[rootCtx.primitives.int(edgeCases.indices)]
-        } else {
-            rootCtx.primitives.int(range)
-        }
+        // todo: passing something from rootContext into something from rootContext feels wrong.
+        val value = rootCtx.primitives.int(range, rootCtx.generateEdgeCase)
 
         return GeneratedValue(
             ctx = rootCtx,

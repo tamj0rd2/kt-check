@@ -38,6 +38,7 @@ data class TestConfig private constructor(
 
     fun withIterations(iterations: Int) = copy(iterations = iterations)
 
+    @HardcodedTestConfig
     fun withSeed(seed: Long) = copy(seed = Seed(seed))
 
     fun withShrinkingConstraint(constraint: ShrinkingConstraintFactory) =

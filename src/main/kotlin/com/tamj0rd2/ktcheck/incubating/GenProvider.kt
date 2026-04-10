@@ -3,6 +3,9 @@ package com.tamj0rd2.ktcheck.incubating
 import com.tamj0rd2.ktcheck.GenerationException
 import com.tamj0rd2.ktcheck.core.GenerationContext
 import com.tamj0rd2.ktcheck.core.Seed
+import com.tamj0rd2.ktcheck.stats.Percentage
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.asPercentage
+import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import dev.forkhandles.result4k.Result4k
 import kotlin.random.Random
 
@@ -27,7 +30,7 @@ internal data class GeneratedValue<T>(
 }
 
 sealed interface PrimitiveProvider {
-    fun int(range: IntRange): Int
+    fun int(range: IntRange, generateEdgeCase: Boolean): Int
 }
 
 private data class RngBasedPrimitiveProvider(
@@ -35,15 +38,20 @@ private data class RngBasedPrimitiveProvider(
 ) : PrimitiveProvider {
     private val random get() = Random(seed.value)
 
-    override fun int(range: IntRange): Int {
-        return range.random(random)
-    }
+    override fun int(range: IntRange, generateEdgeCase: Boolean): Int =
+        when {
+            generateEdgeCase -> setOf(range.first, range.first + 1, range.last - 1, range.last)
+                .filter { it in range }
+                .random(random)
+
+            else -> range.random(random)
+        }
 }
 
 private data class PredeterminedPrimitiveProvider(
     private val primitive: Any,
 ) : PrimitiveProvider {
-    override fun int(range: IntRange): Int = when (primitive) {
+    override fun int(range: IntRange, generateEdgeCase: Boolean): Int = when (primitive) {
         !is Int -> error("$primitive is not an int")
         !in range -> error("$primitive is out of range $range")
         else -> primitive
@@ -53,13 +61,15 @@ private data class PredeterminedPrimitiveProvider(
 @ConsistentCopyVisibility
 internal data class GenContext private constructor(
     val primitives: PrimitiveProvider,
-    private val lazyLeft: Lazy<GenContext>,
-    private val lazyRight: Lazy<GenContext>,
     val generateEdgeCase: Boolean,
     private val metadata: Set<String>,
+    private val lazyLeft: Lazy<GenContext>,
+    private val lazyRight: Lazy<GenContext>,
 ) : GenerationContext {
     val left get() = lazyLeft.value
     val right get() = lazyRight.value
+
+    fun generateEdgeCase() = copy(generateEdgeCase = true)
 
     fun withShrunkPrimitive(primitive: Any): GenContext = copy(primitives = PredeterminedPrimitiveProvider(primitive))
     fun withShrunkLeft(newLeft: GenContext) = copy(lazyLeft = lazyOf(newLeft))
@@ -73,13 +83,14 @@ internal data class GenContext private constructor(
     companion object {
         fun new(
             seed: Seed,
-            influenceEdgeCases: InfluenceGeneration = InfluenceGeneration.BasedOnRng,
+            influenceEdgeCases: InfluenceGeneration = InfluenceGeneration.BasedOnRng(10.percent),
+            influenceDuplicates: InfluenceGeneration = InfluenceGeneration.BasedOnRng(5.percent),
         ): GenContext = GenContext(
             primitives = RngBasedPrimitiveProvider(seed),
-            lazyLeft = lazy { new(seed.next(1), influenceEdgeCases) },
-            lazyRight = lazy { new(seed.next(2), influenceEdgeCases) },
-            generateEdgeCase = influenceEdgeCases(seed.next(3)),
+            generateEdgeCase = influenceEdgeCases(seed.next(1)),
             metadata = emptySet(),
+            lazyLeft = lazy { new(seed.next(2), influenceEdgeCases) },
+            lazyRight = lazy { new(seed.next(3), influenceEdgeCases) },
         )
     }
 
@@ -129,9 +140,9 @@ internal data class GenContext private constructor(
 internal fun interface InfluenceGeneration {
     operator fun invoke(seed: Seed): Boolean
 
-    data object BasedOnRng : InfluenceGeneration {
+    data class BasedOnRng(private val chance: Percentage) : InfluenceGeneration {
         override fun invoke(seed: Seed): Boolean {
-            return Random(seed.value).nextDouble() <= 0.1
+            return Random(seed.value).nextDouble().asPercentage <= chance
         }
     }
 

@@ -11,16 +11,33 @@ internal data class CombineGen<T1, T2, R>(
     val combine: (T1, T2) -> R,
 ) : GenProvider<R> {
     override fun generate(rootCtx: GenContext): Result4k<GeneratedValue<R>, GenerationException> {
-        val left = leftGen.generate(rootCtx.left).onFailure { return it }
-        val right = rightGen.generate(rootCtx.right).onFailure { return it }
+        val left = rootCtx.left
+            .let { if (rootCtx.generateEdgeCase) it.generateEdgeCase() else it }
+            .let { leftGen.generate(it) }
+            .onFailure { return it }
+
+        val right = rootCtx.right
+            .let { if (rootCtx.generateEdgeCase) it.generateEdgeCase() else it }
+            .let { rightGen.generate(it) }
+            .onFailure { return it }
 
         val leftBasedShrinks = left.shrinks.map { left -> rootCtx.withShrunkLeft(left) }
         val rightBasedShrinks = right.shrinks.map { right -> rootCtx.withShrunkRight(right) }
 
+        /**
+         * allows important properties of the data to be maintained during shrinking. For example, if falsifying the
+         * property requires both values to be the same, shrinking left+right separately will never allow it.
+         */
+        val cartesianShrinks = left.shrinks.flatMap { left ->
+            right.shrinks.map { right ->
+                rootCtx.withShrunkLeft(left).withShrunkRight(right)
+            }
+        }
+
         return GeneratedValue(
             ctx = rootCtx,
             value = combine(left.value, right.value),
-            shrinks = leftBasedShrinks + rightBasedShrinks,
+            shrinks = cartesianShrinks + leftBasedShrinks + rightBasedShrinks,
         ).asSuccess()
     }
 }

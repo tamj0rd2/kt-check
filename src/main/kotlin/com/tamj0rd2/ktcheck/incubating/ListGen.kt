@@ -15,13 +15,16 @@ internal sealed class BaseListGen<T> : GenProvider<List<T>> {
     final override fun generate(rootCtx: GenContext): Result4k<GeneratedValue<List<T>>, GenerationException> {
         val size = Gen.int(sizeRange).generate(rootCtx.left).onFailure { return it }
         val elements = generateElements(rootCtx.right, size.value).onFailure { return it }
+        val elementContexts by lazy { elements.map { it.ctx } }
 
         val sizeBasedShrinks = size.shrinks.takeIf { size.value > sizeRange.first }.orEmpty().flatMap { ctx ->
             Gen.int(sizeRange).generate(ctx)
+                .map { it.value }
                 .map { size ->
                     sequence {
-                        yield(rootCtx.withSizeCtx(ctx).withElementsCtx(elements.map { it.ctx }.take(size.value)))
-                        yield(rootCtx.withSizeCtx(ctx).withElementsCtx(elements.map { it.ctx }.takeLast(size.value)))
+                        yield(rootCtx.withSizeCtx(ctx).withElementsCtx(elementContexts.take(size)))
+                        if (elements.size == size) return@sequence
+                        yield(rootCtx.withSizeCtx(ctx).withElementsCtx(elementContexts.takeLast(size)))
                     }
                 }
                 .recover { emptySequence() }
@@ -29,7 +32,7 @@ internal sealed class BaseListGen<T> : GenProvider<List<T>> {
 
         val individualElementShrinks = elements.asSequence().flatMapIndexed { index, element ->
             element.shrinks.map { shrunkElement ->
-                rootCtx.withElementsCtx(elements.map { it.ctx }.replaceAtIndex(index, shrunkElement))
+                rootCtx.withElementsCtx(elementContexts.replaceAtIndex(index, shrunkElement))
             }
         }
 
@@ -41,15 +44,23 @@ internal sealed class BaseListGen<T> : GenProvider<List<T>> {
                 yield(rootCtx.withElementsCtx(shrunkContexts))
             }
         }
+
         return GeneratedValue(
             ctx = rootCtx,
             value = elements.map { it.value },
-            shrinks = sizeBasedShrinks + individualElementShrinks + allElementShrinks,
+            shrinks = sizeBasedShrinks + sequence {
+                val iterators = listOf(allElementShrinks, individualElementShrinks).map { it.iterator() }
+                while (iterators.any { it.hasNext() }) {
+                    for (iterator in iterators) {
+                        if (iterator.hasNext()) yield(iterator.next())
+                    }
+                }
+            },
         ).asSuccess()
     }
 
     protected abstract fun generateElements(
-        ctx: GenContext,
+        root: GenContext,
         targetSize: Int,
     ): Result<List<GeneratedValue<T>>, GenerationException>
 
@@ -79,14 +90,16 @@ internal data class ListGen<T>(
     override val sizeRange: IntRange,
 ) : BaseListGen<T>() {
     override fun generateElements(
-        ctx: GenContext,
+        root: GenContext,
         targetSize: Int,
     ): Result<List<GeneratedValue<T>>, GenerationException> =
         buildList {
-            var ctx = ctx
-            repeat(targetSize) {
+            val contexts = root.traverseRight().take(targetSize).map {
+                if (root.generateEdgeCase) it.generateEdgeCase() else it
+            }
+
+            for (ctx in contexts) {
                 add(gen.generate(ctx.left).onFailure { return it })
-                ctx = ctx.right
             }
         }.asSuccess()
 }
@@ -98,10 +111,10 @@ internal data class DistinctListGen<T>(
     override fun List<GeneratedValue<T>>.isValid(targetSize: Int) = distinctBy { it.value }.size == targetSize
 
     override fun generateElements(
-        ctx: GenContext,
+        root: GenContext,
         targetSize: Int,
     ): Result<List<GeneratedValue<T>>, GenerationException> = buildList {
-        var ctx = ctx
+        var ctx = root
         var attempts = 0
         val seenValues = mutableSetOf<T>()
         while (size < targetSize) {
