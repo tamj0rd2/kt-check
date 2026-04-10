@@ -61,10 +61,9 @@ internal data class GenContext private constructor(
     val left get() = lazyLeft.value
     val right get() = lazyRight.value
 
-    fun withShrunkPrimitive(primitive: Any): GenContext = copy(
-        primitives = PredeterminedPrimitiveProvider(primitive),
-        generateEdgeCase = false,
-    )
+    fun withShrunkPrimitive(primitive: Any): GenContext = copy(primitives = PredeterminedPrimitiveProvider(primitive))
+    fun withShrunkLeft(newLeft: GenContext) = copy(lazyLeft = lazyOf(newLeft))
+    fun withShrunkRight(newRight: GenContext) = copy(lazyRight = lazyOf(newRight))
 
     fun traverseRight() = generateSequence(this) { it.right }
 
@@ -83,9 +82,6 @@ internal data class GenContext private constructor(
             metadata = emptySet(),
         )
     }
-
-    fun withLeft(newLeft: GenContext) = copy(lazyLeft = lazyOf(newLeft))
-    fun withRight(newRight: GenContext) = copy(lazyRight = lazyOf(newRight))
 
     override fun toString(): String = visualise(maxDepth = 10)
 

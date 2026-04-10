@@ -13,8 +13,8 @@ internal data class FlatMappingGen<T, R>(
         val left = gen.generate(rootCtx.left).onFailure { return it }
         val right = fn(left.value).generate(rootCtx.right).onFailure { return it }
 
-        val leftBasedShrinks = left.shrinks.map { left -> rootCtx.withLeft(left) }
-        val rightBasedShrinks = right.shrinks.map { right -> rootCtx.withRight(right) }
+        val leftBasedShrinks = left.shrinks.map { left -> rootCtx.withShrunkLeft(left) }
+        val rightBasedShrinks = right.shrinks.map { right -> rootCtx.withShrunkRight(right) }
 
         return GeneratedValue(
             ctx = rootCtx,

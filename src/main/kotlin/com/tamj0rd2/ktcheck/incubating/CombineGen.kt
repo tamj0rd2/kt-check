@@ -14,8 +14,8 @@ internal data class CombineGen<T1, T2, R>(
         val left = leftGen.generate(rootCtx.left).onFailure { return it }
         val right = rightGen.generate(rootCtx.right).onFailure { return it }
 
-        val leftBasedShrinks = left.shrinks.map { left -> rootCtx.withLeft(left) }
-        val rightBasedShrinks = right.shrinks.map { right -> rootCtx.withRight(right) }
+        val leftBasedShrinks = left.shrinks.map { left -> rootCtx.withShrunkLeft(left) }
+        val rightBasedShrinks = right.shrinks.map { right -> rootCtx.withShrunkRight(right) }
 
         return GeneratedValue(
             ctx = rootCtx,

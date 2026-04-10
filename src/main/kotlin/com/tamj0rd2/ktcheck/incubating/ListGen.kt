@@ -47,17 +47,17 @@ internal sealed class BaseListGen<T> : GenProvider<List<T>> {
 
     protected open fun List<GeneratedValue<T>>.isValid(targetSize: Int): Boolean = true
 
-    private fun GenContext.withSizeCtx(sizeShrink: GenContext) = withLeft(sizeShrink)
+    private fun GenContext.withSizeCtx(sizeShrink: GenContext) = withShrunkLeft(sizeShrink)
 
     private fun GenContext.withElementsCtx(elementContexts: List<GenContext>): GenContext {
         val originalTraversalNodes = right.traverseRight().take(elementContexts.size + 1).toList()
 
         var current = originalTraversalNodes.last().withMetadata(listTerminator)
         for (i in elementContexts.indices.reversed()) {
-            current = originalTraversalNodes[i].withLeft(elementContexts[i]).withRight(current)
+            current = originalTraversalNodes[i].withShrunkLeft(elementContexts[i]).withShrunkRight(current)
         }
 
-        return withRight(current)
+        return withShrunkRight(current)
     }
 
     private fun <T> List<T>.replaceAtIndex(index: Int, replacement: T): List<T> =

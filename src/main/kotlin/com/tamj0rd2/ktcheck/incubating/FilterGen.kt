@@ -22,7 +22,7 @@ internal data class FilterGen<T>(
                     ctx = rootCtx,
                     value = it.value,
                     shrinks = it.shrinks.map { ctx ->
-                        rootCtx.withLeft(ctx).withRight(rootCtx.right.withMetadata(terminator))
+                        rootCtx.withShrunkLeft(ctx).withShrunkRight(rootCtx.right.withMetadata(terminator))
                     }
                 )
             }
