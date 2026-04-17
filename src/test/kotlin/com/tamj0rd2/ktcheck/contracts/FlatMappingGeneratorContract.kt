@@ -1,14 +1,9 @@
 package com.tamj0rd2.ktcheck.contracts
 
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
-import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
-import com.tamj0rd2.ktcheck.stats.withCounter
 import org.junit.jupiter.api.Test
 import strikt.api.expectDoesNotThrow
 import strikt.api.expectThat
-import strikt.assertions.all
-import strikt.assertions.contains
-import strikt.assertions.isContainedIn
 import strikt.assertions.isEqualTo
 import strikt.assertions.isIn
 import strikt.assertions.isNotEmpty

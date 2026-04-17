@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.incubating
+package com.tamj0rd2.ktcheck.current
 
 import com.tamj0rd2.ktcheck.GenerationException
 import dev.forkhandles.result4k.Result4k

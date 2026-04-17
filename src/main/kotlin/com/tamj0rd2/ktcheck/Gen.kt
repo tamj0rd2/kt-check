@@ -123,7 +123,7 @@ interface Gen<T> {
     fun set(size: Int): Gen<Set<T>> = set(size..size)
 }
 
-object Gens : GenBuilders by com.tamj0rd2.ktcheck.incubating.Gen
+object Gens : GenBuilders by com.tamj0rd2.ktcheck.current.Gen
 
 internal interface GenBuilders {
     fun <T> constant(value: T): Gen<T>
@@ -159,7 +159,7 @@ internal interface GenBuilders {
     fun <T> oneOf(values: Iterable<T>): Gen<T> {
         val options = values.toList()
         if (options.isEmpty()) throw OneOfEmpty()
-        return int(0..<options.size).map { options[it] }
+        return int(options.indices).map { options[it] }
     }
 
     /**

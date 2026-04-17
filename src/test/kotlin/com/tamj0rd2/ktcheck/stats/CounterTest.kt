@@ -1,7 +1,5 @@
-package com.tamj0rd2.ktcheck
+package com.tamj0rd2.ktcheck.stats
 
-import com.tamj0rd2.ktcheck.stats.Counter
-import com.tamj0rd2.ktcheck.stats.LabelledCounter
 import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

@@ -1,4 +1,4 @@
-package com.tamj0rd2.ktcheck.incubating
+package com.tamj0rd2.ktcheck.current
 
 import com.tamj0rd2.ktcheck.GenBuilders
 import com.tamj0rd2.ktcheck.GenerationException
@@ -8,7 +8,7 @@ import com.tamj0rd2.ktcheck.core.GenerationContext
 import com.tamj0rd2.ktcheck.core.Seed
 import dev.forkhandles.result4k.orThrow
 
-internal abstract class IncubatingBaseContractImpl : BaseContract, GenBuilders by Gen.Companion {
+internal abstract class BaseContractImpl : BaseContract, GenBuilders by Gen.Companion {
     override fun ctx(seed: Seed): GenerationContext = GenContext.new(seed)
 
     override fun <T> com.tamj0rd2.ktcheck.Gen<T>.generate(ctx: GenerationContext): GenResults<T> {

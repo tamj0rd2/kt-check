@@ -1,5 +1,0 @@
-package com.tamj0rd2.ktcheck.incubating
-
-import com.tamj0rd2.ktcheck.contracts.IgnoreExceptionsGeneratorContract
-
-internal class IncubatingIgnoreExceptionsGeneratorTest : IncubatingBaseContractImpl(), IgnoreExceptionsGeneratorContract
