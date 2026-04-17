@@ -13,7 +13,6 @@ import com.tamj0rd2.ktcheck.core.Tuple8
 import com.tamj0rd2.ktcheck.core.Tuple9
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import com.tamj0rd2.ktcheck.core.tuple
-import com.tamj0rd2.ktcheck.current.GenV2Builders
 import java.util.*
 import kotlin.collections.plus
 import kotlin.plus
@@ -124,7 +123,7 @@ interface Gen<T> {
     fun set(size: Int): Gen<Set<T>> = set(size..size)
 }
 
-object Gens : GenBuilders by GenV2Builders
+object Gens : GenBuilders by com.tamj0rd2.ktcheck.incubating.Gen
 
 internal interface GenBuilders {
     fun <T> constant(value: T): Gen<T>

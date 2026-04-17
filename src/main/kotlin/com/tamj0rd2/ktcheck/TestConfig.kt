@@ -44,7 +44,7 @@ data class TestConfig private constructor(
     fun withShrinkingConstraint(constraint: ShrinkingConstraintFactory) =
         copy(shrinkingConstraintFactory = constraint)
 
-    @Deprecated("I might move this functionality to the Reporter")
+    // todo: I might move this functionality to the Reporter
     internal fun printShrinkSteps(value: Boolean = true) = copy(printShrinkSteps = value)
 
     @HardcodedTestConfig

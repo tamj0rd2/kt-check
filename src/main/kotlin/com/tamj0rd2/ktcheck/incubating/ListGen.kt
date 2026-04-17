@@ -18,16 +18,13 @@ internal sealed class BaseListGen<T> : GenProvider<List<T>> {
         val elementContexts by lazy { elements.map { it.ctx } }
 
         val sizeBasedShrinks = size.shrinks.takeIf { size.value > sizeRange.first }.orEmpty().flatMap { ctx ->
-            Gen.int(sizeRange).generate(ctx)
-                .map { it.value }
-                .map { size ->
-                    sequence {
-                        yield(rootCtx.withSizeCtx(ctx).withElementsCtx(elementContexts.take(size)))
-                        if (elements.size == size) return@sequence
-                        yield(rootCtx.withSizeCtx(ctx).withElementsCtx(elementContexts.takeLast(size)))
-                    }
-                }
-                .recover { emptySequence() }
+            sequence {
+                yield(rootCtx.withSizeCtx(ctx).withElementsCtx(elementContexts))
+
+                val size = Gen.int(sizeRange).generate(ctx).onFailure { return@sequence }.value
+                if (elements.size == size) return@sequence
+                yield(rootCtx.withSizeCtx(ctx).withElementsCtx(elementContexts.takeLast(size)))
+            }
         }
 
         val individualElementShrinks = elements.asSequence().flatMapIndexed { index, element ->
@@ -63,8 +60,6 @@ internal sealed class BaseListGen<T> : GenProvider<List<T>> {
         root: GenContext,
         targetSize: Int,
     ): Result<List<GeneratedValue<T>>, GenerationException>
-
-    protected open fun List<GeneratedValue<T>>.isValid(targetSize: Int): Boolean = true
 
     private fun GenContext.withSizeCtx(sizeShrink: GenContext) = withShrunkLeft(sizeShrink)
 
@@ -108,8 +103,6 @@ internal data class DistinctListGen<T>(
     private val gen: Gen<T>,
     override val sizeRange: IntRange,
 ) : BaseListGen<T>() {
-    override fun List<GeneratedValue<T>>.isValid(targetSize: Int) = distinctBy { it.value }.size == targetSize
-
     override fun generateElements(
         root: GenContext,
         targetSize: Int,
