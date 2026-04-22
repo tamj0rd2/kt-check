@@ -21,7 +21,6 @@ import strikt.api.Assertion
 import strikt.api.expectThat
 import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
-import strikt.assertions.isNotNull
 import java.time.Duration
 import java.time.Duration.ofSeconds
 import kotlin.time.measureTime
@@ -30,7 +29,6 @@ import kotlin.time.measureTimedValue
 internal interface BaseContract : GenBuilders {
     val exampleGen: Gen<*>?
     val genSupportsShrinking: Boolean get() = true
-    val genSupportsEdgeCases: Boolean get() = true
 
     fun getGenIfDefined(): Gen<Any> {
         val gen = exampleGen
@@ -41,9 +39,6 @@ internal interface BaseContract : GenBuilders {
 
     fun runIfGenSupportsShrinking() =
         Assumptions.assumeTrue(genSupportsShrinking, "skipped as this gen doesn't support shrinking")
-
-    fun runIfGenSupportsEdgeCases() =
-        Assumptions.assumeTrue(genSupportsEdgeCases, "skipped as this gen doesn't support edge cases")
 
     @Test
     fun `generated values are deterministic`() {
@@ -72,42 +67,13 @@ internal interface BaseContract : GenBuilders {
         }
     }
 
-    @Test
-    fun `edge cases are deterministic`() {
-        runIfGenSupportsEdgeCases()
-
-        repeatTest { seed ->
-            val gen = getGenIfDefined()
-            val originalResult = gen.edgeCase(seed)
-            val regenerated = gen.edgeCase(seed)
-            if (originalResult == null) skipIteration()
-
-            expectThat(regenerated).isNotNull().value.isEqualTo(originalResult.value)
-        }
-    }
-
-    @Test
-    fun `shrinks of edge cases are deterministic`() {
-        runIfGenSupportsEdgeCases()
-        runIfGenSupportsShrinking()
-
-        repeatTest { seed ->
-            val gen = getGenIfDefined()
-            val originalResult = gen.edgeCase(seed)
-            val regenerated = gen.edgeCase(seed)
-            if (originalResult == null) skipIteration()
-
-            expectThat(regenerated).isNotNull().shrunkValues.containsExactlyInAnyOrder(originalResult.shrunkValues)
-            // this is the assertion I actually want, but the output is easier to read when split into 2 assertions.
-            expectThat(regenerated).isNotNull().shrunkValues.isEqualTo(originalResult.shrunkValues)
-        }
-    }
-
     //=== Wiring ===//
     fun ctx(seed: Seed = Seed.random()): GenerationContext
 
+    @Deprecated("use Gen.collectShrunkValues instead, or samples if shrinks are unnecessary.")
     fun <T> Gen<T>.generate(ctx: GenerationContext): GenResults<T>
 
+    @Deprecated("todo: delete this. generate should produce edge cases now.")
     fun <T> Gen<T>.edgeCase(seed: Seed): GenResults<T>?
 
     /** Retries generations until the exact [value] is produced. */
@@ -132,6 +98,8 @@ internal class GenResults<T>(
     val shrunkValues by lazy { shrinks.map { it.value }.distinct().toList() }
 }
 
+@Deprecated("todo: delete this")
+// todo: can get rid of this once everything is generating values via forAll/checkAll rather than directly.
 fun <T> Gen<T>.expectGenerationAndShrinkingToEventuallyComplete() {
     var shrinksBeforeTimeout = -1
     try {

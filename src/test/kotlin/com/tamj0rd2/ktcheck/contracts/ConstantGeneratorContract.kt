@@ -10,7 +10,6 @@ import strikt.assertions.isEqualTo
 internal interface ConstantGeneratorContract : BaseContract {
     override val exampleGen get() = constant("hello")
     override val genSupportsShrinking get() = false
-    override val genSupportsEdgeCases get() = false
 
     @Test
     fun `always produces the same value`() {

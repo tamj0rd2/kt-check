@@ -14,10 +14,6 @@ import strikt.assertions.isGreaterThanOrEqualTo
 internal interface BooleanGeneratorContract : BaseContract {
     override val exampleGen get() = bool()
 
-    // todo: should a boolean have edge cases? maybe the edge case is whichever value we're not shrinking toward?
-    //  check what other property based testing libraries do.
-    override val genSupportsEdgeCases get() = false
-
     @Test
     fun `generates a reasonable distribution of values over multiple runs`() {
         val counter = withCounter {

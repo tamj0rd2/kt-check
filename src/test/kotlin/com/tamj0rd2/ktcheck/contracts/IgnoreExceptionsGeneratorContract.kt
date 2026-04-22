@@ -16,9 +16,6 @@ import java.time.Duration
 internal interface IgnoreExceptionsGeneratorContract : BaseContract {
     private class TestException : Exception()
 
-    // todo: implement edge cases for this generator
-    override val genSupportsEdgeCases: Boolean get() = false
-
     override val exampleGen
         get() = int(1..3)
             .map {
@@ -41,18 +38,14 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
             .ignoreExceptions(TestException::class)
 
         withLabelledCounter {
-            fun checkResult(result: GenResults<Int>?) {
-                if (result == null) skipIteration()
-                expectThat(result).value.isNotEqualTo(1)
-                expectThat(result).shrunkValues.all { isNotEqualTo(1) }
-                collect("has-shrinks", result.shrunkValues.isNotEmpty())
+            repeatTest { seed ->
+                val (originalValue, shrinks) = possiblyThrowingGen.collectShrunkValues(seed)
+                expectThat(originalValue).isNotEqualTo(1)
+                expectThat(shrinks).describedAs("shrinks of $originalValue") all { isNotEqualTo(1) }
+                collect("has-shrinks", shrinks.isNotEmpty())
             }
-
-            repeatTest { seed -> checkResult(possiblyThrowingGen.generate(ctx(seed))) }
-            if (genSupportsEdgeCases) repeatTest { seed -> checkResult(possiblyThrowingGen.edgeCase(seed)) }
         }.checkPercentages("has-shrinks", mapOf(true to 40.percent))
 
-        // todo: add some - deeply shrunk values are finite function. call it above.
         possiblyThrowingGen.expectGenerationAndShrinkingToEventuallyComplete()
     }
 
@@ -115,15 +108,12 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
                 }
                 .ignoreExceptions(TestException::class)
 
-            fun checkResult(result: GenResults<Int>?) {
-                if (result == null) skipIteration()
-                if (result.value <= 2) skipIteration()
-                expectThat(result).shrunkValues.all { isLessThanOrEqualTo(result.value) }
-                collect("has-shrinks", result.shrunkValues.any())
+            repeatTest { seed ->
+                val (originalValue, shrinks) = gen.collectShrunkValues(seed)
+                if (originalValue <= 2) skipIteration()
+                expectThat(shrinks).describedAs("shrinks of $originalValue").all { isLessThanOrEqualTo(originalValue) }
+                collect("has-shrinks", shrinks.any())
             }
-
-            repeatTest { seed -> checkResult(gen.generate(ctx(seed))) }
-            if (genSupportsEdgeCases) repeatTest { seed -> checkResult(gen.edgeCase(seed)) }
         }.checkPercentages("has-shrinks", mapOf(true to 10.percent))
     }
 }
