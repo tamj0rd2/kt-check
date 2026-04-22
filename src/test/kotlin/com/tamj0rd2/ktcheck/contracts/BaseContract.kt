@@ -9,7 +9,6 @@ import com.tamj0rd2.ktcheck.TestConfig
 import com.tamj0rd2.ktcheck.checkAll
 import com.tamj0rd2.ktcheck.core.GenerationContext
 import com.tamj0rd2.ktcheck.core.Seed
-import com.tamj0rd2.ktcheck.forAll
 import com.tamj0rd2.ktcheck.stats.Percentage
 import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
 import org.junit.jupiter.api.Assumptions
@@ -20,7 +19,9 @@ import org.opentest4j.TestSkippedException
 import strikt.api.Assertion
 import strikt.api.expectThat
 import strikt.assertions.containsExactlyInAnyOrder
+import strikt.assertions.first
 import strikt.assertions.isEqualTo
+import strikt.assertions.second
 import java.time.Duration
 import java.time.Duration.ofSeconds
 import kotlin.time.measureTime
@@ -41,13 +42,15 @@ internal interface BaseContract : GenBuilders {
         Assumptions.assumeTrue(genSupportsShrinking, "skipped as this gen doesn't support shrinking")
 
     @Test
-    fun `generated values are deterministic`() {
-        repeatTest { seed ->
-            val gen = getGenIfDefined()
-            val originalResult = gen.generate(ctx(seed))
-            val regenerated = gen.generate(ctx(seed))
+    fun `generated values and their shrinks are deterministic`() {
+        val gen = getGenIfDefined()
 
-            expectThat(regenerated).value.isEqualTo(originalResult.value)
+        repeatTest { seed ->
+            val originalResult = gen.collectShrunkValues(seed)
+            val regenerated = gen.collectShrunkValues(seed)
+
+            expectThat(regenerated).first.isEqualTo(originalResult.first)
+            expectThat(regenerated).second.isEqualTo(originalResult.second)
         }
     }
 
@@ -96,28 +99,6 @@ internal class GenResults<T>(
     }
 
     val shrunkValues by lazy { shrinks.map { it.value }.distinct().toList() }
-}
-
-@Deprecated("todo: delete this")
-// todo: can get rid of this once everything is generating values via forAll/checkAll rather than directly.
-fun <T> Gen<T>.expectGenerationAndShrinkingToEventuallyComplete() {
-    var shrinksBeforeTimeout = -1
-    try {
-        assertTimeoutPreemptively(ofSeconds(1), "Shrinking took too long") {
-            try {
-                forAll(TestConfig().withoutReporting(), this) {
-                    shrinksBeforeTimeout += 1
-                    false
-                }
-                fail("Expected property to be falsified")
-            } catch (e: PropertyFalsifiedException) {
-                // do nothing
-            }
-        }
-    } catch (e: Throwable) {
-        println("managed $shrinksBeforeTimeout shrinks before exploding")
-        throw e
-    }
 }
 
 internal val <T> Assertion.Builder<GenResults<T>>.value get() = get("value: %s") { value }

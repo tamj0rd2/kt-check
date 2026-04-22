@@ -45,8 +45,6 @@ internal interface IgnoreExceptionsGeneratorContract : BaseContract {
                 collect("has-shrinks", shrinks.isNotEmpty())
             }
         }.checkPercentages("has-shrinks", mapOf(true to 40.percent))
-
-        possiblyThrowingGen.expectGenerationAndShrinkingToEventuallyComplete()
     }
 
     @Test

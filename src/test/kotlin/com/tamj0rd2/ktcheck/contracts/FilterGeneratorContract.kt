@@ -27,8 +27,6 @@ internal interface FilterGeneratorContract : BaseContract {
                 collect("has-shrinks", shrinks.isNotEmpty())
             }
         }.checkPercentages("has-shrinks", mapOf(true to 10.percent))
-
-        gen.expectGenerationAndShrinkingToEventuallyComplete()
     }
 
     @Test

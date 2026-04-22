@@ -99,10 +99,8 @@ internal interface DistinctListGeneratorContract : BaseContract {
     }
 
     @Test
-    fun `can shrink lists with a minimum size greater than 0`() {
-        int().distinctList(1..2).expectGenerationAndShrinkingToEventuallyComplete()
-        int().distinctList(2..2).expectGenerationAndShrinkingToEventuallyComplete()
-        int().distinctList(2..5).expectGenerationAndShrinkingToEventuallyComplete()
+    fun `generation and shrinking are finite for lists with a minimum size greater than 0 (regression test)`() {
+        repeatTest { seed -> int().distinctList(1..5).collectShrunkValues(seed) }
     }
 
     @Test
