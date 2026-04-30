@@ -1,7 +1,9 @@
 package com.tamj0rd2.ktcheck.contracts
 
 
+import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.TestConfig
+import com.tamj0rd2.ktcheck.string
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -15,22 +17,19 @@ import strikt.assertions.isEqualTo
 import strikt.assertions.isLessThan
 import strikt.assertions.isNotEmpty
 
-internal interface CharGeneratorContract : BaseContract {
-    // todo: once the default char set exists, remove 'a'..'z' defined here
-    override val exampleGen get() = char('a'..'z')
+// todo: this should have all the same properties as Int, as it's just int with a map applied...
+internal interface CharGeneratorContract : BaseContract, CanProduceStringsContract {
+    override val exampleGen get() = char()
+
+    override fun newStringLikeGenerator(sizeRange: IntRange): Gen<String> = char().string(sizeRange)
 
     @TestFactory
-    fun `can generate a character from a collection`(): List<DynamicTest> {
+    fun `can generate a character within a range`(): List<DynamicTest> {
         val testCases = mapOf(
-            "single lowercase char" to listOf('a'),
-            "single uppercase char" to listOf('Z'),
-            "single digit" to listOf('5'),
-            "single special char" to listOf('!'),
-            "lowercase range" to ('a'..'z'),
-            "uppercase range" to ('A'..'Z'),
-            "digit range" to ('0'..'9'),
-            "mixed chars" to listOf('a', 'B', '3', '!', ' '),
-            "special chars" to listOf('!', '@', '#', '$', '%'),
+            "single lowercase char" to 'a'..'a',
+            "uppercase range" to 'A'..'Z',
+            "digit range" to '0'..'9',
+            "mixed range" to '!'..'Z',
         )
 
         return testCases.map { (desc, chars) ->

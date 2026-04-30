@@ -18,7 +18,6 @@ import org.junit.jupiter.api.fail
 import org.opentest4j.TestSkippedException
 import strikt.api.Assertion
 import strikt.api.expectThat
-import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.first
 import strikt.assertions.isEqualTo
 import strikt.assertions.second
@@ -29,8 +28,11 @@ import kotlin.time.measureTimedValue
 
 internal interface BaseContract : GenBuilders {
     val exampleGen: Gen<*>?
+
+    // todo: delete this
     val genSupportsShrinking: Boolean get() = true
 
+    // todo: can I just make gen non-nullable now?
     fun getGenIfDefined(): Gen<Any> {
         val gen = exampleGen
         Assumptions.assumeTrue(gen != null)
@@ -38,6 +40,7 @@ internal interface BaseContract : GenBuilders {
         return gen as Gen<Any>
     }
 
+    // todo: delete this
     fun runIfGenSupportsShrinking() =
         Assumptions.assumeTrue(genSupportsShrinking, "skipped as this gen doesn't support shrinking")
 
@@ -51,22 +54,6 @@ internal interface BaseContract : GenBuilders {
 
             expectThat(regenerated).first.isEqualTo(originalResult.first)
             expectThat(regenerated).second.isEqualTo(originalResult.second)
-        }
-    }
-
-    @Test
-    fun `shrinks of generated values are deterministic`() {
-        runIfGenSupportsShrinking()
-
-        repeatTest { seed ->
-            val gen = getGenIfDefined()
-            val originalResult = gen.generate(ctx(seed))
-            val regenerated = gen.generate(ctx(seed))
-
-            expectThat(regenerated).shrunkValues
-                .containsExactlyInAnyOrder(originalResult.shrunkValues)
-                // this is the assertion I actually want, but the output is easier to read when split into 2 assertions.
-                .isEqualTo(originalResult.shrunkValues)
         }
     }
 

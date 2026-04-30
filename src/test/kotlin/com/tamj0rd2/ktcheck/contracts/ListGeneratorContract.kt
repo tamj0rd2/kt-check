@@ -21,9 +21,11 @@ import strikt.assertions.isNotEmpty
 import strikt.assertions.none
 import strikt.assertions.size
 
-internal interface ListGeneratorContract : BaseContract {
+internal interface ListGeneratorContract : BaseContract, BehavesLikeAListGeneratorContract {
     // todo: remove constraint. the full list size causes a timeout.
     override val exampleGen get() = int().list(0..10)
+
+    override fun newListLikeGen(sizeRange: IntRange) = int().map { it as Any? }.list(sizeRange)
 
     @Test
     fun `can generate a long list without stack overflow`() {
@@ -68,7 +70,7 @@ internal interface ListGeneratorContract : BaseContract {
     }
 
     @Test
-    fun `once the elements of a list have been shrunk, the resultant shrinks can also be shrunk by size`() {
+    fun `once the elements of a list have been shrunk, the resultant shrinks can also be shrunk by size (regression test)`() {
         val gen = int(0..10).list(0..3)
 
         val root = gen.generating(listOf(3, 4))
@@ -78,7 +80,7 @@ internal interface ListGeneratorContract : BaseContract {
     }
 
     @Test
-    fun `size shrinks include the first half of the list, and the second half of the list`() {
+    fun `size shrinks include the first half of the list, and the second half of the list (regression test)`() {
         val gen = int().list(0..20)
 
         repeatTest { seed ->
@@ -92,34 +94,6 @@ internal interface ListGeneratorContract : BaseContract {
                 .describedAs { "shrunk values of $originalList" }
                 .isNotEmpty()
                 .contains(originalList.take(halfSize), originalList.takeLast(halfSize))
-        }
-    }
-
-    @Test
-    fun `shrinks to empty list when list is not empty`() {
-        val gen = int(0..10).list()
-
-        repeatTest { seed ->
-            val (originalList, shrunkValues) = gen.collectShrunkValues(
-                seed = seed,
-                startShrinkingOnce = { it.isNotEmpty() }
-            )
-            expectThat(originalList).isNotEmpty()
-            expectThat(shrunkValues).describedAs { "shrunk values" }.any { isEmpty() }
-        }
-    }
-
-    @Test
-    fun `empty lists don't shrink`() {
-        val gen = int(0..10).list(0)
-
-        repeatTest { seed ->
-            val (originalList, shrunkValues) = gen.collectShrunkValues(
-                seed = seed,
-                startShrinkingOnce = { it.isEmpty() }
-            )
-            expectThat(originalList).isEmpty()
-            expectThat(shrunkValues).describedAs { "shrunk values" }.isEmpty()
         }
     }
 
@@ -141,6 +115,7 @@ internal interface ListGeneratorContract : BaseContract {
         }
     }
 
+    // todo: general property of list-based things.
     @Test
     fun `all shrunk element values are within the generator range`() {
         val range = 0..10
@@ -158,23 +133,7 @@ internal interface ListGeneratorContract : BaseContract {
         }
     }
 
-    @Test
-    fun `all shrunk lists are within the generator's size bounds`() {
-        val sizeRange = 0..5
-        val gen = int(0..10).list(sizeRange)
-
-        repeatTest { seed ->
-            val (originalList, shrunkValues) = gen.collectShrunkValues(
-                seed = seed,
-                startShrinkingOnce = { it.isNotEmpty() && it != listOf(0) }
-            )
-            expectThat(shrunkValues)
-                .describedAs { "shrinks of $originalList" }
-                .isNotEmpty()
-                .all { size.isIn(sizeRange) }
-        }
-    }
-
+    // todo ugh.
     @TestFactory
     fun `edge case generation`(): List<DynamicTest> {
         data class TestCase(

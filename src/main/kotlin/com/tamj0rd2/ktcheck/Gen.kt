@@ -1,5 +1,6 @@
 package com.tamj0rd2.ktcheck
 
+import com.tamj0rd2.ktcheck.CodePoint.Companion.toCodePoint
 import com.tamj0rd2.ktcheck.GenerationException.OneOfEmpty
 import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.core.Tuple10
@@ -33,7 +34,7 @@ interface Gen<T> {
     /**
      * Produces an infinite sequence of samples from the generator using the provided seed.
      *
-     * @param random The random instance used to create seeds for sampling. Defaults to [Random.Default].
+     * @param seed The starting seed to use for sampling.
      * @return A sequence of sampled values of type T.
      */
     fun samples(seed: Long = Random.nextLong()): Sequence<T> =
@@ -102,7 +103,7 @@ interface Gen<T> {
     fun ignoreExceptions(klass: KClass<out Exception>, threshold: Int = 100): Gen<T>
 
     /**
-     * Generates lists of values from this generator with a size within the specified range.
+     * Generates lists of values from the given generator with a size within the specified range.
      *
      * Edge cases include empty lists (if 0 in range), singleton lists (if 1 in range), and lists with duplicate
      * elements. The generator supports shrinking by reducing list size and shrinking individual elements.
@@ -126,13 +127,22 @@ interface Gen<T> {
 object Gens : GenBuilders by com.tamj0rd2.ktcheck.current.Gen
 
 internal interface GenBuilders {
+    /** Always generates the provided value. */
     fun <T> constant(value: T): Gen<T>
 
+    /**
+     * Generates a Boolean. Shrinks towards the specified target.
+     *
+     * When `shrinkTarget = true`, `false` shrinks to `true`, and `true` doesn't shrink.
+     *
+     * When `shrinkTarget = false`, `true` shrinks to `false`, and `false` doesn't shrink.
+     */
     fun bool(shrinkTarget: Boolean = false): Gen<Boolean> = int(
         range = 0..1,
         shrinkTarget = if (shrinkTarget) 1 else 0
     ).map { it == 1 }
 
+    /** Generates an int within the given range */
     fun int(
         range: IntRange = Int.MIN_VALUE..Int.MAX_VALUE,
         shrinkTarget: Int = IntShrinker.defaultShrinkTarget(range),
@@ -142,25 +152,51 @@ internal interface GenBuilders {
 
     fun uuid(): Gen<UUID> = long().combineWith(long(), ::UUID)
 
-    // TODO: this should have a default
-    fun char(chars: Iterable<Char>): Gen<Char> =
-        oneOf(chars.distinct().sorted())
+    /**
+     * Generates a char within the given range.
+     *
+     * This can only generate characters within the Basic Multilingual Plane.
+     */
+    fun char(
+        range: CharRange = Char.MIN_VALUE..Char.MAX_VALUE,
+        shrinkTarget: Char = IntShrinker.defaultShrinkTarget(range.toIntRange()).toChar(),
+    ): Gen<Char> = int(range = range.toIntRange(), shrinkTarget = shrinkTarget.code).map { it.toChar() }
 
-    /** Shrinks towards the first generator */
+    /**
+     * Generates a Unicode codepoint within the given range.
+     *
+     * You might use this if you want to generate a character outside of Unicode's Basic Multilingual Plane, such as
+     * emotions and pictographs.
+     */
+    fun codePoint(
+        range: CodePointRange = CodePointRange.full,
+        shrinkTarget: CodePoint = IntShrinker.defaultShrinkTarget(range.toIntRange()).toCodePoint(),
+    ): Gen<CodePoint> = int(range = range.toIntRange(), shrinkTarget = shrinkTarget.value).map { it.toCodePoint() }
+
+    /**
+     * Generates a value using one of the specified generators.
+     *
+     * Shrinks towards the first generator.
+     */
     fun <T> oneOf(vararg gens: Gen<T>): Gen<T> = oneOf(gens.toList())
 
-    /** Shrinks toward the first generator */
+    /**
+     * Generates a value using one of the specified generators.
+     *
+     * Shrinks towards the first generator.
+     */
     fun <T> oneOf(gens: Collection<Gen<T>>): Gen<T> {
         val gensList = gens.toList()
+        if (gensList.isEmpty()) throw OneOfEmpty()
         return int(gensList.indices).flatMap { gensList[it] }
     }
 
-    /** Shrinks toward the first value. Individual values will not be shrunk. */
-    fun <T> oneOf(values: Iterable<T>): Gen<T> {
-        val options = values.toList()
-        if (options.isEmpty()) throw OneOfEmpty()
-        return int(options.indices).map { options[it] }
-    }
+    /**
+     * Shrinks toward the first value.
+     *
+     * Individual values will not be shrunk.
+     */
+    fun <T> oneOf(values: Iterable<T>): Gen<T> = oneOf(values.toList().map(::constant))
 
     /**
      * Combines independent generators. The resulting generator produces a tuple of values, one from each input generator.
@@ -298,14 +334,23 @@ internal interface GenBuilders {
         zip(gen1, gen2, gen3, gen4, gen5, gen6, gen7, gen8, gen9) + gen10
 }
 
-fun Gen<Char>.string(size: IntRange): Gen<String> = list(size).map { it.joinToString("") }
+@JvmName("charString")
+fun Gen<Char>.string(size: IntRange = 0..100): Gen<String> = list(size).map { it.joinToString("") }
 
+@JvmName("charString")
 fun Gen<Char>.string(size: Int) = string(size..size)
+
+@JvmName("codePointString")
+fun Gen<CodePoint>.string(numOfCodepoints: IntRange = 0..100): Gen<String> =
+    list(numOfCodepoints).map { list -> list.joinToString("") { it.asString() } }
+
+@JvmName("codePointString")
+fun Gen<CodePoint>.string(numOfCodepoints: Int): Gen<String> = string(numOfCodepoints..numOfCodepoints)
 
 /**
  * Combines independent generators. The resulting generator produces a tuple of values, one from each input generator.
  *
- * @see [Gen.combineWith]
+ * @see [combineWith]
  */
 @JvmName("plus2")
 infix operator fun <T1, T2> Gen<T1>.plus(
@@ -316,7 +361,7 @@ infix operator fun <T1, T2> Gen<T1>.plus(
 /**
  * Combines independent generators. The resulting generator produces a tuple of values, one from each input generator.
  *
- * @see [Gen.combineWith]
+ * @see [combineWith]
  */
 @JvmName("plus3")
 infix operator fun <T1, T2, T3> Gen<Tuple2<T1, T2>>.plus(
@@ -327,7 +372,7 @@ infix operator fun <T1, T2, T3> Gen<Tuple2<T1, T2>>.plus(
 /**
  * Combines independent generators. The resulting generator produces a tuple of values, one from each input generator.
  *
- * @see [Gen.combineWith]
+ * @see [combineWith]
  */
 @JvmName("plus4")
 infix operator fun <T1, T2, T3, T4> Gen<Tuple3<T1, T2, T3>>.plus(
@@ -338,7 +383,7 @@ infix operator fun <T1, T2, T3, T4> Gen<Tuple3<T1, T2, T3>>.plus(
 /**
  * Combines independent generators. The resulting generator produces a tuple of values, one from each input generator.
  *
- * @see [Gen.combineWith]
+ * @see [combineWith]
  */
 @JvmName("plus5")
 infix operator fun <T1, T2, T3, T4, T5> Gen<Tuple4<T1, T2, T3, T4>>.plus(
@@ -349,7 +394,7 @@ infix operator fun <T1, T2, T3, T4, T5> Gen<Tuple4<T1, T2, T3, T4>>.plus(
 /**
  * Combines independent generators. The resulting generator produces a tuple of values, one from each input generator.
  *
- * @see [Gen.combineWith]
+ * @see [combineWith]
  */
 @JvmName("plus6")
 infix operator fun <T1, T2, T3, T4, T5, T6> Gen<Tuple5<T1, T2, T3, T4, T5>>.plus(
@@ -360,7 +405,7 @@ infix operator fun <T1, T2, T3, T4, T5, T6> Gen<Tuple5<T1, T2, T3, T4, T5>>.plus
 /**
  * Combines independent generators. The resulting generator produces a tuple of values, one from each input generator.
  *
- * @see [Gen.combineWith]
+ * @see [combineWith]
  */
 @JvmName("plus7")
 infix operator fun <T1, T2, T3, T4, T5, T6, T7> Gen<Tuple6<T1, T2, T3, T4, T5, T6>>.plus(
@@ -371,7 +416,7 @@ infix operator fun <T1, T2, T3, T4, T5, T6, T7> Gen<Tuple6<T1, T2, T3, T4, T5, T
 /**
  * Combines independent generators. The resulting generator produces a tuple of values, one from each input generator.
  *
- * @see [Gen.combineWith]
+ * @see [combineWith]
  */
 @JvmName("plus8")
 infix operator fun <T1, T2, T3, T4, T5, T6, T7, T8> Gen<Tuple7<T1, T2, T3, T4, T5, T6, T7>>.plus(
@@ -382,7 +427,7 @@ infix operator fun <T1, T2, T3, T4, T5, T6, T7, T8> Gen<Tuple7<T1, T2, T3, T4, T
 /**
  * Combines independent generators. The resulting generator produces a tuple of values, one from each input generator.
  *
- * @see [Gen.combineWith]
+ * @see [combineWith]
  */
 @JvmName("plus9")
 infix operator fun <T1, T2, T3, T4, T5, T6, T7, T8, T9> Gen<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>>.plus(
@@ -393,7 +438,7 @@ infix operator fun <T1, T2, T3, T4, T5, T6, T7, T8, T9> Gen<Tuple8<T1, T2, T3, T
 /**
  * Combines independent generators. The resulting generator produces a tuple of values, one from each input generator.
  *
- * @see [Gen.combineWith]
+ * @see [combineWith]
  */
 @JvmName("plus10")
 infix operator fun <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> Gen<Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9>>.plus(
