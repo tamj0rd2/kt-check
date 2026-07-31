@@ -11,7 +11,7 @@ import com.tamj0rd2.ktcheck.core.GenerationContext
 import com.tamj0rd2.ktcheck.core.Seed
 import com.tamj0rd2.ktcheck.stats.Percentage
 import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
-import org.junit.jupiter.api.Assumptions
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
 import org.junit.jupiter.api.fail
@@ -29,20 +29,13 @@ import kotlin.time.measureTimedValue
 internal interface BaseContract : GenBuilders {
     val exampleGen: Gen<*>?
 
-    // todo: delete this
-    val genSupportsShrinking: Boolean get() = true
-
     // todo: can I just make gen non-nullable now?
     fun getGenIfDefined(): Gen<Any> {
         val gen = exampleGen
-        Assumptions.assumeTrue(gen != null)
+        assumeTrue(gen != null)
         @Suppress("UNCHECKED_CAST")
         return gen as Gen<Any>
     }
-
-    // todo: delete this
-    fun runIfGenSupportsShrinking() =
-        Assumptions.assumeTrue(genSupportsShrinking, "skipped as this gen doesn't support shrinking")
 
     @Test
     fun `generated values and their shrinks are deterministic`() {
@@ -55,6 +48,18 @@ internal interface BaseContract : GenBuilders {
             expectThat(regenerated).first.isEqualTo(originalResult.first)
             expectThat(regenerated).second.isEqualTo(originalResult.second)
         }
+    }
+
+    @Test
+    fun `values shrink at least some of the time`() {
+        val gen = getGenIfDefined()
+
+        repeat(100) {
+            val (_, shrunkValues) = gen.collectShrunkValues(Seed.random())
+            if (shrunkValues.isNotEmpty()) return
+        }
+
+        fail("Never encountered any shrinks")
     }
 
     //=== Wiring ===//

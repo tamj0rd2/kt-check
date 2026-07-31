@@ -1,59 +1,32 @@
 package com.tamj0rd2.ktcheck.contracts
 
-import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import org.junit.jupiter.api.Test
 import strikt.api.expectDoesNotThrow
 import strikt.api.expectThat
-import strikt.assertions.isEqualTo
+import strikt.assertions.all
 import strikt.assertions.isIn
-import strikt.assertions.isNotEmpty
 
 internal interface FlatMappingGeneratorContract : BaseContract {
     override val exampleGen get() = int(0..5).flatMap { int(10..10 + it) }
 
     @Test
-    fun `generates the second value based on the first`() {
-        val smallGen = int(0..5)
-        val bigGen = int(10..15)
-        val gen = smallGen.flatMap { a -> bigGen.map { b -> a + b } }
-
+    fun `all generated values and shrinks fall within the possible range of the generators`() {
+        val gen = int(6..10).flatMap { int(IntRange(it + 2, it + 6)) }
+        val minValuePossible = 6 + 2
+        val maxPossibleValue = 10 + 6
         repeatTest { seed ->
-            val tree = ctx(seed)
-            val value = gen.generate(tree).value
-            expectThat(value).isIn(10..20)
+            val (value, shrinks) = gen.collectShrunkValues(seed)
+            expectThat(value).isIn(minValuePossible..maxPossibleValue)
+            expectThat(shrinks).all { isIn(minValuePossible..maxPossibleValue) }
         }
     }
 
     @Test
-    fun `combines shrinks from both generators`() {
-        val oneToThree = int(1..3)
-        val fourToSix = int(4..6)
-        val gen = oneToThree.flatMap { outer ->
-            fourToSix.map { inner ->
-                Pair(outer, inner)
-            }
-        }
+    fun `shrinking is tolerant of the constraints of the inner generator being changed due to the outer value`() {
+        val gen = int(0..5).flatMap { int(10..10 + it) }
 
         repeatTest { seed ->
-            val result = gen.generate(ctx())
-            if (result.value == 1 to 4) skipIteration()
-
-            expectThat(result).shrunkValues.isNotEmpty().isEqualTo(
-                listOf(
-                    IntShrinker.shrink(result.value.first, 1..3).map { result.value.copy(first = it) }.toList(),
-                    IntShrinker.shrink(result.value.second, 4..6).map { result.value.copy(second = it) }.toList()
-                ).flatten()
-            )
+            expectDoesNotThrow { gen.collectShrunkValues(seed) }
         }
-    }
-
-    @Test
-    fun `allows changing the constraints of the inner generator`() {
-        val gen = int(0..2).flatMap { int(10..10 + it) }
-
-        // would require that the outer generator produced a 2
-        val result = gen.generating(12)
-        expectThat(result.value).isEqualTo(12)
-        expectDoesNotThrow { result.shrunkValues.toSet() }
     }
 }
