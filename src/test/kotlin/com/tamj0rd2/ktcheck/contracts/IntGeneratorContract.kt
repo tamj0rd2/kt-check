@@ -83,8 +83,8 @@ internal interface IntGeneratorContract : BaseContract {
 
     @Test
     fun `creates common edge cases and their shrinks`() {
-        val gen = int(-10..10)
-        val expectedEdgeCases = setOf(-10, -9, -1, 0, 1, 9, 10)
+        val gen = int(-1000..1000)
+        val expectedEdgeCases = setOf(-1000, -999, -1, 0, 1, 999, 1000)
 
         repeatTest { seed ->
             val (originalValue, shrinks) = gen.collectShrunkValues(
@@ -93,7 +93,7 @@ internal interface IntGeneratorContract : BaseContract {
             )
             expectThat(shrinks)
                 .describedAs { "shrinks of $originalValue" }
-                .isEqualTo(IntShrinker.shrink(originalValue, -10..10, 0).toList())
+                .isEqualTo(IntShrinker.shrink(originalValue, -1000..1000).toList())
         }
     }
 }

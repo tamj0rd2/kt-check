@@ -178,7 +178,7 @@ internal fun <T> Gen<T>.collectShrunkValues(
                 }
             }
         }
-        fail { "property was not falsified" }
+        fail { "startShrinkingOnce never yielded true, so the property wasn't falsified" }
     } catch (e: PropertyFalsifiedException) {
         // good
     }
