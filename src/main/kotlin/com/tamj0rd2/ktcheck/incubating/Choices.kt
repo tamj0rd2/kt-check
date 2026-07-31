@@ -1,10 +1,12 @@
 package com.tamj0rd2.ktcheck.incubating
 
-import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.core.shrinkers.IntShrinker
 import com.tamj0rd2.ktcheck.stats.Percentage
 import com.tamj0rd2.ktcheck.stats.Percentage.Companion.asPercentage
 import com.tamj0rd2.ktcheck.stats.Percentage.Companion.percent
+import dev.forkhandles.result4k.Result4k
+import dev.forkhandles.result4k.asFailure
+import dev.forkhandles.result4k.asSuccess
 import kotlin.random.Random
 
 internal sealed interface Choice<T> {
@@ -34,12 +36,7 @@ internal sealed class Choices {
 
     internal abstract fun int(
         constraints: IntegerConstraints,
-    ): Int
-
-    fun <T> Gen<T>.bind(): T {
-        check(this is GenV2) { "${this@bind::class.java} incompatible with ${this@Choices::class.java}" }
-        return generate(this@Choices)
-    }
+    ): Result4k<Int, InvalidChoiceErrorCode>
 }
 
 // todo: I could inject the edge case chance here. but maybe edge case chance should be per gen? I can't make
@@ -54,7 +51,7 @@ internal class RandomChoices(
 
     override val choices get() = _choices.toList()
 
-    override fun int(constraints: IntegerConstraints): Int {
+    override fun int(constraints: IntegerConstraints): Result4k<Int, InvalidChoiceErrorCode> {
         val range = constraints.range
         val int = when (shouldGenerateAnEdgeCase()) {
             true -> setOf(range.first, range.first + 1, -1, 0, 1, range.last - 1, range.last)
@@ -64,7 +61,7 @@ internal class RandomChoices(
             false -> range.random(random)
         }
         _choices.add(Choice.Integer(value = int, constraints = constraints))
-        return int
+        return int.asSuccess()
     }
 
     private fun shouldGenerateAnEdgeCase(): Boolean {
@@ -77,16 +74,26 @@ internal class PredeterminedChoices(private val derivedFrom: List<Choice<*>>) : 
 
     override val choices: List<Choice<*>> get() = derivedFrom.take(choiceMarker)
 
-    override fun int(constraints: IntegerConstraints): Int {
+    override fun int(constraints: IntegerConstraints): Result4k<Int, InvalidChoiceErrorCode> {
         val choice = derivedFrom.getOrNull(choiceMarker)
         if (choice !is Choice.Integer) {
             TODO("expected an integer choice but got $choice")
         }
 
         if (constraints != choice.constraints) {
-            TODO("Constraint mismatch. Got $constraints, want ${choice.constraints}")
+            return InvalidChoiceErrorCode.ConstraintMismatch(
+                expected = choice.constraints,
+                actual = constraints
+            ).asFailure()
         }
+
         choiceMarker += 1
-        return choice.value
+        return choice.value.asSuccess()
     }
 }
+
+sealed interface InvalidChoiceErrorCode {
+    data class ConstraintMismatch(val expected: Any, val actual: Any) : InvalidChoiceErrorCode
+}
+
+internal class InvalidShrink(override val message: String? = null) : IllegalStateException()

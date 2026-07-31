@@ -5,6 +5,8 @@ import com.tamj0rd2.ktcheck.Property
 import com.tamj0rd2.ktcheck.PropertyFalsifiedException
 import com.tamj0rd2.ktcheck.ShrinkingConstraint
 import com.tamj0rd2.ktcheck.TestConfig
+import dev.forkhandles.result4k.onFailure
+import dev.forkhandles.result4k.orThrow
 import kotlin.random.Random
 
 internal fun <T> test(config: TestConfig, gen: GenV2<T>, property: Property<T>) {
@@ -39,7 +41,7 @@ private class TestRunner<T>(
     private fun runIteration(iteration: Int): TestIterationResult {
         val seed = config.seed.next(iteration)
         val context = RandomChoices(Random(seed.value))
-        val originalValue = gen.generate(context)
+        val originalValue = gen.generate(context).orThrow { error(it) }
         val originalError = property.falsify(originalValue)
             .also { printGeneratedValue(it, iteration, originalValue) }
             ?: return TestIterationResult.DidNotFalsify
@@ -87,7 +89,7 @@ private class TestRunner<T>(
 
             val shrunkContext = shrinkCandidates.next()
             // todo: if generation fails, skip to next shrink.
-            val shrunkInput = gen.generate(shrunkContext)
+            val shrunkInput = gen.generate(shrunkContext).onFailure { continue }
 
             if (!seenValues.add(shrunkInput)) continue
 

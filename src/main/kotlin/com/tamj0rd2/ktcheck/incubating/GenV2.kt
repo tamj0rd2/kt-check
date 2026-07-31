@@ -2,15 +2,20 @@ package com.tamj0rd2.ktcheck.incubating
 
 import com.tamj0rd2.ktcheck.Gen
 import com.tamj0rd2.ktcheck.GenBuilders
+import dev.forkhandles.result4k.Result4k
+import dev.forkhandles.result4k.asSuccess
+import dev.forkhandles.result4k.flatMap
+import dev.forkhandles.result4k.map
+import dev.forkhandles.result4k.orThrow
 import kotlin.random.Random
 import kotlin.reflect.KClass
 
 @ConsistentCopyVisibility
 data class GenV2<T> internal constructor(
-    internal val generate: (Choices) -> T,
+    internal val generate: (choices: Choices) -> Result4k<T, InvalidChoiceErrorCode>,
 ) : Gen<T> {
     override fun sample(seed: Long): T {
-        return generate(RandomChoices(Random(seed)))
+        return generate(RandomChoices(Random(seed))).orThrow { error(it) }
     }
 
     override fun <T2, R> combineWith(nextGen: Gen<T2>, combine: (T, T2) -> R): Gen<R> {
@@ -25,8 +30,10 @@ data class GenV2<T> internal constructor(
         TODO("Not yet implemented")
     }
 
-    override fun <R> flatMap(fn: (T) -> Gen<R>): Gen<R> {
-        TODO("Not yet implemented")
+    override fun <R> flatMap(fn: (T) -> Gen<R>): Gen<R> = GenV2 { choices ->
+        generate(choices)
+            .map { outerValue -> fn(outerValue) as GenV2 }
+            .flatMap { it.generate(choices) }
     }
 
     override fun ignoreExceptions(klass: KClass<out Exception>, threshold: Int): Gen<T> {
@@ -37,11 +44,11 @@ data class GenV2<T> internal constructor(
         TODO("Not yet implemented")
     }
 
-    override fun <R> map(fn: (T) -> R): Gen<R> = GenV2 { fn(generate(it)) }
+    override fun <R> map(fn: (T) -> R): Gen<R> = GenV2 { generate(it).map(fn) }
 
     companion object : GenBuilders {
         override fun <T> constant(value: T): Gen<T> {
-            TODO("Not yet implemented")
+            return GenV2 { value.asSuccess() }
         }
 
         override fun int(
@@ -56,14 +63,14 @@ data class GenV2<T> internal constructor(
             TODO("Not yet implemented")
         }
 
-        fun <T> builder(block: GenBuilderContext.() -> T): Gen<T> = GenV2 { block(GenBuilderContext(it)) }
+        fun <T> builder(block: GenBuilderContext.() -> T): Gen<T> = GenV2 { block(GenBuilderContext(it)).asSuccess() }
     }
 }
 
 class GenBuilderContext internal constructor(private val choices: Choices) {
     fun <T> Gen<T>.bind(): T {
         check(this is GenV2) { "${this@bind::class.java} incompatible with ${choices::class.java}" }
-        return generate(choices)
+        return generate(choices).orThrow { error(it) }
     }
 }
 
