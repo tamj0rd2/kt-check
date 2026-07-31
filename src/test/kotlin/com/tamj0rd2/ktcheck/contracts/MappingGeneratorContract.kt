@@ -13,11 +13,11 @@ internal interface MappingGeneratorContract : BaseContract {
         val doublingGen = originalGen.map { it * 2 }
 
         repeatTest { seed ->
-            val originalResult = originalGen.generate(ctx(seed))
-            val doubledResult = doublingGen.generate(ctx(seed))
+            val (originalValue, originalShrinks) = originalGen.collectShrunkValues(seed)
+            val (doubledValue, doubledShrinks) = doublingGen.collectShrunkValues(seed)
 
-            expectThat(doubledResult.value).isEqualTo(originalResult.value * 2)
-            expectThat(doubledResult).shrunkValues.isEqualTo(originalResult.shrunkValues.map { it * 2 })
+            expectThat(doubledValue).isEqualTo(originalValue * 2)
+            expectThat(doubledShrinks).isEqualTo(originalShrinks.map { it * 2 })
         }
     }
 }
