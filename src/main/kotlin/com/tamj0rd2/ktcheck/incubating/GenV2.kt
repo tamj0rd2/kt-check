@@ -5,9 +5,10 @@ import com.tamj0rd2.ktcheck.GenBuilders
 import kotlin.random.Random
 import kotlin.reflect.KClass
 
-abstract class GenV2<T> : Gen<T> {
-    internal abstract fun generate(choices: Choices): T
-
+@ConsistentCopyVisibility
+data class GenV2<T> internal constructor(
+    internal val generate: (Choices) -> T,
+) : Gen<T> {
     override fun sample(seed: Long): T {
         return generate(RandomChoices(Random(seed)))
     }
@@ -36,9 +37,7 @@ abstract class GenV2<T> : Gen<T> {
         TODO("Not yet implemented")
     }
 
-    override fun <R> map(fn: (T) -> R): Gen<R> {
-        TODO("Not yet implemented")
-    }
+    override fun <R> map(fn: (T) -> R): Gen<R> = GenV2 { fn(generate(it)) }
 
     companion object : GenBuilders {
         override fun <T> constant(value: T): Gen<T> {
@@ -50,29 +49,21 @@ abstract class GenV2<T> : Gen<T> {
             shrinkTarget: Int,
         ): Gen<Int> {
             require(shrinkTarget in range) { "shrinkTarget $shrinkTarget not in range $range" }
-            // todo: it's weird to use the user facing gen implementaiton here...
-            return IntGenerator(IntegerConstraints(range, shrinkTarget))
+            return GenV2 { it.int(IntegerConstraints(range, shrinkTarget)) }
         }
 
         override fun long(): Gen<Long> {
             TODO("Not yet implemented")
         }
 
-        fun <T> builder(block: GenBuilderContext.() -> T): GenV2<T> = UserDefinedGen(block)
+        fun <T> builder(block: GenBuilderContext.() -> T): Gen<T> = GenV2 { block(GenBuilderContext(it)) }
     }
 }
-
 
 class GenBuilderContext internal constructor(private val choices: Choices) {
     fun <T> Gen<T>.bind(): T {
         check(this is GenV2) { "${this@bind::class.java} incompatible with ${choices::class.java}" }
         return generate(choices)
-    }
-}
-
-class UserDefinedGen<T>(private val block: GenBuilderContext.() -> T) : GenV2<T>() {
-    override fun generate(choices: Choices): T {
-        return block(GenBuilderContext(choices))
     }
 }
 
@@ -82,13 +73,6 @@ internal data class IntegerConstraints(
 ) {
     init {
         require(shrinkTarget in range) { "shrinkTarget $shrinkTarget not in range $range" }
-    }
-}
-
-// todo: do I want this to be PrimitiveGenerator and make GenV2 concrete? or stick with this?
-internal class IntGenerator(private val constraints: IntegerConstraints) : GenV2<Int>() {
-    override fun generate(choices: Choices): Int {
-        return choices.int(constraints)
     }
 }
 
